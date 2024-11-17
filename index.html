@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- JS -->
   <script src="js/jquery-latest.js"></script>
+  <script src="js/config.js"></script>
 
   <!-- JS -->
 
@@ -60,7 +61,7 @@
     $(document).ready(function() {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/number_file.php',
+            url: globalConfig.addrServer + '/php/number_file.php',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -74,7 +75,7 @@
         });
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/number_folder.php',
+            url: globalConfig.addrServer + '/php/number_folder.php',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -88,7 +89,7 @@
         });
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/programme/coming_soon.php',
+            url: globalConfig.addrServer + '/php/programme/coming_soon.php',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -106,7 +107,7 @@
         console.log("date=" + date.getFullYear() + "-" + String(month).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'));
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/synchro.php',
+            url: globalConfig.addrServer + '/php/synchro.php',
             data: "date=" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate(),
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
