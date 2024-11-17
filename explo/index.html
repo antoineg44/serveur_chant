@@ -10,8 +10,8 @@
 	<meta name="keywords" content="">
 	<title>Historique</title>
 	<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel=" stylesheet">
-	<!--Replace with your tailwind.css once created-->
 
+	<script src="../js/config.js"></script>
 
 	<!--Regular Datatables CSS-->
 	<link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
@@ -184,13 +184,13 @@
 		$(document).ready(function() {
 
 			new DataTable('#ajouter', {
-				ajax: './get_histo.php',
+				ajax: globalConfig.addrServer + '/php/get_histo.php',
 				processing: true,
 				serverSide: true
 			});
 
 			new DataTable('#supprimer', {
-				ajax: './get_sup.php',
+				ajax: globalConfig.addrServer + 'php/get_sup.php',
 				processing: true,
 				serverSide: true
 			});

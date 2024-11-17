@@ -10,9 +10,7 @@
 	<meta name="keywords" content="">
 	<title>Historique</title>
 	<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel=" stylesheet">
-	<!--Replace with your tailwind.css once created-->
-
-
+	<script src="../js/config.js"></script>
 	<!--Regular Datatables CSS-->
 	<link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 	<!--Responsive Extension Datatables CSS-->
@@ -120,8 +118,8 @@
     <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">[En construction !] Carnet de chant de la paroisse notre Dame de Nantes :</h2>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://<?php echo $_SERVER['HTTP_HOST']; ?>/carnets/lists/Paroisse NDDN - Carnet de chants 2014.pdf" target="_blank" style="color: #3498db;">Lien vers le carnets de chants</a></p>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://<?php echo $_SERVER['HTTP_HOST']; ?>/carnets/lists/Table des matières - Par thème.pdf" target="_blank" style="color: #3498db;">Lien vers la table des matière par thème</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets/lists/Paroisse NDDN - Carnet de chants 2014.pdf" target="_blank" style="color: #3498db;">Lien vers le carnets de chants</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets/lists/Table des matières - Par thème.pdf" target="_blank" style="color: #3498db;">Lien vers la table des matière par thème</a></p>
         </div>
     <div/>
 
@@ -169,8 +167,8 @@
             $('#chants').on( 'click', 'tbody tr', function () {
                 console.log(this);
                 var path = this.innerText.split("\t")[2];
-                console.log("open : " + window.location.origin + "/pdf/" + path);
-                window.open(window.location.origin + "/pdf/" + path);
+                console.log("open : " + globalConfig.addrServer + "/pdf/" + path);
+                window.open(globalConfig.addrServer + "/pdf/" + path);
             } );
 		});
 	</script>
