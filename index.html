@@ -6,8 +6,6 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="Accueil"
-    content="Site gratuit pour projeter des paroles de chant, texte personnalisée et image pour une messe par exemple. Mise à jour récurrentes.">
   <!-- CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- JS -->
@@ -20,13 +18,9 @@
 </head>
 
 <body class="h-full w-full"><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
-  <div class="absolute h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
-    <img src="./web/fond.jpg" style="height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+  <div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+    <img src="./web/fond.jpg" style="position:fixed;height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
     <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl" aria-hidden="true">
-      <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20" style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"></div>
-    </div>
-    <div class="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:ml-16 sm:translate-x-0 sm:transform-gpu" aria-hidden="true">
-      <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20" style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"></div>
     </div>
     <div class="mx-auto max-w-7xl px-6 lg:px-8">
       <div class="mx-auto max-w-2xl lg:mx-0">
@@ -38,29 +32,95 @@
           <a href="./explorer/" style="color: #3498db;">Ouvrir l'explorateur de partitions <span aria-hidden="true">&rarr;</span></a>
           <a href="./explo/index.html" style="color: #3498db;">Historique des partitions ajoutés <span aria-hidden="true">&rarr;</span></a>
           <a href="./messes/" style="color: #3498db;">Les programmes des messes à venir <span aria-hidden="true">&rarr;</span></a>
-          <a href="#" style="color: #3498db;">A propos <span aria-hidden="true">&rarr;</span></a>
+          <a href="./carnets/" style="color: #3498db;">Carnets de chants <span aria-hidden="true">&rarr;</span></a>
+          <a href="./about/" style="color: #3498db;">A propos <span aria-hidden="true">&rarr;</span></a>
         </div>
         <dl class="mt-16 grid grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col-reverse">
             <dt class="text-base leading-7 text-gray-300">Chants disponibles</dt>
-            <dd class="text-2xl font-bold leading-9 tracking-tight text-white">+1800</dd>
+            <dd id="number_folder" class="text-2xl font-bold leading-9 tracking-tight text-white">+1800</dd>
           </div>
           <div class="flex flex-col-reverse">
             <dt class="text-base leading-7 text-gray-300">Partitions différentes</dt>
-            <dd class="text-2xl font-bold leading-9 tracking-tight text-white">+3000</dd>
+            <dd id="number_file" class="text-2xl font-bold leading-9 tracking-tight text-white">+3000</dd>
           </div>
           <div class="flex flex-col-reverse">
-            <dt class="text-base leading-7 text-gray-300">Messes à venir</dt>
-            <dd class="text-2xl font-bold leading-9 tracking-tight text-white">0</dd>
+            <dt class="text-base leading-7 text-gray-300">Messe(s) à venir</dt>
+            <dd id="messes_a_venir" class="text-2xl font-bold leading-9 tracking-tight text-white">0</dd>
           </div>
           <div class="flex flex-col-reverse">
-            <dt class="text-base leading-7 text-gray-300">Partitions ajoutées ce mois-ci</dt>
-            <dd class="text-2xl font-bold leading-9 tracking-tight text-white">0</dd>
+            <dt class="text-base leading-7 text-gray-300">Partitions ajoutées depuis un mois</dt>
+            <dd id="nb_dernierFichier" class="text-2xl font-bold leading-9 tracking-tight text-white">0</dd>
           </div>
         </dl>
       </div>
     </div>
   </div>
+  <script>
+    $(document).ready(function() {
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/number_file.php',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+                var number_file = data.split("£");
+                if(number_file.length == 3)
+                {
+                    $('#number_file').html(number_file[1]);
+                }
+            }
+        });
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/number_folder.php',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+                var number_folder = data.split("£");
+                if(number_folder.length == 3)
+                {
+                    $('#number_folder').html(number_folder[1]);
+                }
+            }
+        });
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/programme/coming_soon.php',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+                var messes_a_venir = data.split("£");
+                if(messes_a_venir.length == 3)
+                {
+                    $('#messes_a_venir').html(messes_a_venir[1]);
+                }
+            }
+        });
+        let date = new Date();
+        var month = date.getMonth();
+        if(month == 0)month = 12;
+        console.log("date=" + date.getFullYear() + "-" + String(month).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'));
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/synchro.php',
+            data: "date=" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate(),
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+                var ajoute = data.split("£#");
+                if(ajoute[0].length > 5) {
+                    var file = ajoute[0].split("%#");
+                    $('#nb_dernierFichier').html(file.length -1);
+                }
+            }
+        });
+    });
+    </script>
 </body>
 
 </html>

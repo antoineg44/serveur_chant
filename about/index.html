@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- JS -->
+  <script src="../js/jquery-latest.js"></script>
+  <!-- Title -->
+  <title>A propos</title>
+</head>
+
+<body class="h-full w-full"><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
+    <div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+    <img src="../web/fond.jpg" style="position:fixed;height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+    <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl" aria-hidden="true" style="overflow-y:scroll"></div>
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <div class="mx-auto lg:mx-0">
+        <h3 class="text-4xl font-bold tracking-tight text-white sm:text-6xl">A propos</h3>
+        <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">Partoch est une application permettant la gestion des partitions de chants liturgiques. Elle se synchronise avec un serveur de façon à pouvoir animer la messe en groupe. Cette application permet de réaliser un gain de temps pour la préparation des messes et le partages des partitions.</p>
+    <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">D'autres fonctionnalités ont été ajoutées, comme la présence d'un explorateur. Pour la recherche et l'utilisation des PDF, nous vous recommandons d'utiliser cet explorateur pour facilité les échanges de fichier et éviter les erreurs.</p>
+    <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">Cette application peut également s'adapter en affichant 2 pages simultanément ou en se connectant à une pédale Bluetooth. En utilisant 3 doigts sur l'écran ou en ouvrant le volet de droite, vous pouvez facilement changer de version du chant.</p>
+    <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">Avertissement : les partitions utilisées ne sont pas libres, vous n'avez pas le droit de les reproduire, de les partager ou de les vendre. Veuillez à ne rajouter que des partitions dont les droits d'auteur n'empêchent pas leur utilisation dans cette application. De même, tout ce qui se trouve dans le répertoire synchronisé devient disponible pour tous les utilisateurs.</p>
+    <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">Cette appli est un logiciel libre et vous pouvez l'utiliser, l'examiner, la partager et l'améliorer librement. Si vous souhaitez collaborer à ce projet, vous pouvez m'envoyer un mail dans la partie suggestion.</p>
+    
+
+      </div>
+
+      <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
+        <h3 class="text-2xl tracking-tight text-white sm:text-3xl">Télécharger l'application</h3>
+        <p class="mt-6 text-lg leading-8 text-gray-300">Seul des verions Android sont développés car Android est libre : toutes les biliothèques sont disponibles et beaucoup utilisées, ce qui rend le projet très sécurisé, fiable et durable dans le temps.</p>
+        <div id="appversion" class="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
+        </div>
+      </div>
+      <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
+        <h3 class="text-2xl tracking-tight text-white sm:text-3xl">Lien vers le projet</h3>
+        <p class="mt-6 text-lg leading-8 text-gray-300">J'ai besoin d'aide pour développer le projet et serais très heureux d'en discuter avec vous. Pour avoir l'accès, n'hésitez pas à me contacter par mail : antoine.nort@netc.fr</p>
+        <div class="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
+          <a href="https://gitlab.com/antoineprojets/serveur_chants" style="color: #3498db;">Projet Gitlab<span aria-hidden="true">&rarr;</span></a>
+          <a href="https://filemanager.ai/new/#" style="color: #3498db;">Serveur<span aria-hidden="true">&rarr;</span></a>
+          ftp.cluster027.hosting.ovh.net
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <script>
+    $(document).ready(function() {
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/app_list.php',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+                var app_file = data.split("£");
+                for(var i=0; i<app_file.length-1; i++)
+                {
+                    var name = app_file[i].split("%");
+                    $('#appversion').append('<a href="' + window.location.origin + "/res/app_version/" + name[0] + '" style="color: #3498db;">' + name[0] + '<span aria-hidden="true">&rarr;</span></a>');
+                }
+            }
+        });
+    });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,35 @@
+2024-08-04Â£NortÂ£Ordinaire
+20240804105823
+description = 
+[Entrée]
+#Soyons toujours joyeux C 249
+path = Cantiques/Soyons toujours joyeux C 249/Soyons toujours joyeux C 249.pdf
+[PP]
+#Messe Saint Claude La Colombière
+path = Messes/Messe Saint Claude La Colombière/Messe Saint Claude La Colombière.pdf
+[Gloria]
+[Psaume]
+[Alléluia]
+[Credo]
+[PU]
+#Notre Père, notre Père, nous te supplions humblement
+path = Refrains/Notre Père, nous te supplions humblement/Notre Père, notre Père, nous te supplions humblement.pdf
+[Offertoire]
+#Viens sois ma lumiere
+path = Cantiques/Viens sois ma lumiere/Viens sois ma lumiere.pdf
+[Sanctus]
+[Anamnèse]
+#Nous proclamons ta mort 2
+path = Anamnèse/Nous proclamons ta mort_CL1/Nous proclamons ta mort 2.pdf
+[Doxologie]
+#Doxologie de la prière eucharistique
+path = Doxologie/Doxologie de la prière eucharistique/Doxologie de la prière eucharistique_v2.pdf
+#Amen, gloire et louange
+path = Doxologie/Amen, gloire et louange/Amen, gloire et louange_v8.pdf
+[Notre Père]
+[Communion]
+#Nous t'avons reconnu Seigneur
+path = Cantiques/Nous t'avons reconnu, Seigneur/Nous t'avons reconnu Seigneur.pdf
+[Sortie]
+#Allez par toute la terre
+path = Cantiques/Allez par toute la terre/Allez par toute la terre 1.pdf

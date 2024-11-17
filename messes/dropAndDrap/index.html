@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Recherches</title>
+<meta charset="utf-8">
+
+<meta name="description" content="test">
+<meta name="author" content="Antoine">
+
+<link href="dragula.css" rel="stylesheet" type="text/css">
+<link href="style.css" rel="stylesheet" type="text/css">
+<script src="jquery-latest.js"></script>
+  <script src="jquery.js"></script>
+</head>
+<body class="">
+  <div class="parent">
+    <div class="wrapper">
+      <div id="sortable" class="dropAndDrap">
+        <div></div>
+      </div>
+    </div>
+  </div>
+  <script src="dragula.js"></script>
+  <script src="dropAndDrap.js"></script>
+  <script src="app.js"></script>
+  <script>
+  $(document).ready(function() {
+
+			init("example_messe.txt", "..");
+		});
+  </script>
+
+</body></html>

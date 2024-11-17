@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Recherches</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <script src="index.js"></script>
+  
+  <link href="dropAndDrap/dragula.css" rel="stylesheet" type="text/css">
+  <link href="dropAndDrap/style.css" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" type="text/css" href="listFolder/listFolder.css" />
+  
+  <script src="dropAndDrap/jquery-latest.js"></script>
+  <script src="dropAndDrap/jquery.js"></script>
+  <script src="listFolder/listFolder.js"></script>
+  <style>
+
+* {
+  margin: 0;
+  padding: 0;
+  border: 0px;
+  border-spacing: 0;
+}
+
+  .listprogramme, .programme {
+      padding: 0;
+      margin: 0;
+      border: 0;
+      top: 0;
+  }
+ th, td{
+      border-bottom: 1px solid #757575;
+      border-right: 1px solid #757575;
+  }
+  
+  html, body, table, tbody, table {
+      padding: 0%;
+      margin: 0%;
+      border: 0px;
+      width: 100%;
+  }
+  html, body {
+    height:100%;
+  }
+  img {
+    height: 18px;
+    margin-right: 5px;
+  }
+  button {
+    display: inline-flex;
+    align-items: center;
+    border: 0px;
+    padding: 5px;
+    background-color: #f0f0f0;
+  }
+  button:hover {
+    background-color: #dddddd;
+  }
+  button:active {
+    background-color: #bbbbbb;
+  }
+  
+  thead {
+    background-color: #f0f0f0;
+    text-align: left;
+  }
+
+  .but {
+    box-shadow: 0px 10px 14px -7px #276873;
+    background:linear-gradient(to bottom, #599bb3 5%, #408c99 100%);
+    background-color:#599bb3;
+    border-radius:8px;
+    display:inline-block;
+    cursor:pointer;
+    color:#ffffff;
+    font-family:Arial;
+    font-size:20px;
+    font-weight:bold;
+    padding:10px 32px;
+    text-decoration:none;
+    text-shadow:0px 1px 0px #3d768a;
+    margin: 7px;
+    margin-right: 10px;
+    margin-top: 3px;
+  }
+  .but:hover {
+    background:linear-gradient(to bottom, #408c99 5%, #599bb3 100%);
+    background-color:#408c99;
+  }
+  .but:active {
+    position:relative;
+    top:1px;
+  }
+
+  </style>
+</head>
+
+<body>
+    <table style="height:100%;width:100%">
+      <tbody>
+        <tr>
+          <div style="background-color: #aeb1b3;">
+            <button class="but" onclick='window.open(window.location.origin, "_self")'><img src = "icon/home.png" style="margin-right: 12px;">Home</button>
+            <button class="but" onclick='window.open(window.location.origin + "/explorer", "_blank")' style="float: right;"><img src = "icon/pdf.png" style="margin-right: 12px;">Ouvrir l'exporateur de partitions</button>
+          </div>
+        </tr>
+        <tr>
+            <!-- Partie liste des programmes -->
+            <td style="position:relative">
+                <div style="overflow-x:auto;position:absolute;height:100%;width:100%;top:0px;left:0px;">
+                <table class="listprogramme" style="position:relative;height:100%">
+                    <thead style="position: sticky; top: 0;height:25px;z-index:5"> <!-- action sur la liste des programmes -->
+                        <th>
+                          <button class = "btn" id="btn-list-copy" onclick="action('btn-list-copy')"><img src = "icon/copy.png">Copier vers</button>
+                          <button class = "btn" onclick="action('btn-list-delete')"><img src = "icon/delete.png">Supprimer</button>
+                          <button class = "btn" onclick="action('btn-list-paroisse')"><img src = "icon/plus.png">Paroisse</button>
+                          <button class = "btn" onclick="action('btn-list-add')"><img src = "icon/plus.png">Programme</button>
+                          <button class = "btn" onclick="action('btn-list-modify')"><img src = "icon/pen.png">Modifier</button>
+                          <button class = "btn" onclick="action('btn-list-download')"><img src = "icon/forward.png">Exporter</button>
+                        </th>
+                    </thead>
+                    <tbody style="bottom:0px">
+                        <tr>
+                            <td style="padding:2%;vertical-align:top">
+                            <div id="mesdossiers" style="height:100%;position:relative;overflow: scroll;"></div>
+                            <script>
+                                tousLesRepertoires();
+                                var dossier_ouvert = [];
+                            </script>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            </td>
+            
+            <!-- Partie programme -->
+            <td style="position:relative">
+                <div style="overflow-x:auto;position:absolute;height:100%;width:100%;top:0px;left:0px;">
+                <table class="programme" style="position:relative;height:100%">
+                    <thead style="position: sticky; top: 0;height:25px;z-index:5">
+                        <th>
+                          <button id="btn-prog-save" onclick="action('btn-prog-save')" style="background-color: #757575;"><img src = "icon/save.png">Sauvegarder</button>
+                          <!--<button onclick="action('btn-prog-copy')" style="background-color: #757575;"><img src = "icon/copy.png">Copier vers</button>-->
+                          <button onclick="action('btn-prog-delete')"><img src = "icon/delete.png">Supprimer</button>
+                          <button onclick="action('btn-prog-add')"><img src = "icon/plus.png">Ajouter</button>
+                          <button onclick="action('btn-prog-modify')"><img src = "icon/pen.png">Modifier</button>
+                          <button onclick="action('btn-prog-download')"><img src = "icon/download.png">Tous les fichiers</button>
+                        </th>
+                    </thead>
+                    <tbody style="bottom:0px">
+                        <tr>
+                            <td>
+                                <div class="parent" style="bottom: 0;overflow: scroll;">
+                                    <div class="wrapper">
+                                    <div id="sortable" class="dropAndDrap">
+                                        <div></div>
+                                    </div>
+                                    </div>
+                                </div>
+                                    <script src="dropAndDrap/dragula.js"></script>
+                                    <script src="dropAndDrap/dropAndDrap.js"></script>
+                                    <script src="dropAndDrap/app.js"></script>
+                                <script>
+                                    $(document).ready(function() {
+                                        init(window.location.origin + "/messes/dropAndDrap/example_messe.txt");
+                                    });
+                                </script>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            </td>
+        </tr>
+      </tbody>
+    </table>    
+</body>
+</html>
