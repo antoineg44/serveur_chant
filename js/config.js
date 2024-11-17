@@ -1,3 +1,3 @@
 var globalConfig = {
-    addrServeur: 'https://partitions.ovh'
+    addrServer: 'https://partitions.ovh'
   };
