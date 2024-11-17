@@ -115,7 +115,7 @@
 </head>
 
 <body class="h-full w-full"><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
-    <img src="../web/fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+    <img src="../fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
     
     <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
         <div class="mx-auto max-w-2xl lg:mx-0">
