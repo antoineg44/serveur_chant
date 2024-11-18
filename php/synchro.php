@@ -2,7 +2,7 @@
 <?php 
     include("config.php");
 
-    if($addr_server_test == $_SERVER['HTTP_ORIGIN'])
+    if(isset($_SERVER['HTTP_ORIGIN']) && $addr_server_test == $_SERVER['HTTP_ORIGIN'])
     {
         header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS');
