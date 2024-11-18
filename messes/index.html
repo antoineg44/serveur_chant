@@ -99,15 +99,19 @@
 <body>
     <table style="height:100%;width:100%">
       <tbody>
-        <?php if(!isset($_GET['_ts'])) {?>
-        <tr>
+        <tr id="button_entete">
           <div style="background-color: #aeb1b3;">
             <button class="but" onclick='window.open(window.location.origin, "_self")'><img src = "icon/home.png" style="margin-right: 12px;">Home</button>
             <button class="but" onclick='share_prog()'><img src = "icon/forward.png" style="margin-right: 12px;">Partager</button>
             <button class="but" onclick='window.open(window.location.origin + "/explorer", "_blank")' style="float: right;"><img src = "icon/pdf.png" style="margin-right: 12px;">Ouvrir l'exporateur de partitions</button>
           </div>
         </tr>
-        <?php } ?>
+        <script>
+          if((new URLSearchParams(location.search)).get('_ts') == null)
+          {
+            document.getElementById("button_entete").style.visibility = "hidden";
+          }
+        </script>
         <tr>
             <!-- Partie liste des programmes -->
             <td style="position:relative">
@@ -167,14 +171,11 @@
                                     <script src="dropAndDrap/app.js"></script>
                                 <script>
                                     $(document).ready(function() {
-                                        <?php
-                                        if(isset($_GET['_pathfile'])){
-                                            $prog =(String) trim($_GET['_pathfile']);
-                                            ?>
-                                            init("<?php echo $prog ?>");
-                                            <?php
+                                        let params = (new URLSearchParams(location.search)).get('_pathfile');
+                                        if(params != null)
+                                        {
+                                          init(params);
                                         }
-                                        ?>
                                     });
                                 </script>
                             </td>
