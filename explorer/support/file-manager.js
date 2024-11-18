@@ -158,8 +158,10 @@ f.subarray(0,c):f.slice(0,c)};E||(r.TextDecoder=x,r.TextEncoder=y)})(""+void 0==
 			openfilesbuttonswrap: CreateNode('div', ['fm_file_editor_open_files_buttons_wrap']),
 			buttonfileexplorerwrap: CreateNode('button', ['fm_file_editor_open_file_explorer_wrap'], { title: $this.Translate('Open/Manage Files... (Ctrl + O)') }),
 			buttonprogramexplorerwrap: CreateNode('button', ['fm_program_editor_open_file_explorer_wrap'], { title: "Ouvrir l'explorateur de programme" }),
+			buttonhomeexplorerwrap: CreateNode('button', ['fm_home_editor_open_file_explorer_wrap'], { title: "Retour à l'accueil" }),
 			buttonfileexplorericon: CreateNode('div', ['fe_fileexplorer_open_icon']),
-			buttonprogramexplorericon: CreateNode('div', ['fe_fileexplorer_open_icon']),
+			buttonprogramexplorericon: CreateNode('div', ['fe_programexplorer_open_icon']),
+			buttonhomeexplorericon: CreateNode('div', ['fe_homeexplorer_open_icon']),
 			buttontabviewwrap: CreateNode('button', ['fm_file_editor_tab_view_wrap', 'fm_file_editor_hidden']),
 			buttontabviewicon: CreateNode('div', ['fm_file_editor_tab_view_icon']),
 			buttonmenuwrap: CreateNode('button', ['fm_file_editor_open_menu_wrap', 'fm_file_editor_hidden'], { title: $this.Translate('Options Menu... (Ctrl + M)') }),
@@ -188,9 +190,11 @@ f.subarray(0,c):f.slice(0,c)};E||(r.TextDecoder=x,r.TextEncoder=y)})(""+void 0==
 
 		elems.buttonfileexplorerwrap.appendChild(elems.buttonfileexplorericon);
 		elems.buttonprogramexplorerwrap.appendChild(elems.buttonprogramexplorericon);
+		elems.buttonhomeexplorerwrap.appendChild(elems.buttonhomeexplorericon);
 		elems.buttontabviewwrap.appendChild(elems.buttontabviewicon);
 		elems.buttonmenuwrap.appendChild(elems.buttonmenuicon);
 		elems.openfilesbuttonswrap.appendChild(elems.buttonfileexplorerwrap);
+		elems.openfilesbuttonswrap.appendChild(elems.buttonhomeexplorerwrap);
 		elems.openfilesbuttonswrap.appendChild(elems.buttonprogramexplorerwrap);
 		elems.openfilesbuttonswrap.appendChild(elems.buttontabviewwrap);
 		elems.openfilesbuttonswrap.appendChild(elems.buttonmenuwrap);
@@ -790,7 +794,8 @@ console.log(e);
 				onopenfile: function(folder, entry, path) {
 					if (!$this.settings.tabbed)  return;
 
-//console.log(entry);
+console.log(entry);
+console.log(path);
 					$this.HideFileExplorer();
 
 					$this.SetNamedStatusBarText('message', FormatStr($this.Translate('Opening "{0}"...'), entry.name), $this.settings.messagetimeout);
@@ -1495,10 +1500,26 @@ console.log(e);
 			}
 
 			$this.HideFileExplorer(); console.log($this.settings.fileexplorer);
-			$this.settings.fileexplorer.onopenfile(null,null,null);
+			var entry = {
+				"id": "template_messe.json",
+				"name": "Explorateur de programme"
+			}
+			var path = [ "", "programmes", "Templates" ];
+			$this.settings.fileexplorer.DispatchWindowEvent('open_file', [null, entry, path]);
 		};
 
 		elems.buttonprogramexplorerwrap.addEventListener('mousedown', ProgrammeExplorerButtonHandler);
+
+		var HomeExplorerButtonHandler = function(e) {
+			if (!e.isTrusted)  return;
+
+			// Stop the button from stealing focus.
+			e.preventDefault();
+
+			window.open(window.location.origin); 
+		};
+
+		elems.buttonhomeexplorerwrap.addEventListener('mousedown', HomeExplorerButtonHandler);
 
 		elems.buttonfileexplorerwrap.addEventListener('mousedown', FileExplorerButtonHandler);
 

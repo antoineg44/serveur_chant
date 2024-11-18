@@ -13,6 +13,7 @@
 
 .fm_file_editor_wrap .fm_file_editor_open_files_wrap .fm_file_editor_open_file_explorer_wrap { }
 .fm_file_editor_wrap .fm_file_editor_open_files_wrap .fm_program_editor_open_file_explorer_wrap { }
+.fm_file_editor_wrap .fm_file_editor_open_files_wrap .fm_home_editor_open_file_explorer_wrap { }
 .fm_file_editor_wrap .fm_file_editor_tab_view_icon { width: 24px; height: 24px; image-rendering: pixelated; }
 .fm_file_editor_wrap .fm_file_editor_preview_icon { background-image: url('file_manager_preview_icon.png'); }
 .fm_file_editor_wrap .fm_file_editor_text_edit_icon { background-image: url('file_manager_text_edit_icon.png'); }

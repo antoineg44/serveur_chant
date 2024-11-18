@@ -60,7 +60,7 @@ function delete_list()
     {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/suppression.php',
+            url: globalConfig.addrServer + '/php/suppression.php',
             crossDomain: true,
             data: 'lien=programmes/' + click_on_programme.path + click_on_programme.name + "&insert=false&auteur=web",
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -84,7 +84,7 @@ function paroisse_list()
 
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/nouveau_dossier.php',
+        url: globalConfig.addrServer + '/php/nouveau_dossier.php',
         crossDomain: true,
         data: 'path=programmes/' + paroisse + "&create=true&auteur=web",
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -156,7 +156,7 @@ function modify_list()      // rename
     console.log(new_name);
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/renommer.php',
+        url: globalConfig.addrServer + '/php/renommer.php',
         crossDomain: true,
         data: 'old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&new_link=programmes/" + click_on_programme.path + new_name + "&insert=false&auteur=web",
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -222,7 +222,7 @@ function onFolder(nom)
             init(window.location.origin + "/pdf/programmes/" + click_on_programme.path + click_on_programme.name, ".");*/
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: globalConfig.addrServer + '/php/copy.php',
                 crossDomain: true,
                 data: 'old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -257,7 +257,7 @@ function onFolder(nom)
             console.log("new : " + decodage_path_javascript(nom) + "/" + prog_name);
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: globalConfig.addrServer + '/php/copy.php',
                 crossDomain: true,
                 data: 'old_link=programmes/' + "Templates/" + "template_messe.json" + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -290,7 +290,7 @@ function onFile(path, name)
 {
     console.log(path);
     console.log(name);
-    init(window.location.origin + "/pdf/programmes/" + path + name, ".");
+    init(globalConfig.addrServer + "/pdf/programmes/" + path + name, ".");
     resetModif();
     return true;
 }
@@ -324,10 +324,10 @@ function add_prog()
     if(new_part == null || new_part == "")return null;
     if(new_part.includes("/"))
     {
-        if(new_part.includes(window.location.origin + "/pdf/"))
+        if(new_part.includes(globalConfig.addrServer + "/pdf/"))
         {
             new_part = decodeURI(new_part);
-            var path = new_part.split(window.location.origin + "/pdf/")[1];
+            var path = new_part.split(globalConfig.addrServer + "/pdf/")[1];
             var extension = path.split(".");
             if(extension.length == 2 && extension[1] == "pdf")
             {
@@ -366,7 +366,7 @@ function save_prog()
 
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/programme/update.php',
+        url: globalConfig.addrServer + '/php/programme/update.php',
         crossDomain: true,
         data: 'data=' + programme.save() + "&dateModif=" + lastModif,
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -386,7 +386,7 @@ function download_prog()
     for(var i=0; i<programme.chants.length; i++)
     {
         if(programme.chants[i].type != "partie"){
-            download(window.location.origin + "/pdf/" +programme.chants[i].path);
+            download(globalConfig.addrServer + "/pdf/" +programme.chants[i].path);
         }
     }
 }
@@ -433,7 +433,7 @@ function share_prog()
         alert("Aucun programme de sélectionné");
         return;
     }
-    text_export = window.location.origin + "/messes/index.php?_pathfile=" + window.location.origin + '/pdf/programmes/' + click_on_programme.path + click_on_programme.name;
+    text_export = globalConfig.addrServer + "/messes/index.php?_pathfile=" + globalConfig.addrServer + '/pdf/programmes/' + click_on_programme.path + click_on_programme.name;
     navigator.clipboard.writeText(text_export).then(() => {
             // 3. On affiche l'alert
             alert("Texte copié :" + text_export);

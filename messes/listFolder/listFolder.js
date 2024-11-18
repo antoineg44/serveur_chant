@@ -37,7 +37,7 @@ function repertoire(nom){
         
 		$.ajax({
 			type: 'GET',
-			url: window.location.origin + '/messes/listFolder/get_php/get_list.php', // "https://partoch.free.nf/messes/listFolder/"
+			url: globalConfig.addrServer + '/messes/listFolder/get_php/get_list.php', // "https://partoch.free.nf/messes/listFolder/"
             crossDomain: true,
 			data: 'nom=' + encodeURI(path).replaceAll("'","¤"),
 			contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -60,7 +60,7 @@ function update_folder()
 
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/messes/listFolder/get_php/get_list.php', // "https://partoch.free.nf/messes/listFolder/"
+        url: globalConfig.addrServer + '/messes/listFolder/get_php/get_list.php', // "https://partoch.free.nf/messes/listFolder/"
         crossDomain: true,
         data: 'nom=' + encodeURI(path).replaceAll("'","¤"),
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
@@ -112,7 +112,7 @@ function tousLesRepertoires(){
     clear_folders();
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/messes/listFolder/get_php/get_list.php',
+        url: globalConfig.addrServer + '/messes/listFolder/get_php/get_list.php',
         crossDomain: true,
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
         data: 'nom=',

@@ -1868,6 +1868,11 @@
 			return (triggers[eventname] && triggers[eventname].length);
 		};
 
+		// to interact with file explorer file from button added
+		$this.DispatchWindowEvent = function(eventname, params) {
+			DispatchEvent(eventname, params);
+		};
+
 		// Dispatches a tool-specific event to listeners.
 		$this.DispatchToolEvent = function(eventname, params) {
 			DispatchEvent('tool_' + eventname, params);
