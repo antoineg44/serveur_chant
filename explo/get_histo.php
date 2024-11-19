@@ -59,12 +59,13 @@ $columns = array(
 	)*/
 );
 
+include("../php/connexion.php");
 // SQL server connection information
 $sql_details = array(
-	'user' => 'partithbase',
-	'pass' => 'Nicolas1',
-	'db'   => 'partithbase',
-	'host' => 'partithbase.mysql.db'
+	'user' => $db_user,
+	'pass' => $db_pass,
+	'db'   => $nom_bd,
+	'host' => $serveur'
 	,'charset' => 'utf8' // Depending on your PHP and MySQL config, you may need this
 );
 
