@@ -65,8 +65,8 @@ $sql_details = array(
 	'user' => $db_user,
 	'pass' => $db_pass,
 	'db'   => $nom_bd,
-	'host' => $serveur'
-	,'charset' => 'utf8' // Depending on your PHP and MySQL config, you may need this
+	'host' => $serveur,
+	'charset' => 'utf8' // Depending on your PHP and MySQL config, you may need this
 );
 
 
