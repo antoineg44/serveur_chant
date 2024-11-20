@@ -20,6 +20,4 @@ jobs:
           echo "Action effectuée après le commit"
           
           # Exemple d'appel à un script PHP via curl
-          curl -X GET -k "https://test.partitions.ovh/php/deploy.php?branch_name=test"
-          # Ou si vous devez envoyer une requête POST
-          # curl -X POST -d "param1=value1&param2=value2" http://votre-site.com/votre-script.php
+          curl -X GET -k "https://partitions.ovh/php/deploy.php?branch_name=${{ github.ref }}"
