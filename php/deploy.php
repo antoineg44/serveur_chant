@@ -1,13 +1,13 @@
 
 <?php
 
-//if(!isset($_GET['branch_name'])) {
-//    die("Erreur : Veuillez indiquer un nom de branche.\n");
-//}
+if(!isset($_GET['branch_name'])) {
+    die("Erreur : Veuillez indiquer un nom de branche.\n");
+}
 
 // Nom de la branche
-//$branch_name = (String) trim($_GET['branch_name']);
-$branch_name = "test";
+$branch_name = (String) trim($_GET['branch_name']);
+//$branch_name = "test";
 
 // Configurations
 if($branch_name == "main") {
