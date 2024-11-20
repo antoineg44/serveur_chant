@@ -184,13 +184,13 @@
 		$(document).ready(function() {
 
 			new DataTable('#ajouter', {
-				ajax: globalConfig.addrServer + '/explo/get_histo.php',
+				ajax: window.location.origin + '/explo/get_histo.php',
 				processing: true,
 				serverSide: true
 			});
 
 			new DataTable('#supprimer', {
-				ajax: globalConfig.addrServer + '/explo/get_sup.php',
+				ajax: window.location.origin + '/explo/get_sup.php',
 				processing: true,
 				serverSide: true
 			});

@@ -3098,7 +3098,7 @@ console.log(e);
 
 			console.log("iframe :  " + 'support/planning/planning.htlm?_ts=' + lastreloadfor + "&_pathfile=" + fileinfo.url);
 
-			iframenode = CreateNode('iframe', ['fm_file_editor_browser'], { src: '../messes/index.php?_ts=' + lastreloadfor + "&_pathfile=" + fileinfo.url, width: '100%', height: '100%', frameBorder: '0' });
+			iframenode = CreateNode('iframe', ['fm_file_editor_browser'], { src: '../messes/index.html?_ts=' + lastreloadfor + "&_pathfile=" + fileinfo.url, width: '100%', height: '100%', frameBorder: '0' });
 
 			viewwrap.appendChild(iframenode);
 		};

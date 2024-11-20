@@ -249,7 +249,7 @@ var Programme = function(options)
       if($this.chants[i].type == "partie")
         text += $this.chants[i].name + " :\n";
       else
-        text += " - " + $this.chants[i].name + " (" + globalConfig.addrServer + "/pdf/" + $this.chants[i].path.replaceAll(" ", "%20") + ")\n";
+        text += " - " + $this.chants[i].name + " (" + window.location.origin + "/pdf/" + $this.chants[i].path.replaceAll(" ", "%20") + ")\n";
     }
     text += "\nLien vers le programme : " + $this.path_file.replaceAll(" ", "%20") + "\n";
     return text;
@@ -298,8 +298,8 @@ function open_pdf(path)
   }
   if(path != null)
   {*/
-    console.log("open : " + globalConfig.addrServer + "/pdf/" + path);
-    window.open(globalConfig.addrServer + "/pdf/" + path);
+    console.log("open : " + window.location.origin + "/pdf/" + path);
+    window.open(window.location.origin + "/pdf/" + path);
   /*}
   else
   {
