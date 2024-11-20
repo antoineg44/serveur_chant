@@ -54,7 +54,7 @@
     $(document).ready(function() {
         $.ajax({
             type: 'GET',
-            url: globalConfig.addrServer + '/php/app_list.php',
+            url: window.location.origin + '/php/app_list.php',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -63,7 +63,7 @@
                 for(var i=0; i<app_file.length-1; i++)
                 {
                     var name = app_file[i].split("%");
-                    $('#appversion').append('<a href="' + globalConfig.addrServer + "/res/app_version/" + name[0] + '" style="color: #3498db;">' + name[0] + '<span aria-hidden="true">&rarr;</span></a>');
+                    $('#appversion').append('<a href="' + window.location.origin + "/res/app_version/" + name[0] + '" style="color: #3498db;">' + name[0] + '<span aria-hidden="true">&rarr;</span></a>');
                 }
             }
         });
