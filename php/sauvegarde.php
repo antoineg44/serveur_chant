@@ -1,12 +1,12 @@
 <?php
 // Configuration
-$sourceDirectory = '/chemin/du/dossier/source';  // Le dossier à sauvegarder
-$backupDirectory = '/chemin/du/dossier/de/sauvegarde';  // L'emplacement où sauvegarder
+$sourceDirectory = '../../www/pdf';  // Le dossier à sauvegarder
+$backupDirectory = '../../backup';  // L'emplacement où sauvegarder
 $date = date('Y-m-d_H-i-s');  // Date et heure pour rendre chaque sauvegarde unique
 $backupPath = $backupDirectory . '/backup_' . $date;  // Nom du dossier de sauvegarde
 $maxWeeklyBackups = 3; // Nombre maximum de sauvegardes à conserver par semaine
 $maxMonthlyBackups = 5; // Nombre maximum de sauvegardes à conserver par mois
-$maxYearlyBackups = 10; // Nombre maximum de sauvegardes à conserver par année
+$maxYearlyBackups = 3; // Nombre maximum de sauvegardes à conserver par année
 
 // Créer le dossier de sauvegarde si nécessaire
 if (!file_exists($backupPath)) {
