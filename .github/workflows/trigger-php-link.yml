@@ -2,8 +2,6 @@ name: Exécuter une action après un commit et appeler un lien PHP
 
 on:
   push:
-    branches:
-      - test  # Vous pouvez ajuster cette branche en fonction de vos besoins
     paths:
       - '**/*'  # Cela déclenche l'action pour tous les fichiers modifiés
 
@@ -14,7 +12,7 @@ jobs:
     steps:
       - name: Effectuer l'action après le commit
         run: |
-          echo "Action effectuée après le commit"
+          echo "Action effectuée après le commit sur la branche ${{ github.ref }}"
           
-          # Exemple d'appel à un script PHP via curl
+          # Appel à un script PHP via curl
           curl -X GET -k "https://partitions.ovh/php/deploy.php?branch_name=${{ github.ref }}"
