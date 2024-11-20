@@ -1,0 +1,25 @@
+name: Exécuter une action après un commit et appeler un lien PHP
+
+on:
+  push:
+    branches:
+      - test  # Vous pouvez ajuster cette branche en fonction de vos besoins
+    paths:
+      - '**/*'  # Cela déclenche l'action pour tous les fichiers modifiés
+
+jobs:
+  post_commit_action:
+    runs-on: ubuntu-latest  # Spécifie l'environnement d'exécution (ici, Ubuntu)
+
+    steps:
+      - name: Vérifier le code du dépôt
+        uses: actions/checkout@v3  # Cloner le dépôt
+
+      - name: Effectuer l'action après le commit
+        run: |
+          echo "Action effectuée après le commit"
+          
+          # Exemple d'appel à un script PHP via curl
+          curl -X GET "https://test.partitions.ovh/php/deploy.php?branch_name=test"
+          # Ou si vous devez envoyer une requête POST
+          # curl -X POST -d "param1=value1&param2=value2" http://votre-site.com/votre-script.php
