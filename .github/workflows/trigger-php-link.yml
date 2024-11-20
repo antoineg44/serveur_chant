@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Effectuer l'action après le commit
         run: |
-          echo "Action effectuée après le commit sur la branche ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "Action effectuée après le commit sur la branche ${{ github.ref_name }}"
           
           # Appel à un script PHP via curl
-          curl -X GET -k "https://partitions.ovh/php/deploy.php?branch_name=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          curl -X GET -k "https://partitions.ovh/php/deploy.php?branch_name=${{ github.ref_name }}"
