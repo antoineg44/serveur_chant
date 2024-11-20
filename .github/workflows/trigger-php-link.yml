@@ -12,9 +12,6 @@ jobs:
     runs-on: ubuntu-latest  # Spécifie l'environnement d'exécution (ici, Ubuntu)
 
     steps:
-      - name: Vérifier le code du dépôt
-        uses: actions/checkout@v3  # Cloner le dépôt
-
       - name: Effectuer l'action après le commit
         run: |
           echo "Action effectuée après le commit"
