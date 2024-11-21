@@ -251,7 +251,6 @@ function onFolder(nom)
         if(prog_name == null)
         {
             alert("Erreur dans les informations saisies");
-            stop_add_mode();
         }
         else
         {
@@ -273,10 +272,10 @@ function onFolder(nom)
                         update_folder();
                         alert("Nouveau programme ajouté"); 
                     }
-                    stop_add_mode();        
                 }
             });
         }
+        stop_add_mode();
     }
     else return true;
 }
