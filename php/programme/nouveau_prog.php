@@ -3,7 +3,7 @@
 // Get original file
 $old_link = (String) "../../pdf/".trim($_GET['old_link']);
 echo $old_link."\n";
-$decoded = json_decode($old_link,true);     // Get json informations
+$decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
 
 echo $decoded["path_file"]."\n";
 
