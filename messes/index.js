@@ -60,15 +60,15 @@ function delete_list()
     {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/suppression.php',
+            url: window.location.origin + '/php/programme/prog_interface.php',
             crossDomain: true,
-            data: 'lien=programmes/' + click_on_programme.path + click_on_programme.name + "&insert=false&auteur=web",
+            data: 'action=supprimer&lien=programmes/' + click_on_programme.path + click_on_programme.name,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
                 console.log("fichiers : " + data);
                 if(!data.includes("success"))
                 {
-                    alert("Erreur de changement de nom sur le serveur");
+                    alert("Erreur de suppression de nom sur le serveur");
                 }
                 update_folder();
                 
