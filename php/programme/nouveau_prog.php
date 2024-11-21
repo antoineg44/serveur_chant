@@ -54,9 +54,9 @@ if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
 }
 else {
     if(isset($old_link))echo "ok";
-    if(isset($paroisse)echo "ok";
-    if(isset($nom)echo "ok";
-    if(isset($auteur)echo "ok";
+    if(isset($paroisse))echo "ok";
+    if(isset($nom))echo "ok";
+    if(isset($auteur))echo "ok";
     echo "failed";
 }
 
