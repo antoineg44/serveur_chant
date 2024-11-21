@@ -52,6 +52,13 @@ if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
 
     echo "success";
 }
+else {
+    echo isset($old_link);
+    echo isset($paroisse);
+    echo isset($nom);
+    echo isset($auteur);
+    echo "failed";
+}
 
 
 
