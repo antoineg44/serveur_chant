@@ -1,12 +1,5 @@
 <?php
 
-// Get original file
-$old_link = (String) "../../pdf/".trim($_GET['old_link']);
-echo $old_link."\n";
-$decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
-
-echo $decoded["path_file"]."\n";
-
 function write_file_server($path, $jsonObj) {
     $json = json_encode($jsonObj);
     $myfile = fopen('../../pdf/programmes/'.$path, 'w') or die("Unable to open file!");
@@ -26,10 +19,7 @@ if (isset($_GET['old_link']) && isset($_GET['paroisse']) && isset($_GET['nom']) 
 
     // Get original file
     $old_link = (String) "../../pdf/".trim($_GET['old_link']);
-    echo $old_link."\n";
-    $decoded = json_decode($old_link,true);     // Get json informations
-
-    echo $decoded["path_file"]."\n";
+    $decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
 
     // Informations nouveau fichiers :
     $decoded["paroisse"] = (String)trim($_GET['paroisse']);
