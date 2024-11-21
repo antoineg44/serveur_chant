@@ -33,7 +33,7 @@ function nouveau() {
     // enregistrement du nouveau programme
     write_program_json($decoded["paroisse"]."/".$nom, $decoded);
 
-    echo "sucess";
+    echo "success";
 }
 
 function supprimer() {

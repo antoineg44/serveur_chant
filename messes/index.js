@@ -222,9 +222,9 @@ function onFolder(nom)
             init(window.location.origin + "/pdf/programmes/" + click_on_programme.path + click_on_programme.name, ".");*/
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: window.location.origin + '/php/programme/prog_interface.php',
                 crossDomain: true,
-                data: 'old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
+                data: 'action=nouveau&old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
                 success: function(data){
                     console.log("fichiers : " + data);
@@ -259,7 +259,7 @@ function onFolder(nom)
                 type: 'GET',
                 url: window.location.origin + '/php/programme/prog_interface.php',
                 crossDomain: true,
-                data: 'action=nouveau&old_link=programmes/' + "Templates/" + "template_messe.json" + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&insert=false&auteur=web",
+                data: 'action=nouveau&old_link=programmes/' + "Templates/" + "template_messe.json" + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
                 success: function(data){
                     console.log("fichiers : " + data);
