@@ -258,9 +258,9 @@ function onFolder(nom)
             console.log("new : " + decodage_path_javascript(nom) + "/" + prog_name);
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: window.location.origin + '/php/programme/nouveau_prog.php',
                 crossDomain: true,
-                data: 'old_link=programmes/' + "Templates/" + "template_messe.json" + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
+                data: 'old_link=programmes/' + "Templates/" + "template_messe.json" + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&insert=false&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
                 success: function(data){
                     console.log("fichiers : " + data);

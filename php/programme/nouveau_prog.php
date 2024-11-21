@@ -1,62 +1,50 @@
 <?php
 
-$old_link = (String) trim($_GET['old_link']);
-$new_link = (String) trim($_GET['new_link']);
-$insert = (String) trim($_GET['insert']);   // insérer ou non dans la base de donnée
-$auteur =(String) trim($_GET['auteur']);
+function write_file_server($path, $jsonObj) {
+    $json = json_encode($jsonObj);
+    $myfile = fopen('../../pdf/programmes/'.$path, 'w') or die("Unable to open file!");
+    //$txt = mb_convert_encoding($txt, 'UTF-8', 'ISO-8859-1');
+    fwrite($myfile, $json);
+    fclose($myfile);
+}
 
-echo $_SERVER['HTTP_HOST'];
+if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
 
-if (isset($old_link) && isset($new_link) && isset($auteur)) {
+    $auteur =(String) trim($_GET['auteur']);
     
-    if(empty($old_link) || empty($new_link)){
+    if(empty($old_link) || empty($paroisse) || empty($nom)){
+        echo "Mauvais paramètres";
         return;
     }
+
+    // Get original file
     $old_link = (String) "../pdf/".trim($_GET['old_link']);
-    $new_link = (String) "../pdf/".trim($_GET['new_link']);
+    $decoded = json_decode($_GET['old_link'],true);     // Get json informations
 
-    $decoded = json_decode($_GET['old_link'],true);
+    // Informations nouveau fichiers :
+    $decoded["paroisse"] = (String)trim($_GET['paroisse']);
+    $nom = (String)trim($_GET['nom']);
 
-    $decoded["path_file"] = $_SERVER['HTTP_ORIGIN'];
+    // Mise à jour des informations dans le json
+    $decoded["path_file"] = "https://".$_SERVER['HTTP_HOST']."/pdf/".trim($_GET['old_link']);
 
-    if(!isset($insert))
-    {
-        $insert = true;
+    $nom_sans_ext = explode(".", $nom);
+    if($nom_sans_ext[1] != "json"){
+        echo "Problème sur le nom du fichier";
+        return;
     }
-    else
-    {
-        if(strcmp("false", $insert) == 0)
-        {
-        $insert = false;
-        }
-        else
-        {
-        $insert = true;
-        }
+    $param = explode("_", $nom_sans_ext[0]);
+    if(sizeof($param) != 3) {
+        echo "Nom incorrect";
+        return;
     }
+    $decoded["date"] = $param[0];
+    $decoded["lieu"] = $param[1];
+    $decoded["occasion"] = $param[2];
+    $decoded["dateLastModif"] = date("YmdHis");     // Date de la dernière modification
 
-    include("../php/connexion.php");
 
-    if($insert == true)connexion();
-    
-    // si c'est un fichier :
-    if(file_exists($old_link))
-    {
-        if(copy_file($old_link, $new_link))  //unlink($dir)
-        {
-
-            if($insert)
-            {
-            // ...
-            }
-            echo "success";
-        } else {
-            echo "fail";
-        }
-    } else {
-        echo "fail file exist";
-    }
-
+    write_file_server($decoded["paroisse"]."/".$nom, $decoded);
 }
 
 
