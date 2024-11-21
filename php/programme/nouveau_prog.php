@@ -43,8 +43,14 @@ if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
     $decoded["occasion"] = $param[2];
     $decoded["dateLastModif"] = date("YmdHis");     // Date de la dernière modification
 
+    if(file_exists('../../pdf/programmes/'.$decoded["paroisse"]."/".$nom)) {
+        echo "file already exist";
+        return;
+    }
 
     write_file_server($decoded["paroisse"]."/".$nom, $decoded);
+
+    echo "success";
 }
 
 
