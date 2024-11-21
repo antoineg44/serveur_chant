@@ -8,11 +8,11 @@ function write_file_server($path, $jsonObj) {
     fclose($myfile);
 }
 
-if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
+if (isset($_GET['old_link']) && isset($_GET['paroisse']) && isset($_GET['nom']) && isset($_GET['auteur'])) {
 
     $auteur =(String) trim($_GET['auteur']);
     
-    if(empty($old_link) || empty($paroisse) || empty($nom)){
+    if(empty($_GET['old_link']) || empty($_GET['paroisse']) || empty($_GET['nom'])){
         echo "Mauvais paramètres";
         return;
     }
@@ -53,10 +53,6 @@ if (isset($old_link) && isset($paroisse) && isset($nom) && isset($auteur)) {
     echo "success";
 }
 else {
-    if(isset($old_link))echo "ok";
-    if(isset($paroisse))echo "ok";
-    if(isset($nom))echo "ok";
-    if(isset($auteur))echo "ok";
     echo "failed";
 }
 
