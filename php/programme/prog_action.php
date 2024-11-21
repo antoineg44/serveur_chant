@@ -40,12 +40,12 @@ function supprimer() {
     $params = getParams(["lien"]);
     if($params == null)return;
 
-    $dir = (String) "../pdf/".$params['lien'];
+    $dir = (String) "../../pdf/".$params['lien'];
 
     // si c'est un fichier :
     if(!file_exists($dir))return set_error("Le fichier n'existe pas");
 
-    if(!supr($dir, "../delete/".$params['lien'], true))set_error("Erreur lors de la suppression");
+    if(!supr($dir, "../../delete/".$params['lien'], true))set_error("Erreur lors de la suppression");
     
     echo "success";
 }
