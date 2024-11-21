@@ -18,8 +18,10 @@ if (isset($_GET['old_link']) && isset($_GET['paroisse']) && isset($_GET['nom']) 
     }
 
     // Get original file
-    $old_link = (String) "../pdf/".trim($_GET['old_link']);
-    $decoded = json_decode($_GET['old_link'],true);     // Get json informations
+    $old_link = (String) "../../pdf/".trim($_GET['old_link']);
+    $decoded = json_decode($old_link,true);     // Get json informations
+
+    echo $decoded["path_file"]."\n";
 
     // Informations nouveau fichiers :
     $decoded["paroisse"] = (String)trim($_GET['paroisse']);
