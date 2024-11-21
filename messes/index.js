@@ -251,6 +251,7 @@ function onFolder(nom)
         if(prog_name == null)
         {
             alert("Erreur dans les informations saisies");
+            stop_add_mode();
         }
         else
         {
