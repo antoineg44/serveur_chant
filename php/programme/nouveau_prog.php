@@ -1,8 +1,8 @@
 <?php
 
 
-includes("../res/generic.php");
-includes("../res/file_lib.php");
+include("../res/generic.php");
+include("../res/file_lib.php");
 
 $params = getParams(["old_link", "paroisse", "nom", "auteur"]);
 if($params == null)return;
