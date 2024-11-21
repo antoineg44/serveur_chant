@@ -5,7 +5,7 @@ $new_link = (String) trim($_GET['new_link']);
 $insert = (String) trim($_GET['insert']);   // insérer ou non dans la base de donnée
 $auteur =(String) trim($_GET['auteur']);
 
-echo $_SERVER['HTTP_ORIGIN'];
+echo $_SERVER['HTTP_HOST'];
 
 if (isset($old_link) && isset($new_link) && isset($auteur)) {
     
