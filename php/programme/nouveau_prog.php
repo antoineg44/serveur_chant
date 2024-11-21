@@ -10,7 +10,7 @@ if($params == null)return;
 $auteur = $params["auteur"];    // useless at the moment
 
 // Get original file
-$old_link = (String) "../../pdf/".params['old_link'];
+$old_link = (String) "../../pdf/".$params['old_link'];
 $decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
 
 // Informations nouveau fichiers :
@@ -18,7 +18,7 @@ $decoded["paroisse"] = $params['paroisse'];
 $nom = $params['nom'];
 
 // Mise à jour des informations dans le json
-$decoded["path_file"] = "https://".$_SERVER['HTTP_HOST']."/pdf/".params['old_link'];
+$decoded["path_file"] = "https://".$_SERVER['HTTP_HOST']."/pdf/".$params['old_link'];
 
 $nom_sans_ext = explode(".", $nom);
 if($nom_sans_ext[1] != "json")return set_error("Problème sur le nom du fichier");
