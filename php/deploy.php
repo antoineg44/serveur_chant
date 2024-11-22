@@ -33,7 +33,7 @@ echo "Déploiement de la branche '$branch_name' dans '$path'\n";
 
 /*
 //At the first execution run:
-chdir("../../");
+chdir("../../".$_GET['branch_name']);
 runCommand("git clone ".$repoUrl);
 // And rename the folder from serveur_chant to $branch_name
 */
