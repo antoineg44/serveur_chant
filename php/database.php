@@ -6,7 +6,7 @@ include("connexion.php");
 
 function connection(){
     try {    
-        $_SESSION['session']=new PDO("mysql:host=$serveur; dbname=$nom_bd", $db_user, $db_pass);
+        $_SESSION['session']=new PDO("mysql:host=".serveur."; dbname=".nom_bd, db_user, db_pass);
     } catch (PDOException $e) {
         print "Erreur !: " . $e->getMessage() . "<br/>";
         die();
