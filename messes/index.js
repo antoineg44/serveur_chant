@@ -156,7 +156,7 @@ function modify_list()      // rename
     console.log(new_name);
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/programmes/interface.php',
+        url: window.location.origin + '/php/programme/interface.php',
         crossDomain: true,
         data: 'action=renommer&paroisse=' + click_on_programme.path + "&ancien_nom=" + click_on_programme.name + "&nouveau_nom=" + new_name,
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
