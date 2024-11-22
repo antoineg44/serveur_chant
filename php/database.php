@@ -1,5 +1,7 @@
 
 <?php 
+
+include("connexion.php");
 // SELECT * FROM Ajouter WHERE  Date > '2022-03-19 17:00:00'
 
 function connection(){
