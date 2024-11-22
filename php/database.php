@@ -35,12 +35,12 @@ function search_new_sup($date){
 
 function nombreFichierAjout()
 {
-    $params = getParams(["date"]);
+    $params = getParams(['date']);
     if($params == null)return;
 
     connection();
 
-    search_new_event($params["date"]);
+    search_new_event($params['date']);
 
     echo "£#1";
 }

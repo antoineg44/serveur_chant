@@ -6,7 +6,7 @@ include("res/file_lib.php");
 
 function 
 
-$params = getParams(["action"]);
+$params = getParams(['action']);
 if($params == null)return;
 
 switch ($params['action']) {
