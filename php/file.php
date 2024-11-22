@@ -1,6 +1,5 @@
 <?php
 
-include("connexion.php");
 include("database.php");
 include("res/generic.php");
 include("res/file_lib.php");
