@@ -2,7 +2,7 @@
 
 include("../res/generic.php");
 include("../res/file_lib.php");
-include("prog_action.php");
+include("action.php");
 
 $params = getParams(["action"]);
 if($params == null)return;
@@ -15,9 +15,20 @@ switch ($params['action']) {
     case 'supprimer':
         supprimer();
         break;
+
+    case 'nouvelle_paroisse':
+        nouvelle_paroisse();
+        break;
+
+    case 'renommer':
+        renommer();
+        break;
+
+    case 'prochains':   // le nombre de programmes à venir
+        prochains();
+        break;
     
     default:
-        # code...
         break;
 }
 
