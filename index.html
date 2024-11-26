@@ -61,7 +61,7 @@
     $(document).ready(function() {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/number_file.php',
+            url: window.location.origin + '/php/file.php?action=nombre_fichiers_pdf',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -75,7 +75,7 @@
         });
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/number_folder.php',
+            url: window.location.origin + '/php/file.php?action=nombre_dossier',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -89,7 +89,7 @@
         });
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/programme/coming_soon.php',
+            url: window.location.origin + '/php/programme/interface.php?action=prochains',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -107,7 +107,7 @@
         console.log("date=" + date.getFullYear() + "-" + String(month).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'));
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/synchro.php',
+            url: window.location.origin + '/php/file.php?action=nombreFichierAjout',
             data: "date=" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate(),
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",

@@ -60,15 +60,15 @@ function delete_list()
     {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/suppression.php',
+            url: window.location.origin + '/php/programme/interface.php',
             crossDomain: true,
-            data: 'lien=programmes/' + click_on_programme.path + click_on_programme.name + "&insert=false&auteur=web",
+            data: 'action=supprimer&lien=programmes/' + click_on_programme.path + click_on_programme.name,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
                 console.log("fichiers : " + data);
                 if(!data.includes("success"))
                 {
-                    alert("Erreur de changement de nom sur le serveur");
+                    alert("Erreur de suppression de nom sur le serveur");
                 }
                 update_folder();
                 
@@ -84,9 +84,9 @@ function paroisse_list()
 
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/nouveau_dossier.php',
+        url: window.location.origin + '/php/programme/interface.php',
         crossDomain: true,
-        data: 'path=programmes/' + paroisse + "&create=true&auteur=web",
+        data: 'action=nouvelle_paroisse&nom=' + paroisse,
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
         success: function(data){
             console.log("fichiers : " + data);
@@ -156,9 +156,9 @@ function modify_list()      // rename
     console.log(new_name);
     $.ajax({
         type: 'GET',
-        url: window.location.origin + '/php/renommer.php',
+        url: window.location.origin + '/php/programme/interface.php',
         crossDomain: true,
-        data: 'old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&new_link=programmes/" + click_on_programme.path + new_name + "&insert=false&auteur=web",
+        data: 'action=renommer&paroisse=' + click_on_programme.path + "&ancien_nom=" + click_on_programme.name + "&nouveau_nom=" + new_name,
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
         success: function(data){
             console.log("fichiers : " + data);
@@ -222,9 +222,9 @@ function onFolder(nom)
             init(window.location.origin + "/pdf/programmes/" + click_on_programme.path + click_on_programme.name, ".");*/
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: window.location.origin + '/php/programme/interface.php',
                 crossDomain: true,
-                data: 'old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
+                data: 'action=nouveau&old_link=programmes/' + click_on_programme.path + click_on_programme.name + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
                 success: function(data){
                     console.log("fichiers : " + data);
@@ -257,9 +257,9 @@ function onFolder(nom)
             console.log("new : " + decodage_path_javascript(nom) + "/" + prog_name);
             $.ajax({
                 type: 'GET',
-                url: window.location.origin + '/php/copy.php',
+                url: window.location.origin + '/php/programme/interface.php',
                 crossDomain: true,
-                data: 'old_link=programmes/' + "Templates/" + "template_messe.json" + "&new_link=programmes/" + decodage_path_javascript(nom) + "/" + prog_name + "&insert=false&auteur=web",
+                data: 'action=nouveau&old_link=programmes/' + "Templates/" + "template_messe.json" + "&paroisse=" + decodage_path_javascript(nom) + "&nom=" + prog_name + "&auteur=web",
                 contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
                 success: function(data){
                     console.log("fichiers : " + data);
@@ -272,10 +272,10 @@ function onFolder(nom)
                         update_folder();
                         alert("Nouveau programme ajouté"); 
                     }
-                    stop_add_mode();        
                 }
             });
         }
+        stop_add_mode();
     }
     else return true;
 }
