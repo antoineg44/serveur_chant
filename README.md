@@ -12,4 +12,5 @@
 
 - La branche "test" est automatiquement déployé l'adresse <a href="https://test.partitions.ovh">https://test.partitions.ovh</a>.
 - La branche "main" correspond à <a href="https://partitions.ovh">https://partitions.ovh</a>.
+- La branche "app" est celle de test pour l'application smartphone <a href="https://app.partitions.ovh">https://app.partitions.ovh</a>.
 
