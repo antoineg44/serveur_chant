@@ -62,10 +62,10 @@ $columns = array(
 include("../php/connexion.php");
 // SQL server connection information
 $sql_details = array(
-	'user' => $db_user,
-	'pass' => $db_pass,
-	'db'   => $nom_bd,
-	'host' => $serveur,
+	'user' => db_user,
+	'pass' => db_pass,
+	'db'   => nom_bd,
+	'host' => serveur,
 	'charset' => 'utf8' // Depending on your PHP and MySQL config, you may need this
 );
 
