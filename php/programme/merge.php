@@ -16,13 +16,9 @@ function compare($cas, &$lignes_client, &$lignes_serveur)
     $i_s = 0;
     $modif = false;
 
-    echo "count:".count($lignes_client).":".count($lignes_serveur)."br";
-
     while($i_c<count($lignes_client) && $i_s<count($lignes_serveur)) {
         $client = $lignes_client[$i_c];
         $serveur = $lignes_serveur[$i_s];
-        echo "client:".$i_c.":".print_r($client);
-        echo "server:".$i_s.":".print_r($serveur);
 
         if(strcmp($client["type"], $serveur["type"]) == 0 && strcmp($client["name"], $serveur["name"]) == 0 && (strcmp($client["type"], "partie") == 0 || strcmp($client["path"], $serveur["path"]) == 0)) {
             if(DEBUG)echo " idem client <br>";
@@ -132,7 +128,6 @@ function present_apres($recherche, $ligne, $index) {
 }
 
 function merge($cas, &$lignes_client, &$lignes_serveur) {
-    echo "count1:".count($lignes_client["chants"]).":".count($lignes_serveur["chants"])."br";
     if(DEBUG)echo "<br>client : <br>";
     if(DEBUG)print_r($lignes_client);
     if(DEBUG)echo "<br>serveur : <br>";
