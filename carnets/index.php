@@ -125,11 +125,12 @@ if(isset($_GET['carnet'])) {
 	<?php 
 		if($carnet == null) {
 	?>
-	<div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+	<div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+	<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" target="_blank" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Carnets de chants</h2>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes" target="_blank" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)</a></p>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes_v2" target="_blank" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes" target="_blank" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)<span aria-hidden="true">&rarr;</span></a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes_v2" target="_blank" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)<span aria-hidden="true">&rarr;</span></a></p>
         </div>
     <div/>
 	<?php
@@ -200,6 +201,16 @@ if(isset($_GET['carnet'])) {
                 window.open(globalConfig.addrServer + "/pdf/" + path);
             } );
 		});
+
+
+		if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+			// true for mobile device
+			document.getElementById("recipients").style.paddingLeft = 0;
+			document.getElementById("recipients").style.paddingRight= 0;
+			document.getElementById("recipients").style.fontSize = "small";
+			document.getElementById("contenu").style.paddingLeft = 0;
+			document.getElementById("contenu").style.paddingRight= 0;
+		}
 	</script>
 	<?php } ?>
 
