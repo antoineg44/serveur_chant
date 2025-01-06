@@ -5,10 +5,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>DataTables </title>
+	<title>Carnet de chants</title>
 	<meta name="description" content="">
 	<meta name="keywords" content="">
-	<title>Historique</title>
 	<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel=" stylesheet">
 	<script src="../js/config.js"></script>
 	<!--Regular Datatables CSS-->
@@ -113,9 +112,9 @@
 </head>
 
 <?php
-$carnet =(String) trim($_GET['carnet']);
-if(!isset($carnet)) {
-	$carnet = null;
+$carnet = null;
+if(isset($_GET['carnet'])) {
+	$carnet = (String) trim($_GET['carnet']);
 }
 
 ?>
@@ -126,18 +125,20 @@ if(!isset($carnet)) {
 	<?php 
 		if($carnet == null) {
 	?>
-	<div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+	<div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Carnets de chants</h2>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes" target="_blank" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)</a></p>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes_v2" target="_blank" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)<span aria-hidden="true">&rarr;</span></a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes_v2" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)<span aria-hidden="true">&rarr;</span></a></p>
         </div>
     <div/>
 	<?php
 		}
 	?>
 	<?php if($carnet == "paroisse_nantes") { ?>
-    <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+    <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Anciens carnet de chants de la paroisse notre Dame de Nantes :</h2>
             <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets/lists/Paroisse NDDN - Carnet de chants 2014.pdf" target="_blank" style="color: #3498db;">Lien vers le carnets de chants</a></p>
@@ -146,7 +147,8 @@ if(!isset($carnet)) {
     <div/>
 	<?php } ?>
 	<?php if($carnet == "paroisse_nantes_v2") { ?>
-    <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+    <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">[En construction !] Nouveaux carnet de chants de la paroisse notre Dame de Nantes</h2>
         </div>
@@ -161,14 +163,14 @@ if(!isset($carnet)) {
             <table id="chants" class="display" style="width:100%">
                 <thead>
                     <tr>
-                        <th>Numéros</th>
+                        <th>Num</th>
                         <th>Chants</th>
                         <th>Liens</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <th>Numéros</th>
+                        <th>Num</th>
                         <th>Chants</th>
                         <th>Liens</th>
                     </tr>
@@ -201,6 +203,16 @@ if(!isset($carnet)) {
                 window.open(globalConfig.addrServer + "/pdf/" + path);
             } );
 		});
+
+
+		if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+			// true for mobile device
+			document.getElementById("recipients").style.paddingLeft = 0;
+			document.getElementById("recipients").style.paddingRight= 0;
+			document.getElementById("recipients").style.fontSize = "small";
+			document.getElementById("contenu").style.paddingLeft = 0;
+			document.getElementById("contenu").style.paddingRight= 0;
+		}
 	</script>
 	<?php } ?>
 
