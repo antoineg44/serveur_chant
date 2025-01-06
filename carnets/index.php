@@ -5,10 +5,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>DataTables </title>
+	<title>Carnet de chants</title>
 	<meta name="description" content="">
 	<meta name="keywords" content="">
-	<title>Historique</title>
 	<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel=" stylesheet">
 	<script src="../js/config.js"></script>
 	<!--Regular Datatables CSS-->
@@ -113,9 +112,9 @@
 </head>
 
 <?php
-$carnet =(String) trim($_GET['carnet']);
-if(!isset($carnet)) {
-	$carnet = null;
+$carnet = null;
+if(isset($_GET['carnet'])) {
+	$carnet = (String) trim($_GET['carnet']);
 }
 
 ?>
@@ -161,14 +160,14 @@ if(!isset($carnet)) {
             <table id="chants" class="display" style="width:100%">
                 <thead>
                     <tr>
-                        <th>Numéros</th>
+                        <th>Num</th>
                         <th>Chants</th>
                         <th>Liens</th>
                     </tr>
                 </thead>
                 <tfoot>
                     <tr>
-                        <th>Numéros</th>
+                        <th>Num</th>
                         <th>Chants</th>
                         <th>Liens</th>
                     </tr>
