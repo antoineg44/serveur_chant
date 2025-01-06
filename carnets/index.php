@@ -137,7 +137,7 @@ if(isset($_GET['carnet'])) {
 		}
 	?>
 	<?php if($carnet == "paroisse_nantes") { ?>
-    <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+    <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
 		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Anciens carnet de chants de la paroisse notre Dame de Nantes :</h2>
@@ -147,7 +147,7 @@ if(isset($_GET['carnet'])) {
     <div/>
 	<?php } ?>
 	<?php if($carnet == "paroisse_nantes_v2") { ?>
-    <div class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
+    <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
 		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">[En construction !] Nouveaux carnet de chants de la paroisse notre Dame de Nantes</h2>
