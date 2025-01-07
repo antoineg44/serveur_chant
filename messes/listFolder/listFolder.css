@@ -8,18 +8,18 @@
 }*/
 
 .std_icon {
-    height: 18px;
+    height: 0.9em;
     margin-right: 5px;
 }
 
 .arrow_close {
-    height: 10px;
+    height: 0.45em;
     margin-right: 9px;
     margin-bottom: 4px;
 }
 
 .arrow_open {
-    height: 10px;
+    height: 0.45em;
     margin-right: 9px;
     margin-bottom: 4px;
     transform: rotate(90deg);
