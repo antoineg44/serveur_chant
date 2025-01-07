@@ -13,6 +13,7 @@ console.log("Utilisation d'un smartphone: " + smarphone);
 
 if(smarphone)
 {
+    document.getElementById("body").style.fontSize="1.5em";
     document.getElementById("block_program").style.visibility="hidden";
     document.getElementById("block_liste").style.width="100%";
     document.body.style.zoom = 1.2;
@@ -33,14 +34,14 @@ function redimensionner() {
         document.getElementById("block_liste").style.width="0px";
         document.getElementById("back-button").style.left="5px";
         document.getElementById("back-button").style.right="unset";
-        document.getElementById("back-button").innerHTML = "Ouvrir";
+        document.getElementById("back-button").innerHTML = "Ouvrir &rarr;";
     }
     else {
         document.getElementById("block_program").style.visibility = "hidden";
         document.getElementById("block_liste").style.width="100%";
         document.getElementById("back-button").style.left="unset";
         document.getElementById("back-button").style.right="5px";
-        document.getElementById("back-button").innerHTML = "Cacher";
+        document.getElementById("back-button").innerHTML = "&larr; Cacher";
     }
 
 }

@@ -91,7 +91,7 @@
         display: inline-flex;
         align-items: center;
         padding: 10px 20px;
-        font-size: 16px;
+        font-size: 1.2em;
         background-color: #cde7f3;
         color: black;
         border: none;
@@ -99,16 +99,16 @@
         cursor: pointer;
         transition: background-color 0.3s;
         z-index: 1;
-        background-color: transparent; /* Fond transparent */
+        /*background-color: transparent; /* Fond transparent */
         border: 1px solid #8cbfc9;
     }
 
     /* Style de la flèche */
-    .back-button::before {
-        content: '\2190'; /* Unicode pour la flèche de retour */
+    /*.back-button::before {
+        content: '\2190'; /* Unicode pour la flèche de retour *//*
         font-size: 18px;
-        margin-right: 10px; /* Espacement entre la flèche et le texte */
-    }
+        margin-right: 10px; /* Espacement entre la flèche et le texte *//*
+    }*/
 
     /* Effet au survol */
     .back-button:hover {
