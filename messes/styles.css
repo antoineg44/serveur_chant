@@ -26,7 +26,7 @@
       height:100%;
     }
     img {
-      height: 18px;
+      height: 0.9em;
       margin-right: 5px;
     }
     .img-big {
@@ -97,6 +97,7 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        visibility: hidden;
         transition: background-color 0.3s;
         z-index: 1;
         /*background-color: transparent; /* Fond transparent */
@@ -126,4 +127,7 @@
         -ms-transition: width .5s;
         -o-transition: width .5s;
         transition: width .5s;
+    }
+    .btn {
+      font-size: 1em;
     }

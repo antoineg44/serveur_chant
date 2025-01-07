@@ -14,6 +14,8 @@ console.log("Utilisation d'un smartphone: " + smarphone);
 if(smarphone)
 {
     document.getElementById("body").style.fontSize="2.7em";
+    document.getElementById("but-big").style.fontSize = "1em";
+    document.getElementById("back-button").style.visibility = "visible";
     document.getElementById("block_program").style.visibility="hidden";
     document.getElementById("block_liste").style.width="100%";
     document.body.style.zoom = 1.2;
