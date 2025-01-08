@@ -1,4 +1,5 @@
 var programme = null;
+var example_version = false;
 
 var Programme = function(options) 
 {
@@ -175,7 +176,7 @@ var Programme = function(options)
     }
     console.log("resultat :");
     console.log(programme.chants);
-    onModif();
+    if(example_version == false)onModif();
   }
 
   $this.deletePart = function(name)
@@ -332,16 +333,18 @@ function initDropAndDrap()
 
 function add_part(name)
 {
-  return '<div id="line_' + codage_path_javascript(name) + '" class="line part" onclick=\'select_line("' + codage_path_javascript(name) + '")\' ondblclick=\'modify_part("' + codage_path_javascript(name) + '")\'><div class="row"><div class="column"><img src="'+window.location.origin+'/messes/icon/note.png" style="height:16px"></div><div class="column part-column"><span>' + name + '</span> </div><div class="column"><img src="'+window.location.origin+'/messes/icon/edit.png" style="height:16px;right:0px;margin-right:8px" onclick=\'modify_part("' + codage_path_javascript(name) + '")\'></div></div></div>';
+  return '<div id="line_' + codage_path_javascript(name) + '" class="line part" onclick=\'select_line("' + codage_path_javascript(name) + '")\' ondblclick=\'modify_part("' + codage_path_javascript(name) + '")\'><div class="row"><div class="column"><img src="'+window.location.origin+'/messes/icon/note.png" style="height:1.2em"></div><div class="column part-column"><span>' + name + '</span> </div><div class="column"><img src="'+window.location.origin+'/messes/icon/edit.png" style="height:1.2em;right:0px;margin-right:8px" onclick=\'modify_part("' + codage_path_javascript(name) + '")\'></div><div class="column" style="margin-left:10px"><img src="'+window.location.origin+'/messes/icon/double-arrow.png" style="height:1.2em;right:0px;margin-right:8px" ontouchstart=\'start_drag_button()\'></div></div></div>';
 }
 
 function add_pdf(name, path)
 {
-  return '<div id="line_' + codage_path_javascript(name) + '" class="line pdf" onclick=\'select_line("' + codage_path_javascript(name) + '")\' ondblclick=\'open_pdf("' + codage_path_javascript(path) + '")\'><div class="row"><div class="column"><img src="'+window.location.origin+'/messes/icon/pdf.png" style="height:30px;vertical-align:middle"></div><div class="column text-column">' + name + '<div class="path-column">' + path + '</div></div><div class="column"><img src="'+window.location.origin+'/messes/icon/forward.png" style="height:30px;vertical-align:middle;right:0px;border: 1px solid" onclick=\'open_pdf("' + codage_path_javascript(path) + '")\'></div></div></div>';
+  return '<div id="line_' + codage_path_javascript(name) + '" class="line pdf" onclick=\'select_line("' + codage_path_javascript(name) + '")\' ondblclick=\'open_pdf("' + codage_path_javascript(path) + '")\'><div class="row"><div class="column"><img src="'+window.location.origin+'/messes/icon/pdf.png" style="height:2em;vertical-align:middle"></div><div class="column text-column">' + name + '<div class="path-column">' + path + '</div></div><div class="column"><img src="'+window.location.origin+'/messes/icon/forward.png" style="height:2em;vertical-align:middle;right:0px;border: 1px solid" onclick=\'open_pdf("' + codage_path_javascript(path) + '")\'/></div><div class="column" style="margin-left:10px"><img src="'+window.location.origin+'/messes/icon/double-arrow.png" style="height:2em;vertical-align:middle;right:0px;border: 1px solid" ontouchstart=\'start_drag_button()\'></div></div></div>';
 }
 
 function init(path_file)
 {
+	
+	if(path_file == "example_messe.txt")example_version = true;
   document.addEventListener("ProgrammeReady", initDropAndDrap);
   programme = new Programme({
     watchers: null,
