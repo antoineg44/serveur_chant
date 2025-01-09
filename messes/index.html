@@ -19,27 +19,27 @@
 </head>
 
 <body id="body">
+    <button id="back-button" class="back-button" onclick="redimensionner()">
+      &larr; Cacher
+    </button>
     <table style="height:100%;width:100%">
       <tbody>
-        <button id="back-button" class="back-button" onclick="redimensionner()">
-          &larr; Cacher
-        </button>
-        <tr>
-          <div id="button_entete" style="background-color: #aeb1b3;">
+        <tr id="button_entete">
+          <div style="background-color: #aeb1b3;">
             <button class="but" onclick='window.open(window.location.origin, "_self")'><img src = "icon/home.png" style="margin-right: 12px;">Home</button>
             <button class="but" onclick='share_prog()'><img src = "icon/forward.png" style="margin-right: 12px;">Partager</button>
             <button class="but" onclick='window.open(window.location.origin + "/explorer", "_blank")' style="float: right;"><img src = "icon/pdf.png" style="margin-right: 12px;">Ouvrir l'exporateur de partitions</button>
           </div>
+          <script>
+            console.log("info messes : !!!!!!");
+            console.log(new URLSearchParams(location.search));
+            console.log(location);
+            if((new URLSearchParams(location.search)).get('_ts'))
+            {
+              document.getElementById("button_entete").style.visibility = "hidden";
+            }
+          </script>
         </tr>
-        <script>
-          console.log("info messes : !!!!!!");
-          console.log(new URLSearchParams(location.search));
-          console.log(location);
-          if((new URLSearchParams(location.search)).get('_ts'))
-          {
-            document.getElementById("button_entete").style.visibility = "hidden";
-          }
-        </script>
         <tr>
             <!-- Partie liste des programmes -->
             <td id="block_liste" style="position:relative">
