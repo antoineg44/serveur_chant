@@ -32,6 +32,9 @@
           </div>
         </tr>
         <script>
+          console.log("info messes : !!!!!!");
+          console.log(new URLSearchParams(location.search));
+          console.log(location);
           if((new URLSearchParams(location.search)).get('_ts'))
           {
             document.getElementById("button_entete").style.visibility = "hidden";
