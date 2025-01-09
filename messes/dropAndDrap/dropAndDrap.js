@@ -378,8 +378,12 @@ function enable_scroll() {
 function disable_scroll_mobile(){
   document.addEventListener('touchmove', preventDefault, false);
   document.addEventListener('scroll', preventDefault, false);
+  document.getElementById("div_program").style.overflowX = "unset";
+  document.getElementById("div_dropAndDrap").style.overflow = "unset";
 }
 function enable_scroll_mobile(){
   document.removeEventListener('touchmove', preventDefault, false);
   document.removeEventListener('scroll', preventDefault, false);
+  document.getElementById("div_program").style.overflowX = "auto";
+  document.getElementById("div_dropAndDrap").style.overflow = "scroll";
 }
