@@ -377,9 +377,9 @@ function enable_scroll() {
 // MOBILE
 function disable_scroll_mobile(){
   document.addEventListener('touchmove', preventDefault, false);
-  document.addEventListener('touchstart', preventDefault, false);
+  document.addEventListener('scroll', preventDefault, false);
 }
 function enable_scroll_mobile(){
   document.removeEventListener('touchmove', preventDefault, false);
-  document.removeEventListener('touchstart', preventDefault, false);
+  document.removeEventListener('scroll', preventDefault, false);
 }
