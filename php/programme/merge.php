@@ -82,14 +82,14 @@ function compare($cas, &$lignes_client, &$lignes_serveur)
 
     // Copie de la fin du fichier
     while($cas != 3 && $i_c<count($lignes_client)) {
-        if(DEBUG)echo "ligne en plus client : ".$i_c." : ".$lignes_client[$i_c]."<br/>";
+        if(DEBUG)echo "ligne en plus client : ".$i_c." : ".$lignes_client[$i_c]["name"]."<br/>";
         array_push($lignes_serveur, $lignes_client[$i_c]);
         $i_s++;
         $i_c++;
         $modif = true;
     }
     while($cas != 1 && $i_s<count($lignes_serveur)) {
-        if(DEBUG)echo "ligne en plus serveur : ".$i_s." : ".$lignes_serveur[$i_s]."<br/>";
+        if(DEBUG)echo "ligne en plus serveur : ".$i_s." : ".$lignes_serveur[$i_s]["name"]."<br/>";
         array_push($lignes_client, $lignes_serveur[$i_s]);
         $i_c++;
         $i_s++;
@@ -98,12 +98,12 @@ function compare($cas, &$lignes_client, &$lignes_serveur)
     
     // supprimer la fin du fichier pour éviter les erreurs
     while($i_s<count($lignes_serveur)) {
-        if(DEBUG)echo "ligne a supprimer sur le serveur : ".$lignes_serveur[$i_s]."<br/>";
+        if(DEBUG)echo "ligne a supprimer sur le serveur : ".$lignes_serveur[$i_s]["name"]."<br/>";
         array_pop($lignes_serveur);
         $modif = true;
     }
     while($i_c<count($lignes_client)) {
-        if(DEBUG)echo "ligne a supprimer sur le client : ".$lignes_client[$i_c]."<br/>";
+        if(DEBUG)echo "ligne a supprimer sur le client : ".$lignes_client[$i_c]["name"]."<br/>";
         array_pop($lignes_client);
         $modif = true;
     }

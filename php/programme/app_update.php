@@ -1,6 +1,6 @@
 <?php
     /***********  For JSON file  *************/
-	define("DEBUG", true);
+	define("DEBUG", false);
 
 	function result_final($path, $lignes_client, $lignes_serveur) {
 			if(DEBUG)echo "<br>Cas 1, 2 ou 4, fichier server mise à jour : <br>";
