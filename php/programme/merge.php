@@ -117,7 +117,7 @@ function present_apres($recherche, $ligne, $index) {
     $i = $index+1;
 
     while($find == false && $i < count($ligne)) {
-        if(strcmp($recherche["name"], $ligne[$i]["name"]) == 0 && (strcmp($client["type"], "partie") == 0 || strcmp($client["path"], $serveur["path"]) == 0)) {
+        if(strcmp($recherche["name"], $ligne[$i]["name"]) == 0 && (strcmp($recherche["type"], "partie") == 0 || strcmp($recherche["path"], $ligne[$i]["path"]) == 0)) {
             if(DEBUG)echo "present après";
             $find = true;
         }
