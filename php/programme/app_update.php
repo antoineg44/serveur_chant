@@ -30,7 +30,7 @@
     	return $lignes_serveur;
 	}
 
-	header ('Content-type: text/html; charset=iso8859-15');
+	//header ('Content-type: text/html; charset=iso8859-15');
 
     //include("../php/connexion.php");
     
