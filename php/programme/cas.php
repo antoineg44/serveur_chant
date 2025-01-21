@@ -52,7 +52,8 @@
             {
                 $cas = 4;		// Cas complexe : il faut faire un mixe des 2 fichiers
             }
-        }    		
+        }
+        if(DEBUG)echo "cas : ".$cas."<br>";
     	return $cas;
     }
  ?>
