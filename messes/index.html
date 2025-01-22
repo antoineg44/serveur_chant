@@ -19,22 +19,30 @@
 </head>
 
 <body id="body">
-    <table style="height:100%;width:100%">
+    <table id="listAndProgram" style="height:100%;width:100%">
       <tbody>
         <button id="back-button" class="back-button" onclick="redimensionner()">
           &larr; Cacher
         </button>
-        <tr id="button_entete">
-          <div style="background-color: #aeb1b3;">
+        <tr>
+          <div id="button_entete" style="background-color: #aeb1b3;">
             <button class="but" onclick='window.open(window.location.origin, "_self")'><img src = "icon/home.png" style="margin-right: 12px;">Home</button>
             <button class="but" onclick='share_prog()'><img src = "icon/forward.png" style="margin-right: 12px;">Partager</button>
             <button class="but" onclick='window.open(window.location.origin + "/explorer", "_blank")' style="float: right;"><img src = "icon/pdf.png" style="margin-right: 12px;">Ouvrir l'exporateur de partitions</button>
           </div>
         </tr>
         <script>
+          console.log("info messes : !!!!!!");
+          console.log(new URLSearchParams(location.search));
+          console.log(location);
           if((new URLSearchParams(location.search)).get('_ts'))
           {
             document.getElementById("button_entete").style.visibility = "hidden";
+            document.getElementById("button_entete").style.position = "absolute";
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (userAgent.includes('iphone') || userAgent.includes('android') || userAgent.includes('mobile')) {
+              document.getElementById("listAndProgram").style.fontSize="0.4em";
+            }
           }
         </script>
         <tr>
@@ -69,7 +77,7 @@
             
             <!-- Partie programme -->
             <td id="block_program" style="position:relative">
-                <div style="overflow-x:auto;position:absolute;height:100%;width:100%;top:0px;left:0px;">
+                <div id="div_program" style="overflow-x:auto;position:absolute;height:100%;width:100%;top:0px;left:0px;">
                 <table class="programme" style="position:relative;height:100%">
                     <thead style="position: sticky; top: 0;height:25px;z-index:5">
                         <th>
@@ -84,7 +92,7 @@
                     <tbody style="bottom:0px">
                         <tr>
                             <td>
-                                <div class="parent" style="bottom: 0;overflow: scroll;">
+                                <div id="div_dropAndDrap" class="parent" style="bottom: 0;overflow: scroll;">
                                     <div class="wrapper">
                                     <div id="sortable" class="dropAndDrap">
                                         <div></div>
