@@ -39,7 +39,9 @@
           {
             document.getElementById("button_entete").style.visibility = "hidden";
             document.getElementById("button_entete").style.position = "absolute";
-            document.getElementById("listAndProgram").style.fontSize="0.4em";
+            if (userAgent.includes('iphone') || userAgent.includes('android') || userAgent.includes('mobile')) {
+              document.getElementById("listAndProgram").style.fontSize="0.4em";
+            }
           }
         </script>
         <tr>

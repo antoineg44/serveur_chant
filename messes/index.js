@@ -292,6 +292,9 @@ function onFile(path, name)
     console.log(name);
     init(window.location.origin + "/pdf/programmes/" + path + name, ".");
     resetModif();
+    if (userAgent.includes('iphone') || userAgent.includes('android') || userAgent.includes('mobile')) {
+        redimensionner();
+    }
     return true;
 }
 
