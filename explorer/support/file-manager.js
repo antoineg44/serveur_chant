@@ -1501,7 +1501,7 @@ console.log(e);
 
 			$this.HideFileExplorer(); console.log($this.settings.fileexplorer);
 			var entry = {
-				"id": "null",	// No program initialise at startup but we can set it with "template_messe.json"
+				"id": "template_messe.json",
 				"name": "Explorateur de programme"
 			}
 			var path = [ "", "programmes", "Templates" ];
