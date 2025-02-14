@@ -88,7 +88,7 @@
     color: var(--navbar-light-primary);
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     overflow: hidden;
-    user-select: none;
+    user-select: none; 
   }
   #nav-bar hr {
     margin: 0;
@@ -111,7 +111,6 @@
     width: var(--navbar-width);
     left: 16px;
     width: calc(var(--navbar-width) - 16px);
-    max-width: 98%;
     min-height: 80px;
     background: var(--navbar-dark-primary);
     border-radius: 16px;
@@ -168,7 +167,6 @@
     position: relative;
     flex: 1;
     width: var(--navbar-width);
-    max-width: 98%;
     background: var(--navbar-dark-primary);
     box-shadow: 0 0 0 16px var(--navbar-dark-primary);
     direction: rtl;
@@ -230,4 +228,10 @@
 img {
     height: 30px;
     margin-right: 5px;
+}
+
+/* For mobile to limit the size of the nav-header */
+@media (max-width: 515px) {  
+  :root {
+    --navbar-width: 99%; }
 }
