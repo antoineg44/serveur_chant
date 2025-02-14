@@ -199,8 +199,8 @@ if(isset($_GET['carnet'])) {
             $('#chants').on( 'click', 'tbody tr', function () {
                 console.log(this);
                 var path = this.innerText.split("\t")[2];
-                console.log("open : " + globalConfig.addrServer + "/pdf/" + path);
-                window.open(globalConfig.addrServer + "/pdf/" + path);
+                console.log("open : " + globalConfig.addrServer + "/components/visualisation/?lien=" + path);
+                window.open(globalConfig.addrServer + "/components/visualisation/?lien=" + path);
             } );
 		});
 

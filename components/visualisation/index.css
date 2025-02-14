@@ -229,3 +229,9 @@ img {
     height: 30px;
     margin-right: 5px;
 }
+
+/* For mobile to limit the size of the nav-header */
+@media (max-width: 515px) {  
+  :root {
+    --navbar-width: 99%; }
+}
