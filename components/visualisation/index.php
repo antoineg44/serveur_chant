@@ -19,6 +19,10 @@ $lien = null;
 $error = true;
 if(isset($_GET['lien'])) {
 	$lien = (String) trim($_GET['lien']);
+  if(str_contains($lien, "/pdf/")) {
+    $directroy = explode("/pdf/", $lien);
+    $lien = $directroy[count($directroy)-1];
+  }
 
   if(str_contains($lien,"/") && !str_contains($lien,"\\.")) {
     $dir_pdf = "../../pdf/";    // dossier où se trouvent les pdf
