@@ -299,8 +299,8 @@ function open_pdf(path)
   }
   if(path != null)
   {*/
-    console.log("open : " + window.location.origin + "/pdf/" + path);
-    window.open(window.location.origin + "/pdf/" + path);
+    console.log("open : " + window.location.origin + "/components/visualisation/?lien=" + path);
+    window.open(window.location.origin + "/components/visualisation/?lien=" + path);
   /*}
   else
   {

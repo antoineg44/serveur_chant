@@ -3008,7 +3008,7 @@ console.log(e);
 
 			if (iframenode)  viewwrap.removeChild(iframenode);
 
-			iframenode = CreateNode('iframe', ['fm_file_editor_browser'], { src: fileinfo.url + (fileinfo.url.indexOf('?') > -1 ? '&' : '?') + '_ts=' + lastreloadfor, width: '100%', height: '100%', frameBorder: '0' });
+			iframenode = CreateNode('iframe', ['fm_file_editor_browser'], { src: '../components/visualisation/?lien=' + fileinfo.url, width: '100%', height: '100%', frameBorder: '0' });
 
 			viewwrap.appendChild(iframenode);
 		};
