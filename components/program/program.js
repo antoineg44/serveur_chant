@@ -1,3 +1,4 @@
+var programme = null;
 var example_version = false;    // Set to true pour les tests
 
 var Programme = function(options) 
@@ -287,11 +288,11 @@ var Programme = function(options)
   }
 };
 
-function init(path_file)
+function initProgram(path_file, end_function)
 {
 	
 	if(path_file == "example_messe.txt")example_version = true;
-  document.addEventListener("ProgrammeReady", initDropAndDrap);
+  document.addEventListener("ProgrammeReady", end_function);
   programme = new Programme({
     watchers: null,
     interval: 100,

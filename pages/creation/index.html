@@ -8,8 +8,11 @@
     <!-- CSS -->
     <link href="index.css" rel="stylesheet">
     <!-- JS -->
+    <script src="../../components/jquery/jquery-latest.js"></script>
+    <script src="../../components/jquery/jquery.js"></script>
     <script src="index.js"></script>
     <script src="../../components/autocomplete/autocomplete.js"></script>
+    <script src="../../components/program/program.js"></script>
 </head>
 
 <body>
@@ -40,7 +43,7 @@
                             </svg>
                             Informations</a>
                     </li>
-                    <li>
+                    <li id="description_list">
                         <a href="#input-types">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -57,7 +60,7 @@
                             <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">
                             Entrée</a>
                     </li>
-                    <li>
+                    <!--<li>
                         <a href="#fieldset">
                             <svg xmlns="http://www.w3.org/2000/svg" style="transform: rotate(90deg)" width="24"
                                 height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -141,7 +144,7 @@
                                 <line x1="17" y1="16" x2="23" y2="16" />
                             </svg>
                             Customization</a>
-                    </li>
+                    </li>-->
                     <li>
                         <a href="#contribute">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -165,6 +168,9 @@
                 <p>
                     Commencez par remplir la partie informations et continuer ensuite vers les autres catégories. Enfin,
                     sauvegardez.
+                </p>
+                <p>
+                    Pour avoir l'ensemble des partitions, aller à <a href="" target="_blank">l'explorateur</a>.
                 </p>
             </section>
 
@@ -247,7 +253,7 @@
                 </fieldset>
             </section>
 
-            <section>
+            <section id="description">
                 <div class="href-target" id="input-types"></div>
                 <h1>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -304,11 +310,9 @@
                                 style="height:1.2em;right:0px;margin-right:8px" ontouchstart=""></div>
                     </div>
                 </div>
-                <p>
-                    Pour avoir l'ensemble des partitions, aller à <a href="" target="_blank">l'explorateur</a>.
-                </p>
 
                 <div class="nice-form-group">
+                    <h1>Nom du chant</h1>
                     <label>Url du chant</label>
                     <input type="url" placeholder="/type/chant... (ex: /cantique/chantez avec moi/)" value="" id="dName"
                         class="icon-left" />
@@ -742,6 +746,9 @@
             prevBtn.disabled = currentStep === 0;
             nextBtn.innerText = currentStep === steps.length - 1 ? "Terminer" : "Suivant";
         }
+
+        // init :
+        initProgram("../../components/program/example_messe.txt",initFormulaire);
     </script>
 </body>
 

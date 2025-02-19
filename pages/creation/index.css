@@ -1024,8 +1024,8 @@ section ul {
 
 details {
     background: #f1f1f1;
-    margin: 2em -2em -2em;
-    padding: 1.5em 2em
+    margin: 1em -2em -2em;
+    padding: 0.5em 2em
 }
 
 details .gist {
@@ -1150,4 +1150,7 @@ details summary::-webkit-details-marker {
 .acWrap .acSuggest li:hover {
   background: #d9e7ff;
   cursor: pointer;
+}
+.chant_title {
+    margin-top: 1em;
 }
