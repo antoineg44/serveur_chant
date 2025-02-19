@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Questionnaire Multi-étapes</title>
+    <title>Nouvelle messe</title>
     <!-- CSS -->
     <link href="index.css" rel="stylesheet">
     <!-- JS -->
     <script src="index.js"></script>
+    <script src="../../components/autocomplete/autocomplete.js"></script>
 </head>
 
 <body>
@@ -53,12 +54,7 @@
                     </li>
                     <li>
                         <a href="#checkbox-and-radio">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="feather feather-check-square">
-                                <polyline points="9 11 12 14 22 4" />
-                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                            </svg>
+                            <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">
                             Entrée</a>
                     </li>
                     <li>
@@ -299,6 +295,8 @@
                             Entrée
                         </h1></div>
                         <div class="column"><img src="/components/icons/edit.png"
+                                style="height:1.2em;right:0px;margin-right:16px" onclick=""></div>
+                        <div class="column"><img src="/components/icons/delete.png"
                                 style="height:1.2em;right:0px;margin-right:8px" onclick=""></div>
                         <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"
                                 style="height:1.2em;right:0px;margin-right:8px" ontouchstart=""></div>
@@ -312,8 +310,15 @@
 
                 <div class="nice-form-group">
                     <label>Url du chant</label>
-                    <input type="url" placeholder="https://partitions.ovh/pdf/type/chant..." value=""
+                    <input type="url" placeholder="/type/chant... (ex: /cantique/chantez avec moi/)" value="" id="dName"
                         class="icon-left" />
+
+                    <script>
+                        ac.attach({
+                            target: document.getElementById("dName"),
+                            data: "../../components/autocomplete/autocomplete_path.php"
+                        });
+                    </script>
                 </div>
 
                 
@@ -399,7 +404,6 @@
                             Toggle code
                         </div>
                     </summary>
-                    <script src="https://gist.github.com/nielsVoogt/e513d0df728dfc3fb1f5f9ecae042bf8.js"></script>
                 </details>
             </section>
 
@@ -475,7 +479,6 @@
                             Toggle code
                         </div>
                     </summary>
-                    <script src="https://gist.github.com/nielsVoogt/8cc4cd8ebc6e81c3f889f1b40037b0cc.js"></script>
                 </details>
             </section>
 
@@ -519,7 +522,6 @@
                             Toggle code
                         </div>
                     </summary>
-                    <script src="https://gist.github.com/nielsVoogt/75ebf8c12ca420eb2089312a931ab4cf.js"></script>
                 </details>
             </section>
 
@@ -574,7 +576,6 @@
                             Toggle code
                         </div>
                     </summary>
-                    <script src="https://gist.github.com/nielsVoogt/2ae279af287e520f545285b0d7c45828.js"></script>
                 </details>
             </section>
 
@@ -638,7 +639,6 @@
                             Toggle code
                         </div>
                     </summary>
-                    <script src="https://gist.github.com/nielsVoogt/f0480b1a2d0deda02138d61ec5c9f4d0.js"></script>
                 </details>
             </section>
 
@@ -695,7 +695,6 @@
                     Customization
                 </h1>
                 <p>The styling is highly customizable using css variables.</p>
-                <script src="https://gist.github.com/nielsVoogt/63daf967a17776d00f5923048cf28daf.js"></script>
             </section>
 
             <section>
