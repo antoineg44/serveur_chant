@@ -26,7 +26,7 @@ function initFormulaire()
 }
 
 function add_section(partie, chants) {
-    return '<section>\
+    return '<section id="part_'+partie.name+'">\
     <div class="href-target" id="'+partie.name+'_link"></div>\
     <div id="" onclick="" ondblclick="">\
         <div class="row">\
@@ -93,12 +93,15 @@ function decodage_path_javascript(path)
 
 // Action
 function delete_part(id_part) {
+    console.log("delete_part");
     document.getElementById(id_part).remove();
-    programme.deletePart(decodage_path_javascript(id_part));
+    programme.deletePart(decodage_path_javascript(id_part.slice(5)));
 }
 function move_up_part(id_part) {
-    console.log("before : " + programme.getPreviousPart(id_part));
+    console.log("move_up_part");
+    console.log("before : " + programme.getPreviousPart(decodage_path_javascript(id_part.slice(5))));
 }
 function move_down_part(id_part) {
-    console.log("After : " + programme.getNextPart(id_part));
+    console.log("move_down_part");
+    console.log("After : " + programme.getNextPart(decodage_path_javascript(id_part.slice(5))));
 }
