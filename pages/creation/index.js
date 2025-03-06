@@ -26,8 +26,8 @@ function initFormulaire()
 }
 
 function add_section(partie, chants) {
-    return '<section id="part_'+partie.name+'">\
-    <div class="href-target" id="'+partie.name+'_link"></div>\
+    return '<section id="part_'+codage_path_javascript(partie.name)+'">\
+    <div class="href-target" id="'+codage_path_javascript(partie.name)+'_link"></div>\
     <div id="" onclick="" ondblclick="">\
         <div class="row">\
             <div class="column"><h1>\
@@ -61,7 +61,7 @@ function add_section(partie, chants) {
 
 function add_link_section(name) {   // For the navigation
     return '<li>\
-    <a href="#'+name+'_link">\
+    <a href="#'+codage_path_javascript(name)+'_link">\
         <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
         '+name+'</a>\
     </li>';
@@ -94,14 +94,14 @@ function decodage_path_javascript(path)
 // Action
 function delete_part(id_part) {
     console.log("delete_part");
-    document.getElementById(id_part).remove();
-    programme.deletePart(decodage_path_javascript(id_part.slice(5)));
+    document.getElementById("part_"+id_part).remove();
+    programme.deletePart(decodage_path_javascript(id_part));
 }
 function move_up_part(id_part) {
     console.log("move_up_part");
-    console.log("before : " + programme.getPreviousPart(decodage_path_javascript(id_part.slice(5))));
+    console.log("before : " + programme.getPreviousPart(decodage_path_javascript(id_part)));
 }
 function move_down_part(id_part) {
     console.log("move_down_part");
-    console.log("After : " + programme.getNextPart(decodage_path_javascript(id_part.slice(5))));
+    console.log("After : " + programme.getNextPart(decodage_path_javascript(id_part)));
 }
