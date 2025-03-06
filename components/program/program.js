@@ -150,7 +150,7 @@ var Programme = function(options)
       }
     }
     if(find == null) {
-      console.e("Part not found ! " + target_name);
+      console.log("Part not found ! " + target_name);
       return null;
     }
     var previous = null;
@@ -162,7 +162,7 @@ var Programme = function(options)
       }
     }
     if(previous == null) {
-      console.i("Previous not found ! " + target_name);
+      console.log("Previous not found ! " + target_name);
       return null;
     }
     return programme.chants[previous].name;
@@ -178,7 +178,7 @@ var Programme = function(options)
       }
     }
     if(find == null) {
-      console.e("Part not found ! " + target_name);
+      console.log("Part not found ! " + target_name);
       return null;
     }
     var next = null;
@@ -190,7 +190,7 @@ var Programme = function(options)
       }
     }
     if(next == null) {
-      console.i("Next not found ! " + target_name);
+      console.log("Next not found ! " + target_name);
       return null;
     }
     return programme.chants[next].name;

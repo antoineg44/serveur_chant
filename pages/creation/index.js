@@ -60,7 +60,7 @@ function add_section(partie, chants) {
 }
 
 function add_link_section(name) {   // For the navigation
-    return '<li>\
+    return '<li id="link_'+codage_path_javascript(partie.name)+'">\
     <a href="#'+codage_path_javascript(name)+'_link">\
         <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
         '+name+'</a>\
@@ -95,13 +95,18 @@ function decodage_path_javascript(path)
 function delete_part(id_part) {
     console.log("delete_part");
     document.getElementById("part_"+id_part).remove();
+    document.getElementById("link_"+id_part).remove();
     programme.deletePart(decodage_path_javascript(id_part));
 }
 function move_up_part(id_part) {
     console.log("move_up_part");
-    console.log("before : " + programme.getPreviousPart(decodage_path_javascript(id_part)));
+    var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
+    console.log("before : " + part_before);
+    document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
 }
 function move_down_part(id_part) {
     console.log("move_down_part");
-    console.log("After : " + programme.getNextPart(decodage_path_javascript(id_part)));
+    var part_after = programme.getNextPart(decodage_path_javascript(id_part));
+    console.log("After : " + part_after);
+    document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
 }
