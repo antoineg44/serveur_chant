@@ -120,7 +120,7 @@ function move_down_part(id_part) {
     }
 }
 function add_new_chant(id_part){
-    console("add_new_chant");
+    console.log("add_new_chant");
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
     //let doc = parser.parseFromString(add_chant(chant), 'text/html');
@@ -128,7 +128,7 @@ function add_new_chant(id_part){
 
 }
 function add_new_part(id_part) {
-    console("add_new_part");
+    console.log("add_new_part");
     var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
     let parser = new DOMParser();
     let doc = parser.parseFromString(add_section(partie), 'text/html');
