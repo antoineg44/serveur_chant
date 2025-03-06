@@ -37,11 +37,11 @@ function add_section(partie, chants) {
             <div class="column"><img src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick=""></div>\
             <div class="column"><img src="/components/icons/delete.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part('+codage_path_javascript(partie.name)+')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part('+codage_path_javascript(partie.name)+')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part('+codage_path_javascript(partie.name)+')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
         </div>\
     </div>\
     \
