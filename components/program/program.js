@@ -139,6 +139,63 @@ var Programme = function(options)
     $this.chants.push(part);
   }
 
+  $this.getPreviousPart = function(target_name)
+  {
+    var find = null;
+    for(var i=0; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].name == target_name && programme.chants[i].type == "partie") {
+        find = i;
+        break;
+      }
+    }
+    if(find == null) {
+      console.e("Part not found ! " + target_name);
+      return null;
+    }
+    var previous = null;
+    for(var i=find-1; i>=0; i--)
+    {
+      if(programme.chants[i].type == "partie") {
+        previous = i;
+        break;
+      }
+    }
+    if(previous == null) {
+      console.i("Previous not found ! " + target_name);
+      return null;
+    }
+    return programme.chants[previous].name;
+  }
+  $this.getNextPart = function(target_name)
+  {
+    var find = null;
+    for(var i=0; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].name == target_name && programme.chants[i].type == "partie") {
+        find = i;
+        break;
+      }
+    }
+    if(find == null) {
+      console.e("Part not found ! " + target_name);
+      return null;
+    }
+    var next = null;
+    for(var i=find+1; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].type == "partie") {
+        next = i;
+        break;
+      }
+    }
+    if(next == null) {
+      console.i("Next not found ! " + target_name);
+      return null;
+    }
+    return programme.chants[next].name;
+  }
+
   $this.echange = function(target_name, target_type, path, next, next_type, next_path)
   {
     console.log("echange: " + target_name);

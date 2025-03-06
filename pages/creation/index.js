@@ -37,11 +37,11 @@ function add_section(partie, chants) {
             <div class="column"><img src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick=""></div>\
             <div class="column"><img src="/components/icons/delete.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick=""></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part('+codage_path_javascript(partie.name)+')"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" ontouchstart=""></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part('+codage_path_javascript(partie.name)+')"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" ontouchstart=""></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part('+codage_path_javascript(partie.name)+')"></div>\
         </div>\
     </div>\
     \
@@ -59,7 +59,7 @@ function add_section(partie, chants) {
 </section>';
 }
 
-function add_link_section(name) {
+function add_link_section(name) {   // For the navigation
     return '<li>\
     <a href="#'+name+'_link">\
         <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
@@ -77,4 +77,28 @@ function add_chant(chant) {
                 data: "../../components/autocomplete/autocomplete_path.php"\
             });\
         </script>';
+}
+
+
+// Manage ID
+function codage_path_javascript(path)
+{
+    return path.replaceAll(",","µ").replaceAll("/","°").replaceAll("\.","¨").replaceAll("'","¤").replaceAll(" ","§") // remplacement des caractères spéciaux pour éviter les problèmes avec le javascript
+}
+
+function decodage_path_javascript(path)
+{
+    return path.replaceAll("µ",",").replaceAll("°","/").replaceAll("¨","\.").replaceAll("¤","'").replaceAll("§"," ")
+}
+
+// Action
+function delete_part(id_part) {
+    document.getElementById(id_part).remove();
+    programme.deletePart(decodage_path_javascript(id_part));
+}
+function move_up_part(id_part) {
+    console.log("before : " + programme.getPreviousPart(id_part));
+}
+function move_down_part(id_part) {
+    console.log("After : " + programme.getNextPart(id_part));
 }
