@@ -196,6 +196,55 @@ var Programme = function(options)
     return programme.chants[next].name;
   }
 
+  $this.echange2 = function(target_name, target_type, path, next, next_type, next_path)
+  {
+    console.log("moveUp: " + target_name);
+    console.log(path);
+    var find = null;
+    var i_target = null;
+    var i_next = null;
+    for(var i=0; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].name == target_name && programme.chants[i].type == target_type && (programme.chants[i].type == "partie" || programme.chants[i].name+programme.chants[i].path == path)) {
+        i_target = i;
+        break;
+      }
+    }
+    if(i_target == null)
+    {
+      alert("Erreur, élément non trouvé : " + target_name);
+      console.log("name : " + target_name);
+      console.log(programme.chants);
+      return;
+    }
+    console.log(find);
+    if(next == null)
+    {
+      programme.chants.push(find);
+    }
+    else {
+      for(var i=0; i<programme.chants.length; i++)
+      {
+        if(programme.chants[i].name == next && programme.chants[i].type == next_type && (programme.chants[i].type == "partie" || programme.chants[i].name+programme.chants[i].path == next_path)) {
+          i_next = i;
+          break;
+        }
+      }
+
+      if(i_next != null) {
+        find = programme.chants[i_target];
+        programme.chants[i_target] = programme.chants[i_next];
+        programme.chants[i_next] = find;
+      }
+      else {
+        alert("Erreur, élément non trouvé : " + next);
+      }
+    }
+    console.log("resultat :");
+    console.log(programme.chants);
+    if(example_version == false)onModif();
+  }
+
   $this.echange = function(target_name, target_type, path, next, next_type, next_path)
   {
     console.log("echange: " + target_name);
