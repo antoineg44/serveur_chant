@@ -45,13 +45,13 @@ function add_section(partie, chants) {
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
         </div>\
     </div>\
-    \
+    <div id="list_'+codage_path_javascript(partie.name)+'">\
         '+chants+'<!-- Chants here -->\
-    \
+    </div>\
     <details>\
         <summary>\
-            <div class="toggle-code">+ Ajouter un chant en plus</div>\
-            <div class="toggle-code">\
+            <div class="toggle-code" onclick="add_new_chant(\''+codage_path_javascript(partie.name)+'\')">+ Ajouter un chant en plus</div>\
+            <div class="toggle-code" onclick="add_new_part(\''+codage_path_javascript(partie.name)+'\')">\
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">\
                     <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />\
                 </svg>Ajouter une partie ci-dessous</div>\
@@ -103,15 +103,29 @@ function move_up_part(id_part) {
     console.log("move_up_part");
     var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
     console.log("before : " + part_before);
-    document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
-    document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
-    programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
+    if(part_before != null){
+        document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
+        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
+    }
 }
 function move_down_part(id_part) {
     console.log("move_down_part");
     var part_after = programme.getNextPart(decodage_path_javascript(id_part));
     console.log("After : " + part_after);
+    if(part_after != null) {
+        document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_after).after(document.querySelector('#link_' + id_part));
+        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_after, "partie", null);
+    }
+}
+function add_new_chant(id_part){
+    var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
+    //let parser = new DOMParser();
+    //let doc = parser.parseFromString(add_chant(chant), 'text/html');
+    document.getElementById("list_"+id_part).append = add_chant(chant);
+
+}
+function add_new_part(id_part) {
     document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
-    document.querySelector('#link_' + part_after).after(document.querySelector('#link_' + id_part));
-    programme.echange2(decodage_path_javascript(id_part), "partie", null, part_after, "partie", null);
 }
