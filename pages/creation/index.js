@@ -1,6 +1,7 @@
 
 function initFormulaire()
 {
+    example_version = true;
   console.log("initFormulaire");
   console.log(programme.chants);
   var html_chants = "";
@@ -103,12 +104,14 @@ function move_up_part(id_part) {
     var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
     console.log("before : " + part_before);
     document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
-    programme.echange(id_part, "partie", null, part_before, "partie", null);
+    document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
+    programme.echange(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
 }
 function move_down_part(id_part) {
     console.log("move_down_part");
     var part_after = programme.getNextPart(decodage_path_javascript(id_part));
     console.log("After : " + part_after);
     document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
-    programme.echange(id_part, "partie", null, part_after, "partie", null);
+    document.querySelector('#link_' + part_after).after(document.querySelector('#link_' + id_part));
+    programme.echange(decodage_path_javascript(id_part), "partie", null, part_after, "partie", null);
 }
