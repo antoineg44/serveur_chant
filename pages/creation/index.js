@@ -60,7 +60,7 @@ function add_section(partie, chants) {
 }
 
 function add_link_section(name) {   // For the navigation
-    return '<li id="link_'+codage_path_javascript(partie.name)+'">\
+    return '<li id="link_'+codage_path_javascript(name)+'">\
     <a href="#'+codage_path_javascript(name)+'_link">\
         <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
         '+name+'</a>\
