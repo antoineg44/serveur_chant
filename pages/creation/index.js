@@ -120,12 +120,19 @@ function move_down_part(id_part) {
     }
 }
 function add_new_chant(id_part){
+    console("add_new_chant");
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
     //let doc = parser.parseFromString(add_chant(chant), 'text/html');
-    document.getElementById("list_"+id_part).append = add_chant(chant);
+    document.getElementById("list_"+id_part).innerHTML += add_chant(chant);
 
 }
 function add_new_part(id_part) {
-    document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
+    console("add_new_part");
+    var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(add_section(partie), 'text/html');
+    let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
+    document.querySelector('#part_' + id_part).after(doc.body);
+    document.querySelector('#link_' + id_part).after(nav.body);
 }
