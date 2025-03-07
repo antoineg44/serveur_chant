@@ -9,7 +9,7 @@ function initFormulaire()
   {
     if(programme.chants[i].type == "partie")
     {
-        if(html_chants != "")html_chants = '<div class="nice-form-group">' + html_chants + '</div>';
+        if(html_chants != "")html_chants = '<div class="nice-form-group" id="list_'+codage_path_javascript(programme.chants[i].name)+'">' + html_chants + '</div>';
       var code_html = add_section(programme.chants[i], html_chants);
       $('#description').after(code_html);
       $('#description_list').after(add_link_section(programme.chants[i].name));
@@ -45,7 +45,7 @@ function add_section(partie, chants) {
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
         </div>\
     </div>\
-    <div id="list_'+codage_path_javascript(partie.name)+'">\
+    <div id="doc_'+codage_path_javascript(partie.name)+'">\
         '+chants+'<!-- Chants here -->\
     </div>\
     <details>\
@@ -124,7 +124,13 @@ function add_new_chant(id_part){
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
     //let doc = parser.parseFromString(add_chant(chant), 'text/html');
-    document.getElementById("list_"+id_part).innerHTML += add_chant(chant);
+    var h = document.getElementById("doc_"+id_part);
+    if(h == null) {
+        document.getElementById("doc_"+id_part).innerHTML = '<div class="nice-form-group" id="list_'+id_part+'">' + add_chant(chant) + '</div>';
+    }
+    else {
+        document.getElementById("list_"+id_part).innerHTML += add_chant(chant);
+    }
 
 }
 function add_new_part(id_part) {
