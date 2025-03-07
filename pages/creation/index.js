@@ -201,6 +201,7 @@ function modify_part(element) {
     document.getElementById("doc_"+id_part).id = "doc_"+codage_path_javascript(name_part);
     document.getElementById("link_"+id_part).id = "link_"+codage_path_javascript(name_part);
     document.getElementById(id_part+"_link").id = codage_path_javascript(name_part);+"_link";
+    document.getElementById("part_"+id_part).id = "part_"+codage_path_javascript(name_part);
 
 }
 var testing = null;
