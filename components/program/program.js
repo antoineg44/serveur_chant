@@ -120,23 +120,45 @@ var Programme = function(options)
     document.dispatchEvent(EndEvent);
   }
 
+  $this.find = function(target_name, target_type, target_path) {
+    var found = null;
+    for(var i=0; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].name == target_name && programme.chants[i].type == target_type && (programme.chants[i].type == "partie" || programme.chants[i].name+programme.chants[i].path == target_path)) {
+        found = i;
+        break;
+      }
+    }
+    return found;
+  }
+
   $this.addPart = function(name)
   {
+    if($this.find(name, "partie", null)) {
+      console.log("item already exist : " + name);
+      return null;
+    }
     var part = {
       "type" : "partie",
       "name" : name
     };
     $this.chants.push(part);
+    return true;
   }
 
   $this.addPdf = function(name, path)
   {
+    if($this.find(name, "chant", path)) {
+      console.log("item already exist : " + name);
+      return null;
+    }
     var part = {
       "type" : "chant",
       "name" : name,
       "path" : path
     };
     $this.chants.push(part);
+    return true;
   }
 
   $this.getPreviousPart = function(target_name)

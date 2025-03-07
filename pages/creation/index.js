@@ -69,7 +69,20 @@ function add_link_section(name) {   // For the navigation
 }
 
 function add_chant(chant) {
-    return '<h1 class="chant_title">'+chant.name+'</h1>\
+    return '<div class="row">\
+            <div class="column"><h1>\
+                <div class="row"><div class="column"><img src="/components/icons/pdf.png" style="height:1.4em">\
+            </h1></div>\
+            <div class="column part-column"><h1>'+chant.name+'</h1></div>\
+            <div class="column"><img src="/components/icons/edit.png"\
+                    style="height:1.2em;right:0px;margin-right:16px" onclick=""></div>\
+            <div class="column"><img src="/components/icons/delete.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+            <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+            <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+        </div>\
         <label>Url du chant</label>\
         <input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
         <script>\
@@ -124,8 +137,7 @@ function add_new_chant(id_part){
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
     //let doc = parser.parseFromString(add_chant(chant), 'text/html');
-    var h = document.getElementById("doc_"+id_part);
-    if(h == null) {
+    if(document.getElementById("doc_"+id_part)) {
         document.getElementById("doc_"+id_part).innerHTML = '<div class="nice-form-group" id="list_'+id_part+'">' + add_chant(chant) + '</div>';
     }
     else {
@@ -135,9 +147,12 @@ function add_new_chant(id_part){
 }
 function add_new_part(id_part) {
     console.log("add_new_part");
+    if(programme.addPart('nouvelle partie') == null) {
+        alert("Une nouvelle partie à déjà été créé");
+    }
     var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
     let parser = new DOMParser();
-    let doc = parser.parseFromString(add_section(partie), 'text/html');
+    let doc = parser.parseFromString(add_section(partie, ""), 'text/html');
     let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
     document.querySelector('#part_' + id_part).after(doc.body.firstChild);
     document.querySelector('#link_' + id_part).after(nav.body.firstChild);
