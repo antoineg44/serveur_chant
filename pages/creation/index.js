@@ -36,13 +36,13 @@ function add_section(partie, chants) {
             </h1></div>\
             <div class="column part-column"><h1 id="h1_'+codage_path_javascript(partie.name)+'">'+partie.name+'</h1></div>\
             <div class="column"><img src="/components/icons/edit.png"\
-                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_part(this)"></div>\
             <div class="column"><img src="/components/icons/delete.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(this)"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(this)"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(partie.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(this)"></div>\
         </div>\
     </div>\
     <div id="doc_'+codage_path_javascript(partie.name)+'">\
@@ -50,8 +50,8 @@ function add_section(partie, chants) {
     </div>\
     <details>\
         <summary>\
-            <div class="toggle-code" onclick="add_new_chant(\''+codage_path_javascript(partie.name)+'\')">+ Ajouter un chant en plus</div>\
-            <div class="toggle-code" onclick="add_new_part(\''+codage_path_javascript(partie.name)+'\')">\
+            <div class="toggle-code" onclick="add_new_chant(this)">+ Ajouter un chant en plus</div>\
+            <div class="toggle-code" onclick="add_new_part(this)">\
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">\
                     <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />\
                 </svg>Ajouter une partie ci-dessous</div>\
@@ -68,8 +68,14 @@ function add_link_section(name) {   // For the navigation
     </li>';
 }
 
+function link_section(name) {
+    return '<a href="#'+codage_path_javascript(name)+'_link">\
+        <img src="/components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
+        '+name+'</a>';
+}
+
 function add_chant(chant) {
-    return '<div class="row">\
+    return '<section><div class="row">\
             <div class="column"><h1>\
                 <div class="row"><div class="column"><img src="/components/icons/pdf.png" style="height:1em">\
             </h1></div>\
@@ -77,11 +83,11 @@ function add_chant(chant) {
             <div class="column"><img src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>\
             <div class="column"><img src="/components/icons/delete.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(\''+codage_path_javascript(chant.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_chant(this)"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(\''+codage_path_javascript(chant.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_chant(this)"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(\''+codage_path_javascript(chant.name)+'\')"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>\
         </div>\
         <label>Url du chant</label>\
         <input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
@@ -90,7 +96,7 @@ function add_chant(chant) {
                 target: document.getElementById("dName"),\
                 data: "../../components/autocomplete/autocomplete_path.php"\
             });\
-        </script>';
+        </script></section>';
 }
 
 
@@ -106,13 +112,22 @@ function decodage_path_javascript(path)
 }
 
 // Action
-function delete_part(id_part) {
+function delete_part(element) {
+    var id_part = element.closest("section").id.slice(5);
     console.log("delete_part");
     document.getElementById("part_"+id_part).remove();
     document.getElementById("link_"+id_part).remove();
     programme.deletePart(decodage_path_javascript(id_part));
 }
-function move_up_part(id_part) {
+function delete_chant(element) {
+    var id_part = element.closest("section").id.slice(5);
+    console.log("delete_part");
+    document.getElementById("part_"+id_part).remove();
+    document.getElementById("link_"+id_part).remove();
+    programme.deletePart(decodage_path_javascript(id_part));
+}
+function move_up_part(element) {
+    var id_part = element.closest("section").id.slice(5);
     console.log("move_up_part");
     var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
     console.log("before : " + part_before);
@@ -122,7 +137,8 @@ function move_up_part(id_part) {
         programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
     }
 }
-function move_down_part(id_part) {
+function move_down_part(element) {
+    var id_part = element.closest("section").id.slice(5);
     console.log("move_down_part");
     var part_after = programme.getNextPart(decodage_path_javascript(id_part));
     console.log("After : " + part_after);
@@ -132,7 +148,8 @@ function move_down_part(id_part) {
         programme.echange2(decodage_path_javascript(id_part), "partie", null, part_after, "partie", null);
     }
 }
-function add_new_chant(id_part) {
+function add_new_chant(element) {
+    var id_part = element.closest("section").id.slice(5);
     console.log("add_new_chant");
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
@@ -145,8 +162,9 @@ function add_new_chant(id_part) {
     }
 
 }
-function add_new_part(id_part) {
+function add_new_part(element) {
     console.log("add_new_part");
+    var id_part = element.closest("section").id.slice(5);
     if(programme.addPart('nouvelle partie') == null) {
         alert("Une nouvelle partie à déjà été créé");
         return;
@@ -158,7 +176,9 @@ function add_new_part(id_part) {
     document.querySelector('#part_' + id_part).after(doc.body.firstChild);
     document.querySelector('#link_' + id_part).after(nav.body.firstChild);
 }
-function modify_part(id_part) {
+function modify_part(element) {
+    console.log("modify_part");
+    var id_part = element.closest("section").id.slice(5);
     var name_part = prompt("Changer de nom :", decodage_path_javascript(id_part));
     if(name_part == null || name_part == "" || name_part == decodage_path_javascript(id_part))return null;
     if(programme.find(name_part, "partie", null) == null) {
@@ -166,10 +186,16 @@ function modify_part(id_part) {
     }
     programme.modifyPart(decodage_path_javascript(id_part), name_part);
     document.getElementById("h1_"+id_part).innerHTML = name_part;
+    document.getElementById("link_"+id_part).innerHTML = link_section(name_part);
+    document.getElementById("h1_"+id_part).id = "h1_"+codage_path_javascript(name_part);
+    document.getElementById("doc_"+id_part).id = "doc_"+codage_path_javascript(name_part);
+    document.getElementById("link_"+id_part).id = "link_"+codage_path_javascript(name_part);
+    document.getElementById(id_part+"_link").id = codage_path_javascript(name_part);+"_link";
 
 }
 var testing = null;
 function modify_chant(element) {
-    testing = element;
+    console.log("modify_chant");
     console.log(element);
+    testing = element;
 }
