@@ -75,7 +75,7 @@ function link_section(name) {
 }
 
 function add_chant(chant) {
-    return '<section><div class="row">\
+    return '<section id="chant_'+codage_path_javascript(chant.name)+'"><div class="row">\
             <div class="column"><h1>\
                 <div class="row"><div class="column"><img src="/components/icons/pdf.png" style="height:1em">\
             </h1></div>\
@@ -120,11 +120,9 @@ function delete_part(element) {
     programme.deletePart(decodage_path_javascript(id_part));
 }
 function delete_chant(element) {
-    var id_part = element.closest("section").id.slice(5);
-    console.log("delete_part");
-    document.getElementById("part_"+id_part).remove();
-    document.getElementById("link_"+id_part).remove();
-    programme.deletePart(decodage_path_javascript(id_part));
+    console.log("delete_chant");
+    var id_part = element.closest("span").remove();
+    programme.deletePart(decodage_path_javascript(element.closest("span").id.slice(6)));
 }
 function move_up_part(element) {
     var id_part = element.closest("section").id.slice(5);
