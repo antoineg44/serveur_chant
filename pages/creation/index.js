@@ -90,13 +90,13 @@ function add_chant(chant) {
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>-->\
         </div>\
         <label>Url du chant</label>\
-        <input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
+        <div class="nice-form-group acWrap"><input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
         <script>\
             ac.attach({\
                 target: document.getElementById("dName"),\
                 data: "../../components/autocomplete/autocomplete_path.php"\
             });\
-        </script></span>';
+        </script></div></span>';
 }
 
 
