@@ -163,7 +163,7 @@ function add_new_chant(element) {
     var chant = {'name': 'nouveau chant', "type" : "chant", "path": null};
     //let parser = new DOMParser();
     //let doc = parser.parseFromString(add_chant(chant), 'text/html');
-    if(document.getElementById("doc_"+id_part)) {
+    if(document.getElementById("list_"+id_part)) {
         document.getElementById("list_"+id_part).innerHTML += add_chant(chant);
     }
     else {
