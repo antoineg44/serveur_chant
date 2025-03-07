@@ -133,6 +133,6 @@ function add_new_part(id_part) {
     let parser = new DOMParser();
     let doc = parser.parseFromString(add_section(partie), 'text/html');
     let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
-    document.querySelector('#part_' + id_part).after(doc.body);
-    document.querySelector('#link_' + id_part).after(nav.body);
+    document.querySelector('#part_' + id_part).after(doc.body.firstChild);
+    document.querySelector('#link_' + id_part).after(nav.body.firstChild);
 }
