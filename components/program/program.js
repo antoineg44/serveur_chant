@@ -331,11 +331,16 @@ var Programme = function(options)
   $this.modifyPart = function(old_name, new_name)
   {
     console.log("rename: " + old_name + " to " + new_name);
+    var find = false;
     for(var i=0; i<programme.chants.length; i++)
     {
-      if(programme.chants[i].name == old_name)programme.chants[i].name = new_name;
+      if(programme.chants[i].name == old_name){
+        programme.chants[i].name = new_name;
+        find = true;
+      }
     }
-    onModif();
+    if(find == false)console.log("not found : " + old_name);
+    if(example_version == false)onModif();
   }
 
   $this.readFile = function(path_file)

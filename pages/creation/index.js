@@ -75,19 +75,19 @@ function link_section(name) {
 }
 
 function add_chant(chant) {
-    return '<section id="chant_'+codage_path_javascript(chant.name)+'"><div class="row">\
+    return '<span id="chant_'+codage_path_javascript(chant.name)+'"><div class="row">\
             <div class="column"><h1>\
                 <div class="row"><div class="column"><img src="/components/icons/pdf.png" style="height:1em">\
             </h1></div>\
             <div class="column part-column"><h1>'+chant.name+'</h1></div>\
-            <div class="column"><img src="/components/icons/edit.png"\
-                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>\
+            <!--<div class="column"><img src="/components/icons/edit.png"\
+                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>-->\
             <div class="column"><img src="/components/icons/delete.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="delete_chant(this)"></div>\
-            <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
+            <!--<div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_chant(this)"></div>\
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
-                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>-->\
         </div>\
         <label>Url du chant</label>\
         <input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
@@ -96,7 +96,7 @@ function add_chant(chant) {
                 target: document.getElementById("dName"),\
                 data: "../../components/autocomplete/autocomplete_path.php"\
             });\
-        </script></section>';
+        </script></span>';
 }
 
 
@@ -135,6 +135,17 @@ function move_up_part(element) {
         programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
     }
 }
+/*function move_up_chant(element) {
+    var id_part = element.closest("span").id.slice(5);
+    console.log("move_up_part");
+    var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
+    console.log("before : " + part_before);
+    if(part_before != null){
+        document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
+        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
+    }
+}*/
 function move_down_part(element) {
     var id_part = element.closest("section").id.slice(5);
     console.log("move_down_part");
@@ -179,8 +190,9 @@ function modify_part(element) {
     var id_part = element.closest("section").id.slice(5);
     var name_part = prompt("Changer de nom :", decodage_path_javascript(id_part));
     if(name_part == null || name_part == "" || name_part == decodage_path_javascript(id_part))return null;
-    if(programme.find(name_part, "partie", null) == null) {
+    if(programme.find(name_part, "partie", null) != null) {
         alert("le nom existe déjà");
+        return;
     }
     programme.modifyPart(decodage_path_javascript(id_part), name_part);
     document.getElementById("h1_"+id_part).innerHTML = name_part;
