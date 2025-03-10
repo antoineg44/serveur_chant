@@ -1154,3 +1154,7 @@ details summary::-webkit-details-marker {
 .chant_title {
     margin-top: 1em;
 }
+
+.button:hover {
+    background-color: #c5c5c5;
+}

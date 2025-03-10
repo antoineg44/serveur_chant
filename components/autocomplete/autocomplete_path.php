@@ -1,13 +1,8 @@
 <?php
 
+require "../../explorer/support/file_explorer_fs_helper.php";
 
-// For test :
-/*
-$data = ["test1", "coucou", "suite", "encore"];
-echo count($data)==0 ? "null" : json_encode($data);
-*/
-
-$path = "/pdf/";
+$path = "../../pdf/";
 $search_word = $_POST["search"];
 
 $iterator = new RecursiveIteratorIterator(
@@ -33,20 +28,25 @@ foreach ($iterator as $item)
     {
         if ($item->isFile()) 
         {
-            $entry = self::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
-            if ($entry !== false)  $result["entries"][] = $entry;
+            $entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
+            if ($entry !== false)  $data[] = substr($entry["id"], 1);
         }
-        elseif ($item->isDir()) 
+        /*elseif ($item->isDir()) 
         {
             if ($file[0] !== "." || $options["dot_folders"])
             {
-                $entry = self::SearchEntry($item->getPath(), $file, "folder", 20, $options, $path);
+                $entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "folder", 20, $options, $path);
                 if ($entry !== false)  $result["entries"][] = $entry;
             }
-        }
+        }*/
         $i = $i+1;
         if($i > 100)break;
     }
 }
+
+// For test :
+//$data = ["test1", $_GET["search"], "suite", "encore"];
+echo count($data)==0 ? "null" : json_encode($data);
+
 
 ?>

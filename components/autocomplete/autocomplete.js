@@ -120,7 +120,10 @@ var ac = {
       }
   
       // (F2) CALL ON SELECT IF DEFINED
-      if (ac.now.select != null) { ac.now.select(row); }
+      if (ac.now.select != null) { 
+        ac.now.select(row);
+      }
+      ac.now.hWrap.style.setProperty("--nf-input-border-color", "green")
       ac.close();
     },
   
@@ -135,6 +138,8 @@ var ac = {
   
     // (H) CLOSE AUTOCOMPLETE IF USER CLICKS ANYWHERE OUTSIDE
     checkclose : evt => { if (ac.now!=null && ac.now.hWrap.contains(evt.target)==false) {
+      //document.getElementById() --nf-input-focus-border-color
+      ac.now.hWrap.style.setProperty("--nf-input-border-color", "red")
       ac.close();
     }}
   };

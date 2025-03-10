@@ -35,13 +35,13 @@ function add_section(partie, chants) {
                 <div class="row"><div class="column"><img src="/components/icons/double_note.svg" style="height:1.4em">\
             </h1></div>\
             <div class="column part-column"><h1 id="h1_'+codage_path_javascript(partie.name)+'">'+partie.name+'</h1></div>\
-            <div class="column"><img src="/components/icons/edit.png"\
+            <div class="column"><img class="button" src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick="modify_part(this)"></div>\
-            <div class="column"><img src="/components/icons/delete.png"\
+            <div class="column"><img class="button" src="/components/icons/delete.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(this)"></div>\
-            <div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
+            <div class="column" style="margin-left:10px"><img class="button" src="/components/icons/up-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(this)"></div>\
-            <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
+            <div class="column" style="margin-left:10px"><img class="button" src="/components/icons/down-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(this)"></div>\
         </div>\
     </div>\
@@ -82,7 +82,7 @@ function add_chant(chant) {
             <div class="column part-column"><h1>'+chant.name+'</h1></div>\
             <!--<div class="column"><img src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>-->\
-            <div class="column"><img src="/components/icons/delete.png"\
+            <div class="column"><img class="button" src="/components/icons/delete.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="delete_chant(this)"></div>\
             <!--<div class="column" style="margin-left:10px"><img src="/components/icons/up-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_chant(this)"></div>\
@@ -92,6 +92,7 @@ function add_chant(chant) {
         <label>Url du chant</label>\
         <div class="nice-form-group acWrap"><input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
         <script>\
+            console.log("attach: '+chant.name+'");\
             ac.attach({\
                 target: document.getElementById("dName"),\
                 data: "../../components/autocomplete/autocomplete_path.php"\
