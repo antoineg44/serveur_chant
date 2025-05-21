@@ -21,6 +21,8 @@ $i = 0;
 
 $search_word = preg_replace('/[^A-Za-z0-9\-]/', '', $search_word);
 
+echo $search_word;
+
 foreach ($iterator as $item) 
 {
     $file = $item->getFilename();
