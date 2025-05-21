@@ -71,13 +71,13 @@ if($error == false) {
 
 
 
-    <div class="nav-bar .nav-bar-rigth computer">
-        <input id="nav-toggle" class="smartphone" type="checkbox">
-        <div id="nav-header"><a id="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
-          <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
+    <div class="nav-bar nav-bar-rigth computer">
+        <input class="nav-toggle" class="smartphone" type="checkbox">
+        <div class="nav-header"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
+          <label for="nav-toggle"><span class="nav-toggle-burger"></span></label>
           <hr>
         </div>
-        <div id="nav-content">
+        <div class="nav-content">
           <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
           <?php
             $fichiers = [];
@@ -111,7 +111,7 @@ if($error == false) {
               echo '<div class="nav-button"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
             }
           ?>
-          <div id="nav-content-highlight"></div>
+          <div class="nav-content-highlight"></div>
         </div>
       </div>
 

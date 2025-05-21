@@ -15,65 +15,65 @@
   .nav-bar.computer:not(:hover) { 
     opacity: 0.5; }
   
-  #nav-toggle.smartphone:checked ~ #nav-header {
+  .nav-toggle.smartphone:checked ~ .nav-header {
     width: calc(var(--navbar-width-min) - 16px); }
 
-  .nav-bar.computer:not(:hover) #nav-header {
+  .nav-bar.computer:not(:hover) .nav-header {
     width: calc(var(--navbar-width-min) - 16px); 
     opacity: 0.5; }
   
-  #nav-toggle.smartphone:checked ~ #nav-content {
+  .nav-toggle.smartphone:checked ~ .nav-content {
     width: var(--navbar-width-min); }
 
-  .nav-bar.computer:not(:hover) #nav-content {
+  .nav-bar.computer:not(:hover) .nav-content {
     width: var(--navbar-width-min); }
   
-  #nav-toggle.smartphone:checked ~ #nav-header #nav-title {
+  .nav-toggle.smartphone:checked ~ .nav-header .nav-title {
     opacity: 0;
     pointer-events: none;
     transition: opacity .1s; }
 
-  .nav-bar.computer:not(:hover) #nav-header #nav-title {
+  .nav-bar.computer:not(:hover) .nav-header .nav-title {
     opacity: 0;
     pointer-events: none;
     transition: opacity .1s; }
   
-  #nav-toggle.smartphone:checked ~ #nav-header label[for="nav-toggle"] {
+  .nav-toggle.smartphone:checked ~ .nav-header label[for="nav-toggle"] {
     left: calc(50% - 8px);
     transform: translate(-50%); }
 
-  .nav-bar.computer:not(:hover) #nav-header label[for="nav-toggle"] {
+  .nav-bar.computer:not(:hover) .nav-header label[for="nav-toggle"] {
     left: calc(50% - 8px);
     transform: translate(-50%); }
   
-  #nav-toggle.smartphone:checked ~ #nav-header #nav-toggle-burger {
+  .nav-toggle.smartphone:checked ~ .nav-header .nav-toggle-burger {
     background: var(--navbar-light-primary); }
 
-  .nav-bar.computer:not(:hover) #nav-header #nav-toggle-burger {
+  .nav-bar.computer:not(:hover) .nav-header .nav-toggle-burger {
     background: var(--navbar-light-primary); }
 
-  #nav-toggle.smartphone:checked ~ #nav-header #nav-toggle-burger:before, #nav-toggle.smartphone:checked ~ #nav-header #nav-toggle-burger::after {
+  .nav-toggle.smartphone:checked ~ .nav-header .nav-toggle-burger:before, .nav-toggle.smartphone:checked ~ .nav-header .nav-toggle-burger::after {
     width: 16px;
     background: var(--navbar-light-secondary);
     transform: translate(0, 0) rotate(0deg); }
 
-  .nav-bar.computer:not(:hover) #nav-header #nav-toggle-burger:before, .nav-bar.computer:not(:hover) #nav-header #nav-toggle-burger::after {
+  .nav-bar.computer:not(:hover) .nav-header .nav-toggle-burger:before, .nav-bar.computer:not(:hover) .nav-header .nav-toggle-burger::after {
     width: 16px;
     background: var(--navbar-light-secondary);
     transform: translate(0, 0) rotate(0deg); }
   
-  #nav-toggle.smartphone:checked ~ #nav-content .nav-button span {
+  .nav-toggle.smartphone:checked ~ .nav-content .nav-button span {
     opacity: 0;
     transition: opacity .1s; }
 
-  .nav-bar.computer:not(:hover) #nav-content .nav-button span {
+  .nav-bar.computer:not(:hover) .nav-content .nav-button span {
   opacity: 0;
   transition: opacity .1s; }
   
-  #nav-toggle.smartphone:checked ~ #nav-content .nav-button .fas {
+  .nav-toggle.smartphone:checked ~ .nav-content .nav-button .fas {
     min-width: calc(100% - 16px); }
 
-  .nav-bar.computer:not(:hover) #nav-content .nav-button .fas {
+  .nav-bar.computer:not(:hover) .nav-content .nav-button .fas {
     min-width: calc(100% - 16px); }
 
   .nav-bar-left{
@@ -114,7 +114,7 @@
     display: none;
   }
   
-  #nav-header {
+  .nav-header {
     position: relative;
     width: var(--navbar-width);
     left: 16px;
@@ -127,12 +127,12 @@
     align-items: center;
     transition: width .2s; 
   }
-  #nav-header hr {
+  .nav-header hr {
     position: absolute;
     bottom: 0; 
   }
   
-  #nav-title {
+  .nav-title {
     font-size: 1.5rem;
     transition: opacity 1s; 
   }
@@ -148,14 +148,14 @@
     cursor: pointer; 
   }
   
-  #nav-toggle-burger {
+  .nav-toggle-burger {
     position: relative;
     width: 16px;
     height: 2px;
     background: var(--navbar-dark-primary);
     border-radius: 99px;
     transition: background .2s; }
-    #nav-toggle-burger:before, #nav-toggle-burger:after {
+    .nav-toggle-burger:before, .nav-toggle-burger:after {
       content: '';
       position: absolute;
       top: -6px;
@@ -165,11 +165,11 @@
       border-radius: 99px;
       transform: translate(2px, 8px) rotate(30deg);
       transition: .2s; }
-    #nav-toggle-burger:after {
+    .nav-toggle-burger:after {
       top: 6px;
       transform: translate(2px, -8px) rotate(-30deg); }
   
-  #nav-content {
+  .nav-content {
     margin: -16px 0;
     padding: 16px 0;
     position: relative;
@@ -180,16 +180,16 @@
     direction: rtl;
     overflow-x: hidden;
     transition: width .2s; }
-    #nav-content::-webkit-scrollbar {
+    .nav-content::-webkit-scrollbar {
       width: 8px;
       height: 8px; }
-    #nav-content::-webkit-scrollbar-thumb {
+    .nav-content::-webkit-scrollbar-thumb {
       border-radius: 99px;
       background-color: #D62929; }
-    #nav-content::-webkit-scrollbar-button {
+    .nav-content::-webkit-scrollbar-button {
       height: 16px; }
   
-  #nav-content-highlight {
+  .nav-content-highlight {
     position: absolute;
     left: 16px;
     top: -70px;
@@ -199,7 +199,7 @@
     background-attachment: fixed;
     border-radius: 16px 0 0 16px;
     transition: top .2s; }
-    #nav-content-highlight:before, #nav-content-highlight:after {
+    .nav-content-highlight:before, .nav-content-highlight:after {
       content: '';
       position: absolute;
       right: 0;
@@ -208,7 +208,7 @@
       height: 32px;
       border-radius: 50%;
       box-shadow: 16px 16px var(--background); }
-    #nav-content-highlight:after {
+    .nav-content-highlight:after {
       top: 100%;
       box-shadow: 16px -16px var(--background); }
   
