@@ -73,7 +73,7 @@ if($error == false) {
 
     <div class="nav-bar nav-bar-right computer">
         <input id="nav-toggle" class="smartphone" type="checkbox">
-        <div class="nav-header"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
+        <div class="nav-header nav-header-right"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
           <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
           <hr>
         </div>
@@ -94,9 +94,9 @@ if($error == false) {
                 if(str_contains($f, ".pdf")) {
                   $coded = str_replace("'","£",$dir."/".$f);
                   if(strcmp($file, $f) == 0)
-                    echo '<div class="nav-button" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
                   else
-                    echo '<div class="nav-button" onclick=\'open_pdf("'.$coded.'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
                 }
               }
             } else {
@@ -108,10 +108,55 @@ if($error == false) {
           <?php
             foreach($files = $fichiers as $f) {                       
               if(!str_contains($f, ".pdf"))
-              echo '<div class="nav-button"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
+              echo '<div class="nav-button nav-button-right"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
             }
           ?>
-          <div class="nav-content-highlight"></div>
+          <div class="nav-content-highlight nav-content-highlight-left"></div>
+        </div>
+      </div>
+
+
+      <div class="nav-bar nav-bar-left computer">
+        <input id="nav-toggle-left" class="smartphone" type="checkbox">
+        <div class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
+          <label for="nav-toggle-left"><span id="nav-toggle-left-burger"></span></label>
+          <hr>
+        </div>
+        <div class="nav-content">
+          <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
+          <?php
+            $fichiers = [];
+            if(is_dir($dir_pdf.$dir)) {
+              foreach($files = new DirectoryIterator($dir_pdf.$dir) as $f) {
+                if($f->isDot())continue;
+                $fichier = $f->getfilename();
+                if($fichier[0] != '.')
+                  array_push($fichiers, $f->getfilename());
+              }
+              sort($fichiers);
+              $fichiers = array_reverse($fichiers);
+              foreach($files = $fichiers as $f) {                       
+                if(str_contains($f, ".pdf")) {
+                  $coded = str_replace("'","£",$dir."/".$f);
+                  if(strcmp($file, $f) == 0)
+                    echo '<div class="nav-button nav-button-left" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                  else
+                    echo '<div class="nav-button nav-button-left" onclick=\'open_pdf("'.$coded.'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                }
+              }
+            } else {
+              echo "Le répertoire : ".$dir_pdf.$dir." n'existe pas.";
+            }
+          ?>
+          <!-- Pour ajouter une barre entre les différents type de fichiers : <hr> -->
+          <hr>
+          <?php
+            foreach($files = $fichiers as $f) {                       
+              if(!str_contains($f, ".pdf"))
+              echo '<div class="nav-button nav-button-left"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
+            }
+          ?>
+          <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
       </div>
 
