@@ -159,7 +159,7 @@ var Programme = function(options)
       "type" : "partie",
       "name" : name
     };
-    $this.chants.splice($this.find(name_before, "partie", null),0,part);
+    $this.chants.splice($this.find(name_before, "partie", null)+1,0,part);
     return true;
   }
 
