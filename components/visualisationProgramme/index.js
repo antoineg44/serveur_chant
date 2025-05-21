@@ -25,7 +25,7 @@ function init() {
     var list_nav_button = document.getElementsByClassName("nav-button");
     var top = 16;
     for(var i=0; i<list_nav_button.length; i++) {
-        var css = '.nav-button:nth-of-type('+(i+1)+'):hover {color: var(--navbar-dark-primary); color: var(--navbar-dark-primary); }.nav-button:nth-of-type('+(i+1)+'):hover ~ #nav-content-highlight {top: '+top+'px; }';
+        var css = '.nav-button:nth-of-type('+(i+1)+'):hover {color: var(--navbar-dark-primary); color: var(--navbar-dark-primary); }.nav-button:nth-of-type('+(i+1)+'):hover ~ .nav-content-highlight {top: '+top+'px; }';
         var style = document.createElement('style');
         if (style.styleSheet) {
             style.styleSheet.cssText = css;
