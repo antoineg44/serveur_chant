@@ -175,7 +175,7 @@ function add_new_chant(element) {
 function add_new_part(element) {
     console.log("add_new_part");
     var id_part = element.closest("section").id.slice(5);
-    if(programme.addPart('nouvelle partie') == null) {
+    if(programme.addPartAfter('nouvelle partie', decodage_path_javascript(id_part)) == null) {
         alert("Une nouvelle partie à déjà été créé");
         return;
     }

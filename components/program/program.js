@@ -146,6 +146,23 @@ var Programme = function(options)
     return true;
   }
 
+  $this.addPartAfter = function(name, name_before) {
+    if($this.find(name, "partie", null)) {
+      console.log("item already exist : " + name);
+      return null;
+    }
+    if($this.find(name_before, "partie", null) == null) {
+      console.log("previous item not found : " + name_before);
+      return null;
+    }
+    var part = {
+      "type" : "partie",
+      "name" : name
+    };
+    $this.chants.splice($this.find(name_before, "partie", null),0,part);
+    return true;
+  }
+
   $this.addPdf = function(name, path)
   {
     if($this.find(name, "chant", path)) {
