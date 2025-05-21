@@ -111,7 +111,7 @@ if($error == false) {
               echo '<div class="nav-button nav-button-right"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
             }
           ?>
-          <div class="nav-content-highlight nav-content-highlight-left"></div>
+          <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
       </div>
 
@@ -156,7 +156,7 @@ if($error == false) {
               echo '<div class="nav-button nav-button-left"><i class="fas fa-thumbtack"><img src = "../../messes/icon/doc.png"></i><span>'.$f.'</span></div>';
             }
           ?>
-          <div class="nav-content-highlight nav-content-highlight-right"></div>
+          <div class="nav-content-highlight nav-content-highlight-left"></div>
         </div>
       </div>
 
