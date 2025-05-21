@@ -18,6 +18,7 @@ $result = array(
 );
 
 $i = 0;
+$data[] = null;
 
 $search_word = preg_replace('/[^A-Za-z0-9\-]/', '', $search_word);
 
