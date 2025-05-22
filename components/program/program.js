@@ -413,6 +413,7 @@ var Programme = function(options)
     if (!initialize)
     {
       $this.path_file = path_file;
+      console.log("Path file : " + path_file);
       var data = path_file.split("/");
       if(data.length >= 2)
         $this.paroisse = data[data.length-2];
