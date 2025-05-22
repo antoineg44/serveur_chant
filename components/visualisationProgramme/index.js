@@ -63,7 +63,7 @@ function init_content_program() {
         content += '<div class="nav-button nav-button-left" style="height:20px"><span>'+programme.chants[i].name+'</span></div>';
       }
       else {
-        if(programme.chants[i].name == titre)) {
+        if(programme.chants[i].name == titre) {
             content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme+"&lien="+programme.chants[i].path+'\',\'_self\');" style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
         }
         else {
