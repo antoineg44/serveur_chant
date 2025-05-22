@@ -126,11 +126,8 @@ if($error == false) {
           <label for="nav-toggle-left"><span id="nav-toggle-left-burger"></span></label>
           <hr>
         </div>
-        <div class="nav-content">
+        <div id="content-program" class="nav-content">
           <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
-          <script>
-            init("<?php echo $programme; ?>");
-          </script>
           <?php
             $fichiers = [];
             if(is_dir($dir_pdf.$dir)) {
@@ -174,7 +171,7 @@ if($error == false) {
 ?>
 <script>
   var fichiers_en_cours = "<?php echo $file ?>";
-  init();
+  init("<?php echo $programme; ?>");
 </script>
 </body>
 </html>

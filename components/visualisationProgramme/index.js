@@ -21,7 +21,7 @@ function eventChangePDF(url){
           console.log("ok event");
 }
 
-function init() {
+function init(path_file) {
     var list_nav_button = document.getElementsByClassName("nav-button");
     var top = 16;
     for(var i=0; i<list_nav_button.length; i++) {
@@ -35,13 +35,9 @@ function init() {
         list_nav_button[i].appendChild(style);
         top += 54;
     }
-}
 
-function init(path_file)
-{
-	
-	if(path_file == "example_messe.txt")example_version = true;
-    //document.addEventListener("ProgrammeReady", initDropAndDrap);
+    if(path_file == "example_messe.txt")example_version = true;
+    document.addEventListener("ProgrammeReady", init_content_program);
     programme = new Programme({
         watchers: null,
         interval: 100,
@@ -51,4 +47,22 @@ function init(path_file)
     });
     programme.Start(path_file);
     console.log(programme);
+}
+
+function init_content_program() {
+    var content = "";
+    for(var i=0; i<programme.chants.length; i++)
+    {
+      if(programme.chants[i].type == "partie") {
+
+      }
+      else {
+        //if(programme.chants[i].name == )
+        //            echo '<div class="nav-button nav-button-left" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+        //          else
+        content += '<div class="nav-button nav-button-left" onclick=\'open_pdf("'+'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
+      }
+      
+    }
+    document.getElementById("content-program").innerHTML = content;
 }
