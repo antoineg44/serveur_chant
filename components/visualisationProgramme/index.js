@@ -54,15 +54,25 @@ function init_content_program() {
     for(var i=0; i<programme.chants.length; i++)
     {
       if(programme.chants[i].type == "partie") {
-
+        content += '<div class="nav-button nav-button-left"><span>'+programme.chants[i].name+'</span></div>';
       }
       else {
         //if(programme.chants[i].name == )
         //            echo '<div class="nav-button nav-button-left" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
         //          else
-        content += '<div class="nav-button nav-button-left" onclick=\'open_pdf("'+'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
+        content += '<div class="nav-button nav-button-left" onclick=\''+ window.location.host+window.location.pathname+programme.chants[i].path'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
       }
       
     }
     document.getElementById("content-program").innerHTML = content;
+}
+
+function codage_path_javascript(path)
+{
+    return path.replaceAll(",","µ").replaceAll("/","°").replaceAll("\.","¨").replaceAll("'","¤").replaceAll(" ","§") // remplacement des caractères spéciaux pour éviter les problèmes avec le javascript
+}
+
+function decodage_path_javascript(path)
+{
+    return path.replaceAll("µ",",").replaceAll("°","/").replaceAll("¨","\.").replaceAll("¤","'").replaceAll("§"," ")
 }
