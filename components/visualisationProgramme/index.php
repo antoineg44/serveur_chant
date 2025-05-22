@@ -19,9 +19,8 @@
 $lien = null;
 $programme = null;
 $error = true;
-if(isset($_GET['lien']) && isset($_GET['programme'])) {
+if(isset($_GET['lien'])) {
 	$lien = (String) trim($_GET['lien']);
-  $programme = (String) trim($_GET['programme']);
   if(str_contains($lien, "/pdf/")) {
     $directroy = explode("/pdf/", $lien);
     $lien = $directroy[count($directroy)-1];
@@ -118,7 +117,10 @@ if($error == false) {
           <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
       </div>
-
+<?php
+} elseif(isset($_GET['programme'])) {
+  $programme = (String) trim($_GET['programme']);
+  ?>
 
       <div class="nav-bar nav-bar-left computer">
         <input id="nav-toggle-left" class="smartphone" type="checkbox">
@@ -163,8 +165,7 @@ if($error == false) {
           <div class="nav-content-highlight nav-content-highlight-left"></div>
         </div>
       </div>
-
-<?php
+  <?php
 } else {
   echo "Le lien est mauvais, si vous pensez qu'il y a un problème, merci d'envoyer un mail (addresse mail à la fin de la page à propos)";
 }
