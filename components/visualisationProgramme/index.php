@@ -168,7 +168,7 @@ if(isset($_GET['programme'])) {
       </div>
   <?php
 }
-if(!isset($_GET['programme'] && !isset($_GET['lien'])) {
+if(!isset($_GET['programme']) && !isset($_GET['lien'])) {
   echo "Le lien est mauvais, si vous pensez qu'il y a un problème, merci d'envoyer un mail (addresse mail à la fin de la page à propos)";
 }
 ?>
