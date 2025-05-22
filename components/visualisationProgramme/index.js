@@ -36,3 +36,19 @@ function init() {
         top += 54;
     }
 }
+
+function init(path_file)
+{
+	
+	if(path_file == "example_messe.txt")example_version = true;
+    //document.addEventListener("ProgrammeReady", initDropAndDrap);
+    programme = new Programme({
+        watchers: null,
+        interval: 100,
+        stopsame: 5,
+        callback: null,
+        intervalcallback: null
+    });
+    programme.Start(path_file);
+    console.log(programme);
+}

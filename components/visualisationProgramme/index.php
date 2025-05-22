@@ -9,6 +9,7 @@
 	<!-- CSS -->
 	<link href="index.css" rel="stylesheet">
   <!-- JS -->
+  <script src="../program/program.js"></script>
   <script src="index.js"></script>
 </head>
 
@@ -16,9 +17,11 @@
 
 <?php
 $lien = null;
+$programme = null;
 $error = true;
-if(isset($_GET['lien'])) {
+if(isset($_GET['lien']) && isset($_GET['programme'])) {
 	$lien = (String) trim($_GET['lien']);
+  $programme = (String) trim($_GET['programme']);
   if(str_contains($lien, "/pdf/")) {
     $directroy = explode("/pdf/", $lien);
     $lien = $directroy[count($directroy)-1];
@@ -125,6 +128,9 @@ if($error == false) {
         </div>
         <div class="nav-content">
           <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
+          <script>
+            init(<?php echo $programme; ?>)
+          </script>
           <?php
             $fichiers = [];
             if(is_dir($dir_pdf.$dir)) {
