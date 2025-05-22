@@ -73,8 +73,7 @@ if($error == false) {
 
     <div class="nav-bar nav-bar-right computer">
         <input id="nav-toggle" class="smartphone" type="checkbox">
-        <div class="nav-header nav-header-right"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
-          <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
+        <div class="nav-header nav-header-right"><a class="nav-title"><label for="nav-toggle"><span id="nav-toggle-burger"></span></label>Fichiers disponibles :<i class="fab fa-codepen"></i></a>
           <hr>
         </div>
         <div class="nav-content">
@@ -94,9 +93,9 @@ if($error == false) {
                 if(str_contains($f, ".pdf")) {
                   $coded = str_replace("'","£",$dir."/".$f);
                   if(strcmp($file, $f) == 0)
-                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
                   else
-                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\' style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
+                    echo '<div class="nav-button nav-button-right" onclick=\'open_pdf("'.$coded.'",this)\'><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
                 }
               }
             } else {

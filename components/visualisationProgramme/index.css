@@ -192,7 +192,7 @@
   
   label[for="nav-toggle"] {
     position: absolute;
-    right: 0;
+    left: 0;
     width: 3rem;
     height: 100%;
     display: flex;
@@ -290,18 +290,30 @@
       right: 16px;
       border-radius: 0 16px 16px 0;
      }
-    .nav-content-highlight:before, .nav-content-highlight:after {
+    .nav-content-highlight-right:before, .nav-content-highlight-right:after {
       content: '';
       position: absolute;
-      right: 0;
+      left: 0;
       bottom: 100%;
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      box-shadow: 16px 16px var(--background); }
-    .nav-content-highlight:after {
+      box-shadow: -16px 16px var(--background); }
+    .nav-content-highlight-right:after {
       top: 100%;
-      box-shadow: 16px -16px var(--background); }
+      box-shadow: -16px -16px var(--background); }
+    .nav-content-highlight-left:before, .nav-content-highlight-left:after {
+          content: '';
+          position: absolute;
+          right: 0;
+          bottom: 100%;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          box-shadow: 16px 16px var(--background); }
+        .nav-content-highlight-left:after {
+          top: 100%;
+          box-shadow: 16px -16px var(--background); }
   
   .nav-button-left {
     margin-left: 16px;
