@@ -1,3 +1,5 @@
+var path_file_programme = null;
+
 function open_pdf(path, el) {
     console.log("open_pdf");
     path = path.replaceAll("£","'");
@@ -22,6 +24,7 @@ function eventChangePDF(url){
 }
 
 function init(path_file) {
+    path_file_programme = path_file;
     var list_nav_button = document.getElementsByClassName("nav-button");
     var top = 16;
     for(var i=0; i<list_nav_button.length; i++) {
@@ -60,7 +63,7 @@ function init_content_program() {
         //if(programme.chants[i].name == )
         //            echo '<div class="nav-button nav-button-left" onclick=\'open_pdf("'.$coded.'",this)\' style="background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'.$f.'</span></div>';
         //          else
-        content += '<div class="nav-button nav-button-left" onclick="window.open('+window.location.origin+window.location.pathname+programme.chants[i].path+');" style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
+        content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme+"&lien="+programme.chants[i].path+'\');" style="border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../../messes/icon/pdf.png"></i><span>'+programme.chants[i].name+'</span></div>';
       }
       
     }
