@@ -129,7 +129,7 @@ if($error == false) {
         <div class="nav-content">
           <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
           <script>
-            init(<?php echo $programme; ?>);
+            init("<?php echo $programme; ?>");
           </script>
           <?php
             $fichiers = [];
