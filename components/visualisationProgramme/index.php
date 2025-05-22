@@ -118,7 +118,8 @@ if($error == false) {
         </div>
       </div>
 <?php
-} elseif(isset($_GET['programme'])) {
+}
+if(isset($_GET['programme'])) {
   $programme = (String) trim($_GET['programme']);
   ?>
 
@@ -166,7 +167,8 @@ if($error == false) {
         </div>
       </div>
   <?php
-} else {
+}
+if(!isset($_GET['programme'] && !isset($_GET['lien'])) {
   echo "Le lien est mauvais, si vous pensez qu'il y a un problème, merci d'envoyer un mail (addresse mail à la fin de la page à propos)";
 }
 ?>
