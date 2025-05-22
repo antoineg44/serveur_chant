@@ -77,7 +77,7 @@ if($error == false) {
           <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
           <hr>
         </div>
-        <div id="nav-content">
+        <div id="nav-content" style="margin-bottom: 50px;">
           <!-- EXAMPLE : <div class="nav-button"><i class="fas fa-images"></i><span>Assets</span></div> -->
           <?php
             $fichiers = [];
