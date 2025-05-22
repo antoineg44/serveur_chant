@@ -122,7 +122,7 @@ if($error == false) {
 
       <div class="nav-bar nav-bar-left computer">
         <input id="nav-toggle-left" class="smartphone" type="checkbox">
-        <div class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
+        <div class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i><div id="name-program">Fichiers disponibles :</div></a>
           <label for="nav-toggle-left"><span id="nav-toggle-left-burger"></span></label>
           <hr>
         </div>
