@@ -173,6 +173,7 @@ if(!isset($_GET['programme']) && !isset($_GET['lien'])) {
 }
 ?>
 <script>
+  var lien_en_cours = "<?php echo $lien; ?>";
   var fichiers_en_cours = "<?php echo $file ?>";
   init("<?php echo $programme; ?>");
 </script>
