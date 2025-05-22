@@ -73,7 +73,9 @@ if($error == false) {
 
     <div class="nav-bar nav-bar-right computer">
         <input id="nav-toggle" class="smartphone" type="checkbox">
-        <div class="nav-header nav-header-right"><a class="nav-title"><label for="nav-toggle"><span id="nav-toggle-burger"></span></label>Fichiers disponibles :<i class="fab fa-codepen"></i></a>
+        <div class="nav-header nav-header-right">
+          <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
+          <a class="nav-title"><i class="fab fa-codepen"></i>Fichiers disponibles :</a>
           <hr>
         </div>
         <div class="nav-content">

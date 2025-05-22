@@ -50,7 +50,7 @@
     transition: opacity .1s; }
   
   #nav-toggle.smartphone:checked ~ .nav-header label[for="nav-toggle"] {
-    right: calc(50% - 8px);
+    left: calc(100% - 8px);
     transform: translate(-50%); }
 
   #nav-toggle-left.smartphone:checked ~ .nav-header label[for="nav-toggle-left"] {
@@ -58,7 +58,7 @@
     transform: translate(-50%); }
 
   .nav-bar.computer:not(:hover) .nav-header label[for="nav-toggle"] {
-    right: calc(50% - 8px);
+    left: calc(100% - 8px);
     transform: translate(-50%); }
 
   .nav-bar.computer:not(:hover) .nav-header label[for="nav-toggle-left"] {
