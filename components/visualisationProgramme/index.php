@@ -19,6 +19,8 @@
 $lien = null;
 $programme = null;
 $error = true;
+$file = null;               // fichier en question
+
 if(isset($_GET['lien'])) {
 	$lien = (String) trim($_GET['lien']);
   if(str_contains($lien, "/pdf/")) {
@@ -29,7 +31,6 @@ if(isset($_GET['lien'])) {
   if(str_contains($lien,"/") && !str_contains($lien,"\\.")) {
     $dir_pdf = "../../pdf/";    // dossier où se trouvent les pdf
     $dir = $lien;               // lien vers le dossier
-    $file = null;               // fichier en question
     
     if(is_dir($dir)){ // le lien est un dossier
       $error = false;
