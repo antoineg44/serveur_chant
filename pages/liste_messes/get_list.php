@@ -1,5 +1,5 @@
 <?php
-include("../../../php/config.php");
+include("../../php/config.php");
 
 if(isset($_SERVER['HTTP_ORIGIN']) && $addr_server_test == $_SERVER['HTTP_ORIGIN'])
 {
