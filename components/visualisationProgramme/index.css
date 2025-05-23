@@ -51,7 +51,7 @@
     transition: opacity .1s; }
   
   #nav-toggle.smartphone:checked ~ .nav-header label[for="nav-toggle"] {
-    left: calc(100% - 8px);
+    left: calc(50% - 8px);
     transform: translate(-50%); }
 
   #nav-toggle-left.smartphone:checked ~ .nav-header label[for="nav-toggle-left"] {
@@ -59,7 +59,7 @@
     transform: translate(-50%); }
 
   .nav-bar.computer:not(:hover) .nav-header label[for="nav-toggle"] {
-    left: calc(100% - 8px);
+    left: calc(50% - 8px);
     transform: translate(-50%); }
 
   .nav-bar.computer:not(:hover) .nav-header label[for="nav-toggle-left"] {
@@ -193,6 +193,7 @@
   
   label[for="nav-toggle"] {
     position: absolute;
+    margin-left: 25px;
     left: 0;
     width: 3rem;
     height: 100%;
