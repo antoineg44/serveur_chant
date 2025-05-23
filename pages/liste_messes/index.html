@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Collapse List with Tailwind</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-md mx-auto bg-white rounded-md shadow-md">
+    <ul class="divide-y divide-gray-200">
+      <li>
+        <button
+          type="button"
+          class="w-full flex justify-between items-center px-4 py-3 text-left text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-expanded="false"
+          aria-controls="item1"
+          id="item1-button"
+        >
+          <span>Section 1</span>
+          <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="item1" class="px-4 py-3 text-gray-600 hidden" role="region" aria-labelledby="item1-button">
+          Content for section 1 goes here. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </div>
+      </li>
+      <li>
+        <button
+          type="button"
+          class="w-full flex justify-between items-center px-4 py-3 text-left text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-expanded="false"
+          aria-controls="item2"
+          id="item2-button"
+        >
+          <span>Section 2</span>
+          <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="item2" class="px-4 py-3 text-gray-600 hidden" role="region" aria-labelledby="item2-button">
+          Content for section 2 goes here. Praesent commodo cursus magna, vel scelerisque nisl consectetur.
+        </div>
+      </li>
+      <li>
+        <button
+          type="button"
+          class="w-full flex justify-between items-center px-4 py-3 text-left text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-expanded="false"
+          aria-controls="item3"
+          id="item3-button"
+        >
+          <span>Section 3</span>
+          <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div id="item3" class="bg-gray-50 px-4 py-3 text-gray-600 hidden" role="region" aria-labelledby="item3-button">
+          <div class="bg-white rounded shadow">
+            <div class="flex items-center justify-between p-4 cursor-pointer select-none">
+              <div class="font-semibold text-gray-800">Item One</div>
+              <div class="flex space-x-2">
+                <button type="button" class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">Edit</button>
+                <button type="button" class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400">Visualize</button>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded shadow">
+            <div class="flex items-center justify-between p-4 cursor-pointer select-none">
+              <div class="font-semibold text-gray-800">Item Two</div>
+              <div class="flex space-x-2">
+                <button type="button" class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">Edit</button>
+                <button type="button" class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400">Visualize</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <script>
+    document.querySelectorAll('button[aria-expanded]').forEach(button => {
+      button.addEventListener('click', () => {
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        const controls = button.getAttribute('aria-controls');
+        const content = document.getElementById(controls);
+        if (expanded) {
+          button.setAttribute('aria-expanded', 'false');
+          content.classList.add('hidden');
+          button.querySelector('svg').classList.remove('rotate-180');
+        } else {
+          button.setAttribute('aria-expanded', 'true');
+          content.classList.remove('hidden');
+          button.querySelector('svg').classList.add('rotate-180');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
