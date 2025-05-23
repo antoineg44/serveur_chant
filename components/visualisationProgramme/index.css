@@ -322,6 +322,7 @@
 
   .nav-button-right {
     margin-right: 16px;
+    border-radius: 0px 16px 16px 0px;
   }
 
   .nav-button {
