@@ -73,11 +73,11 @@ if($error == false) {
 
 
 
-    <div class="nav-bar nav-bar-right computer">
+    <div id="nav-bar-right" class="nav-bar nav-bar-right computer">
         <input id="nav-toggle" class="smartphone" type="checkbox">
         <div class="nav-header nav-header-right">
           <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
-          <a class="nav-title"><i class="fab fa-codepen"></i><div style="margin-left:50px">Fichiers disponibles :</div></a>
+          <a class="nav-title" style="width: 100%;"><i class="fab fa-codepen"></i><div style="margin-left:50px;text-align: right;" onclick="window.open(window.location.origin+'/explorer','_self')">Fichiers disponibles :</div></a>
           <hr>
         </div>
         <div class="nav-content">
@@ -123,9 +123,9 @@ if(isset($_GET['programme'])) {
   $programme = (String) trim($_GET['programme']);
   ?>
 
-      <div class="nav-bar nav-bar-left computer">
+      <div id="nav-bar-left" class="nav-bar nav-bar-left computer">
         <input id="nav-toggle-left" class="smartphone" type="checkbox">
-        <div class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i><div id="name-program">Fichiers disponibles :</div></a>
+        <div id="testint" class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i><div id="name-program" onclick="window.open(window.location.origin+'/pages/liste_messes','_self')">Fichiers disponibles :</div></a>
           <label for="nav-toggle-left"><span id="nav-toggle-left-burger"></span></label>
           <hr>
         </div>
