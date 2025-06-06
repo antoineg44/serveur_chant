@@ -144,6 +144,10 @@ if(!isset($_GET['programme']) && !isset($_GET['lien'])) {
   var lien_en_cours = "<?php echo $lien; ?>";
   var fichiers_en_cours = "<?php echo $file ?>";
   init("<?php echo $programme; ?>");
+  if(lien_en_cours == "") {
+    navbar = document.getElementById("nav-bar-left");
+    navbar.classList.remove("computer");
+  }
 </script>
 </body>
 </html>
