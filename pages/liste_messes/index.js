@@ -46,7 +46,7 @@ function insert_paroisse(paroisses, programmes) {
     var html_programmes = "";
 				  
     for(var i=1; i<programmes.length-1;i++) {
-        html_programmes += '<div class="bg-white rounded shadow"><div class="flex items-center justify-between p-3 cursor-pointer select-none" style="padding: 2px;">\
+        html_programmes += '<div class="bg-white rounded shadow"><div class="flex items-center justify-between p-3 cursor-pointer select-none" style="padding: 2px;" ondblclick="view_programme_from_div(this)">\
           <div style="padding: 10px;">'+programmes[i]+'</div><div class="flex space-x-2">\
             <img class="button" src="../../components/icons/edit.png" onclick="edit_programme(this)">\
             <img class="button" src="../../components/icons/arrow.png" onclick="view_programme(this)">\
@@ -88,6 +88,13 @@ function edit_programme(element) {
 function view_programme(element) {
     console.log(element);
     var programme = element.parentElement.parentElement.children[0].textContent;
+    var paroisse = element.closest("li").children[0].children[0].textContent;
+    window.open(window.location.origin+"/components/visualisationProgramme/"+"?programme="+window.location.origin+"/pdf/programmes/"+paroisse+"/"+programme);
+}
+
+function view_programme_from_div(element) {
+    console.log(element);
+    var programme = element.children[0].textContent;
     var paroisse = element.closest("li").children[0].children[0].textContent;
     window.open(window.location.origin+"/components/visualisationProgramme/"+"?programme="+window.location.origin+"/pdf/programmes/"+paroisse+"/"+programme);
 }
