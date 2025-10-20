@@ -64,10 +64,10 @@ function init_content_program() {
       }
       else {
         if(programme.chants[i].name == titre) {
-            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme+"&lien="+programme.chants[i].path+'\',\'_self\');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+programme.chants[i].path.replaceAll("'","%27")+'\',\'_self\');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
         }
         else {
-            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme+"&lien="+programme.chants[i].path+'\',\'_self\');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+programme.chants[i].path.replaceAll("'","%27")+'\',\'_self\');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
         }
       }
       
