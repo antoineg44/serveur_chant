@@ -9,6 +9,7 @@
 	<!-- CSS -->
 	<link href="index.css" rel="stylesheet">
   <!-- JS -->
+   <script src="../../js/jquery-latest.js"></script>
   <script src="../program/program.js"></script>
   <script src="index.js"></script>
 </head>
@@ -117,8 +118,8 @@ if($error == false) {
           ?>
           <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
-        <div class="nav-foot nav-foot-right" style="bottom:0px">
-          <button class = "btn" onclick="horsligne()"><img src = "../icons/no-connection.png"></button>
+        <div class="nav-foot nav-foot-right" style="bottom:0px;margin-top:35px;margin-bottom:5px">
+          <button class = "btn" onclick="horsligne()" style="margin-left:15px"><img src = "../icons/no-connection.png"></button>
         </div>
       </div>
 <?php
