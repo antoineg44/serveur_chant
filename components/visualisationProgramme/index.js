@@ -108,6 +108,7 @@ function horsligne() {
             window.URL.revokeObjectURL( url );
         }
     })*/
+    var url = "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf";
     var if1 = document.getElementById("pdf-js-viewer");
     var fc = (if1.contentWindow || if1.contentDocument);
     fc.document.dispatchEvent(new CustomEvent("changePDF", {
