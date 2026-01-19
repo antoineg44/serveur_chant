@@ -91,7 +91,7 @@ ondblclick = (event) => {
     }, 5000);
 }
 
-function horsligne() {
+async function horsligne() {
     /*$.ajax({
         url: "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf",
         method: "get",
@@ -108,11 +108,20 @@ function horsligne() {
             window.URL.revokeObjectURL( url );
         }
     })*/
-    var url = "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf";
+    
+        var url =  "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf";
+        let blob = await fetch(url).then(r => r.blob());
+        console.log(blob);
+        const url2 = URL.createObjectURL(blob);
+        console.log("url2");
+        console.log(url2);
+
+
+   
     var if1 = document.getElementById("pdf-js-viewer");
     var fc = (if1.contentWindow || if1.contentDocument);
     fc.document.dispatchEvent(new CustomEvent("changePDF", {
-        detail: { file: url }
+        detail: { file: url2 }
     }));
     console.log("ok event");
 }
