@@ -92,7 +92,7 @@ ondblclick = (event) => {
 }
 
 function horsligne() {
-        $.ajax({
+    /*$.ajax({
         url: "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf",
         method: "get",
         xhrFields: {
@@ -107,5 +107,11 @@ function horsligne() {
             // clean-up
             window.URL.revokeObjectURL( url );
         }
-    })
+    })*/
+    var if1 = document.getElementById("pdf-js-viewer");
+    var fc = (if1.contentWindow || if1.contentDocument);
+    fc.document.dispatchEvent(new CustomEvent("changePDF", {
+        detail: { file: url }
+    }));
+    console.log("ok event");
 }
