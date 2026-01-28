@@ -91,7 +91,7 @@ ondblclick = (event) => {
     }, 5000);
 }
 
-async function horsligne() {
+function horsligne() {
     /*$.ajax({
         url: "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf",
         method: "get",
