@@ -64,10 +64,10 @@ function init_content_program() {
       }
       else {
         if(programme.chants[i].name == titre) {
-            content += '<div class="nav-button nav-button-left" onclick="manager_open(\'' + path_file_programme + '\',\'' + programme.chants[i].path + '\');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="manager_open(\'' + path_file_programme + '\',\'' + programme.chants[i].path + '\');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","\'")+'</span></div>';
         }
         else {
-            content += '<div class="nav-button nav-button-left" onclick="manager_open(\'' + path_file_programme + '\',\'' + programme.chants[i].path + '\');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="manager_open(\'' + path_file_programme + '\',\'' + programme.chants[i].path + '\');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","\'")+'</span></div>';
         }
       }
       

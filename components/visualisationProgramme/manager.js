@@ -41,12 +41,12 @@ function manager_open(path_file_programme, path_chant)
                 fc.document.dispatchEvent(new CustomEvent("changePDF", {
                     detail: { file: programme.chants[i].url }
                 }));
-                change_url_without_relaod(window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27"))
+                change_url_without_relaod(window.location.pathname+"?programme="+path_file_programme+"&lien="+path_chant)
             }
             else {
                 console.log("chant not downloaded");
                 // not downloaded :
-                var path = window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27");
+                var path = window.location.origin+window.location.pathname+"?programme="+path_file_programme+"&lien="+path_chant;
                 window.open(path,"_self");
             }
         }
