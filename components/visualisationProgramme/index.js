@@ -91,25 +91,7 @@ ondblclick = (event) => {
     }, 5000);
 }
 
-function horsligne() {
-    /*$.ajax({
-        url: "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf",
-        method: "get",
-        xhrFields: {
-            responseType: 'blob'
-        },
-        success: function( data ) {
-            // create an object URL of the blob response.
-            var url = window.URL.createObjectURL( data )
-
-            eventChangePDF(encodeURI(url));
-
-            // clean-up
-            window.URL.revokeObjectURL( url );
-        }
-    })*/
-    
-        
+function horsligne() {       
     console.log("ok event");
     manager_init();
 }

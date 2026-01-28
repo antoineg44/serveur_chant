@@ -34,19 +34,20 @@ function manager_open(path_file_programme, path_chant)
             if(programme.chants[i].url)
             {
                 console.log("chant downloaded");
-                
+
                 // Change pdf
                 var if1 = document.getElementById("pdf-js-viewer");
                 var fc = (if1.contentWindow || if1.contentDocument);
                 fc.document.dispatchEvent(new CustomEvent("changePDF", {
                     detail: { file: programme.chants[i].url }
                 }));
+                change_url_without_relaod(window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27"))
             }
             else {
                 console.log("chant not downloaded");
                 // not downloaded :
                 var path = window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27");
-                window.open(path,_self);
+                window.open(path,"_self");
             }
         }
     }
@@ -54,4 +55,10 @@ function manager_open(path_file_programme, path_chant)
     {
         console.error("Path not found : " + path_chant);
     }
+}
+
+function change_url_without_relaod(urlPath)
+{
+    let stateObj = { id: "100" };
+    window.history.pushState(stateObj, "Visualisation", urlPath);
 }
