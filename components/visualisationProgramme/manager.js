@@ -5,21 +5,24 @@ async function manager_init()
     console.log("manager init");
     for(var i=0; i<programme.chants.length; i++)
     {
-        var url =  "https://partitions.ovh/pdf/" + programme.chants[i].path;
-        let blob = await fetch(url).then(r => r.blob());
-        console.log(blob);
-        const url2 = URL.createObjectURL(blob);
-        console.log("url2");
-        console.log(url2);
-        programme.chants[i].url = url2;
-   
-        //var if1 = document.getElementById("pdf-js-viewer");
-        //var fc = (if1.contentWindow || if1.contentDocument);
-        //fc.document.dispatchEvent(new CustomEvent("changePDF", {
-        //    detail: { file: url2 }
-        //}));
+        // uniquement les fichiers :
+        if(programme.chants[i].type != "partie") {
+            var url =  "https://partitions.ovh/pdf/" + programme.chants[i].path;
+            let blob = await fetch(url).then(r => r.blob());
+            console.log(blob);
+            const url2 = URL.createObjectURL(blob);
+            console.log("url2");
+            console.log(url2);
+            programme.chants[i].url = url2;
+    
+            //var if1 = document.getElementById("pdf-js-viewer");
+            //var fc = (if1.contentWindow || if1.contentDocument);
+            //fc.document.dispatchEvent(new CustomEvent("changePDF", {
+            //    detail: { file: url2 }
+            //}));
 
-        console.log(programme.chants[i])
+            console.log(programme.chants[i])
+        }
     }
 }
 
