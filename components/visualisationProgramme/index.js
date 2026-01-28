@@ -124,4 +124,5 @@ async function horsligne() {
         detail: { file: url2 }
     }));
     console.log("ok event");
+    manager_init();
 }
