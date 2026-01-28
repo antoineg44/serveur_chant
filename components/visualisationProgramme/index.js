@@ -64,10 +64,10 @@ function init_content_program() {
       }
       else {
         if(programme.chants[i].name == titre) {
-            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+programme.chants[i].path.replaceAll("'","%27")+'\',\'_self\');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="manager_open(' + path_file_programme + ',' + programme.chants[i].path + ');" style="color:#fff;background-color:#c9bfff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
         }
         else {
-            content += '<div class="nav-button nav-button-left" onclick="window.open(\''+window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+programme.chants[i].path.replaceAll("'","%27")+'\',\'_self\');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
+            content += '<div class="nav-button nav-button-left" onclick="manager_open(' + path_file_programme + ',' + programme.chants[i].path + ');" style="color:#fff;border-radius: 16px 0 0 16px;"><i class="fas fa-thumbtack"><img src = "../icons/music.png"></i><span>'+programme.chants[i].name.replaceAll("'","%27")+'</span></div>';
         }
       }
       
@@ -109,20 +109,7 @@ async function horsligne() {
         }
     })*/
     
-        var url =  "https://partitions.ovh/pdf/Cantiques/Ad majorem Dei gloriam/Ad majorem Dei gloriam.pdf";
-        let blob = await fetch(url).then(r => r.blob());
-        console.log(blob);
-        const url2 = URL.createObjectURL(blob);
-        console.log("url2");
-        console.log(url2);
-
-
-   
-    var if1 = document.getElementById("pdf-js-viewer");
-    var fc = (if1.contentWindow || if1.contentDocument);
-    fc.document.dispatchEvent(new CustomEvent("changePDF", {
-        detail: { file: url2 }
-    }));
+        
     console.log("ok event");
     manager_init();
 }
