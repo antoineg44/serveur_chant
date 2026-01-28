@@ -15,11 +15,7 @@ async function manager_init()
             console.log(url2);
             programme.chants[i].url = url2;
     
-            //var if1 = document.getElementById("pdf-js-viewer");
-            //var fc = (if1.contentWindow || if1.contentDocument);
-            //fc.document.dispatchEvent(new CustomEvent("changePDF", {
-            //    detail: { file: url2 }
-            //}));
+            
 
             console.log(programme.chants[i])
         }
@@ -38,9 +34,19 @@ function manager_open(path_file_programme, path_chant)
             if(programme.chants[i].url)
             {
                 console.log("chant downloaded");
+                
+                // Change pdf
+                var if1 = document.getElementById("pdf-js-viewer");
+                var fc = (if1.contentWindow || if1.contentDocument);
+                fc.document.dispatchEvent(new CustomEvent("changePDF", {
+                    detail: { file: programme.chants[i].url }
+                }));
             }
             else {
                 console.log("chant not downloaded");
+                // not downloaded :
+                var path = window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27");
+                window.open(path,_self);
             }
         }
     }
@@ -48,7 +54,4 @@ function manager_open(path_file_programme, path_chant)
     {
         console.error("Path not found : " + path_chant);
     }
-    // not downloaded :
-    //var path = window.location.origin+window.location.pathname+"?programme="+path_file_programme.replaceAll("'","%27")+"&lien="+path_chant.replaceAll("'","%27");
-    //window.open(path,_self);
 }
