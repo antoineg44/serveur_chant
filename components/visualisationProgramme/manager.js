@@ -42,8 +42,7 @@ function manager_open(path_file_programme, path_chant)
                     detail: { file: programme.chants[i].url }
                 }));
                 change_url_without_relaod(window.location.pathname+"?programme="+path_file_programme+"&lien="+path_chant)
-                console.log(window.location.href);
-                lien_en_cours = window.location.href;
+                lien_en_cours = path_chant;
                 init_content_program();
             }
             else {
