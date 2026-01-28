@@ -24,6 +24,7 @@ async function manager_init()
 
 function manager_open(path_file_programme, path_chant)
 {
+    console.log("manager_open");
     var found = false;
     for(var i=0; i<programme.chants.length; i++)
     {
