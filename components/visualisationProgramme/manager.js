@@ -1,6 +1,6 @@
 
 
-void manager_init()
+function manager_init()
 {
     console.log("manager init");
     for(var i=0; i<programme.chants.length; i++)
