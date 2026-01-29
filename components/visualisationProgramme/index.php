@@ -9,9 +9,11 @@
 	<!-- CSS -->
 	<link href="index.css" rel="stylesheet">
   <!-- JS -->
-   <script src="../../js/jquery-latest.js"></script>
+  <script src="../../js/jquery-latest.js"></script>
   <script src="../program/program.js"></script>
   <script src="index.js"></script>
+  <script src="manager.js"></script>
+  <script src="https://partitions.ovh/components/build/pdf.worker.js"></script>
 </head>
 
 <body><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
