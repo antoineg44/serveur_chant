@@ -7,7 +7,7 @@ async function manager_init()
     {
         // uniquement les fichiers :
         if(programme.chants[i].type != "partie") {
-            var url =  "https://partitions.ovh/pdf/" + programme.chants[i].path;
+            var url =  window.location.origin + "/pdf/" + programme.chants[i].path;
             let blob = await fetch(url).then(r => r.blob());
             console.log(blob);
             const url2 = URL.createObjectURL(blob);
