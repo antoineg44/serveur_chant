@@ -20,6 +20,10 @@ switch ($params['action']) {
         nouvelle_paroisse();
         break;
 
+    case 'get_list_paroisses':
+        get_list_paroisses();
+        break;
+
     case 'renommer':
         renommer();
         break;

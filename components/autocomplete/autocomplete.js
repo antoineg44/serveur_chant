@@ -129,6 +129,8 @@ var ac = {
         ac.now.select(row);
       }
       ac.now.hWrap.style.setProperty("--nf-input-border-color", "green")
+
+      ac.now.exec(ac.now.target, row.textContent);
       ac.close();
     },
   

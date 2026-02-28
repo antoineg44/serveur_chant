@@ -218,10 +218,7 @@
                 <div class="nice-form-group" style="margin-top:15px">
                     <label>Paroisse</label>
                     <small>Si votre paroisse n'apparaît pas, aller la créer sur la page de gestion des messes.</small>
-                    <select>
-                        <option>choisissez votre paroisse</option>
-                        <option>Nantes</option>
-                        <option>Nort-sur-Erdre</option>
+                    <select id="select_paroisse">
                     </select>
                 </div>
 
@@ -728,7 +725,7 @@
                 </a>
             </section>
 
-            <footer>Made for you ♥</footer>
+            <!--<footer>Made for you ♥</footer>-->
         </main>
     </div>
 
@@ -749,6 +746,22 @@
 
         // init :
         initProgram("../../components/program/example_messe.txt",initFormulaire);
+
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/programme/interface.php?action=get_list_paroisses',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+               var option_html = "<option>choisissez votre paroisse</option>";
+                var paroisses = data.split("Â£");
+                for(var i=0; i<paroisses.length-1; i++) {
+                    option_html += "<option>" + paroisses[i] + "</option>";
+                }
+                document.getElementById("select_paroisse").innerHTML = option_html;
+            }
+        });
     </script>
 </body>
 

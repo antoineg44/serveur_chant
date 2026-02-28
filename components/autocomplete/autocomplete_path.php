@@ -46,7 +46,8 @@ foreach ($iterator as $item)
 
 // For test :
 //$data = ["test1", $_GET["search"], "suite", "encore"];
-echo count($data)==0 ? "null" : json_encode($data);
+if($data != null)
+    echo count($data)==0 ? "null" : json_encode($data);
 
 
 ?>

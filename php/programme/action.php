@@ -1,5 +1,8 @@
 <?php
 
+header('Content-Type: text/html; charset=ISO-8859-15');
+
+
 function getInformationFromName($name) {
     $nom_sans_ext = explode(".", $name);
     if($nom_sans_ext[1] != "json")return set_error("Problème sur le nom du fichier");
@@ -74,6 +77,43 @@ function nouvelle_paroisse() {
     if(!mkdir($dir))return set_error("Erreur lors de la création de la paroisse");
 
     echo "success";
+}
+
+function get_list_paroisses() {
+    $path = "../../pdf/programmes";
+
+    // création tableau avec liste fichiers :
+    $rep = array();
+
+    // ouverture du répertoire
+    $le_repertoire = opendir($path) or die("Erreur le repertoire $path existe pas");
+
+    // parcours des ficheirs
+    while($var = @readdir($le_repertoire))
+    {
+        if ($var == "." || $var == "..") continue;
+        //if(is_dir($path.'/'.$var)) // si c'est un repertoire
+        //{
+        else
+            $rep[] = $var;
+        //}
+    }
+
+    // tri par ordre alphabétique
+    rsort($rep);
+
+    // affichage des répertoire :
+    foreach($rep as $affichage)
+    {
+        // on remplace les caracteres posants problemes
+        //$a_remplacer = array("  ", " ", "'", "é", "è", "à", "ç", "//", "/");
+        //$affichage_simple = str_replace($a_remplacer, "_", $affichage);
+        $affichage = iconv("utf-8", "iso-8859-1//IGNORE", $affichage);
+        echo $affichage."£";
+    }
+    
+    // fermeture répertoire
+    closedir($le_repertoire);
 }
 
 function renommer() {
