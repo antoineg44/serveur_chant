@@ -20,6 +20,8 @@ var ac = {
       inst.target.setAttribute("autocomplete", "off");
       inst.hWrap = document.createElement("div"); // autocomplete wrapper
       inst.hList = document.createElement("ul"); // suggestion list
+      inst.hList.style.position = "relative";
+
       inst.hWrap.className = "nice-form-group acWrap";
       inst.hList.className = "acSuggest";
       inst.hList.style.display = "none";
@@ -88,8 +90,11 @@ var ac = {
       // (E2) DRAW OPTION
       let complex = typeof results[0]=="object";
       for (let row of results) {
+        console.log("nouveau result : " + row);
         // (E2-1) SET "DISPLAY NAME"
         let li = document.createElement("li");
+        li.style.zIndex = 50;
+        li.style.whiteSpace = "normal";
         li.innerHTML = complex ? row.D : row;
   
         // (E2-2) SET SUGGESTION DATA

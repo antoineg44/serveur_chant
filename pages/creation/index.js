@@ -75,11 +75,11 @@ function link_section(name) {
 }
 
 function add_chant(chant) {
-    return '<span id="chant_'+codage_path_javascript(chant.name)+'"><div class="row">\
+    return '<div id="chant_'+codage_path_javascript(chant.name)+'" style="margin-top:24px"><div class="row">\
             <div class="column"><h1>\
                 <div class="row"><div class="column"><img src="/components/icons/pdf.png" style="height:1em">\
             </h1></div>\
-            <div class="column part-column"><h1>'+chant.name+'</h1></div>\
+            <div class="column part-column"><h1 style="white-space: normal;">'+chant.name+'</h1></div>\
             <!--<div class="column"><img src="/components/icons/edit.png"\
                     style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>-->\
             <div class="column"><img class="button" src="/components/icons/delete.png"\
@@ -89,7 +89,7 @@ function add_chant(chant) {
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>-->\
         </div>\
-        <label>Url du chant</label>\
+        <label style="white-space: normal;">'+chant.path+'</label>\
         <div class="nice-form-group acWrap"><input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+chant.path+'" id="dName" class="icon-left" />\
         <script>\
             console.log("attach: '+chant.name+'");\
@@ -97,7 +97,7 @@ function add_chant(chant) {
                 target: document.getElementById("dName"),\
                 data: "../../components/autocomplete/autocomplete_path.php"\
             });\
-        </script></div></span>';
+        </script></div></div>';
 }
 
 

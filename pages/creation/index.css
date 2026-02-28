@@ -163,7 +163,6 @@ table {
     --nf-slider-thumb-border-color: #fff;
     --nf-slider-thumb-background: var(--nf-input-focus-border-color);
     display: block;
-    margin-top: calc(var(--nf-input-size)*1.5);
     line-height: 1;
     white-space: nowrap;
     --switch-orb-size: var(--nf-input-size);

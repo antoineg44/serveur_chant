@@ -30,6 +30,8 @@ foreach ($iterator as $item)
         {
             $entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
             if ($entry !== false)  $data[] = substr($entry["id"], 1);
+            $i = $i+1;
+            if($i > 9)break;
         }
         /*elseif ($item->isDir()) 
         {
@@ -39,8 +41,6 @@ foreach ($iterator as $item)
                 if ($entry !== false)  $result["entries"][] = $entry;
             }
         }*/
-        $i = $i+1;
-        if($i > 100)break;
     }
 }
 
