@@ -119,8 +119,8 @@ if($error == false) {
           ?>
           <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
-        <div class="nav-foot nav-foot-right" style="bottom:0px;margin-top:35px;margin-bottom:5px">
-          <button class = "btn" onclick="horsligne()" style="margin-left:15px"><img src = "../icons/no-connection.png"></button>
+        <div class="nav-foot nav-foot-right" style="bottom:0px;margin-top:35px;margin-bottom:5px;display:inline-block">
+          <button class = "btn" id="connection_icon" onclick="horsligne()" style="margin-left:10px;width:100%;display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 6px; font-size: 16px; cursor: pointer;"><img src = "../icons/no-connection.png"><div id="text_connection_button">Mode hors-ligne</div></button>
         </div>
       </div>
 <?php

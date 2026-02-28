@@ -3,6 +3,7 @@
 async function manager_init()
 {
     console.log("manager init");
+    document.getElementById("connection_icon").style.backgroundColor = "#FFFF00";
     for(var i=0; i<programme.chants.length; i++)
     {
         // uniquement les fichiers :
@@ -20,6 +21,8 @@ async function manager_init()
             console.log(programme.chants[i])
         }
     }
+    document.getElementById("connection_icon").style.backgroundColor = "#80FF00";
+
 }
 
 function manager_open(path_file_programme, path_chant)
