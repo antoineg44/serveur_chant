@@ -95,7 +95,7 @@
 
 			echo '\n<pre>ligne client : '.print_r($decoded, true).'</pre>';
 			echo '\n<pre>ligne serveur : '.print_r($lignes_serveur, true).'</pre>';
-			if($result == true)echo 'result : true<br/>';
+			if($result == true)echo 'result : success<br/>';
 			else echo 'result : false<br/>';
 			if($result == true)write_file_server($path_prog, $lignes_serveur);
 		}  

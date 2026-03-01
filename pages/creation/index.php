@@ -17,6 +17,14 @@
 
 <body>
 
+    <?php
+        if(isset($_GET['programme']) && str_contains(trim($_GET['programme']), "/pdf/")) {
+            $programme = (String) trim($_GET['programme']);
+        } else {
+            $programme = "";
+        }
+    ?>
+
     <div class="demo-page">
         <div class="demo-page-navigation">
             <nav>
@@ -32,7 +40,7 @@
                             Paramètres</a>
                     </li>-->
                     <li>
-                        <a href="#informations">
+                        <a href="#informations" id="informations_part">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" class="feather feather-calendar">
@@ -159,7 +167,7 @@
             </nav>
         </div>
         <main class="demo-page-content">
-            <section>
+            <section id="title_section">
                 <div class="href-target" id="intro"></div>
                 <h1 class="package-name">Création d'une nouvelle messe</h1>
                 <p>
@@ -192,7 +200,7 @@
                 </p>
             </section>-->
 
-            <section>
+            <section id="section_informations">
                 <div class="href-target" id="informations"></div>
                 <h1>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -212,7 +220,7 @@
 
                 <div class="nice-form-group">
                     <label>Date</label>
-                    <input type="date" />
+                    <input type="date" id="programme_date"/>
                 </div>
 
                 <div class="nice-form-group" style="margin-top:15px">
@@ -224,13 +232,13 @@
 
                 <div class="nice-form-group" style="margin-top:15px">
                     <label>Lieu de la messe</label>
-                    <input type="text" placeholder="Ville" />
+                    <input type="text" placeholder="Ville" id="programme_lieu"/>
                 </div>
 
                 <div class="nice-form-group" style="margin-top:15px">
                     <label>Pour quelle occasion cette messe est-elle célébrée ?</label>
                     <small>Messe ordinaire, Messe de semaine, Noël, communion, mariage ...</small>
-                    <input type="text" placeholder="Occasion" />
+                    <input type="text" placeholder="Occasion" id="programme_occasion"/>
                 </div>
 
                 <fieldset class="nice-form-group">
@@ -248,6 +256,13 @@
                         </label>
                     </div>
                 </fieldset>
+
+                <div class="nice-form-group" style="margin-top:15px">
+                    <label>Template</label>
+                    <small>Base de fichiers pour démarrer (se trouvent dans programmes/Templates).</small>
+                    <select id="select_template">
+                    </select>
+                </div>
             </section>
 
             <section id="description">
@@ -268,7 +283,7 @@
 
                 <div class="nice-form-group">
                     <label>Description :</label>
-                    <textarea rows="5" placeholder="Your message"></textarea>
+                    <textarea rows="5" placeholder="Your message" id="programme_description"></textarea>
                 </div>
 
 
@@ -710,10 +725,10 @@
                     Fin
                 </h1>
                 <p>
-                    Vous pouvez également continuer à enrichir cette messe sur la page ... après avoir enregistré.
+                    <!--Vous pouvez également continuer à enrichir cette messe sur la page ... après avoir enregistré.-->
                 </p>
 
-                <a href="https://github.com/nielsVoogt/nice-forms.css" class="to-repo" target="_blank">
+                <a onclick=enregistrer() class="to-repo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="feather feather-external-link">
@@ -745,7 +760,7 @@
         }
 
         // init :
-        initProgram("../../components/program/example_messe.txt",initFormulaire);
+        initProgram("http://localhost/pdf/programmes/Lazare Nantes/2024-06-19_Nantes_Semaine.json",initFormulaire);
 
         $.ajax({
             type: 'GET',
@@ -760,6 +775,22 @@
                     option_html += "<option>" + paroisses[i] + "</option>";
                 }
                 document.getElementById("select_paroisse").innerHTML = option_html;
+            }
+        });
+
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/programme/interface.php?action=get_list_templates',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+               var option_html = "<option>Ne pas utiliser de template</option>";
+                var template = data.split("Â£");
+                for(var i=0; i<template.length-1; i++) {
+                    option_html += "<option>" + template[i] + "</option>";
+                }
+                document.getElementById("select_template").innerHTML = option_html;
             }
         });
     </script>

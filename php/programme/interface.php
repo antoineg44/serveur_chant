@@ -23,6 +23,10 @@ switch ($params['action']) {
     case 'get_list_paroisses':
         get_list_paroisses();
         break;
+    
+    case 'get_list_templates':
+        get_list_templates();
+        break;
 
     case 'renommer':
         renommer();

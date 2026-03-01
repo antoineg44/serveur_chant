@@ -26,6 +26,27 @@ function initFormulaire()
   if(html_chants != "") {
     // TO DO !!!
   }
+
+  // paroisse :
+  document.getElementById("select_paroisse").value = programme.paroisse;
+
+  // lieu
+  document.getElementById("programme_lieu").value = programme.lieu;
+
+  // occation
+  document.getElementById("programme_occasion").value = programme.occasion;
+
+  // date
+  document.getElementById("programme_date").value = programme.date;
+
+  // description
+  document.getElementById("programme_description").value = programme.description;
+
+  // title
+  document.getElementById("title_section").innerHTML = '<div class="href-target" id="intro"></div>' + "<h1 class='package-name'>Messe du " + programme.date + " à " + programme.lieu + " pour " + programme.occasion + "</h1><p>Paroisse de " + programme.paroisse + ".</p>";
+  document.getElementById("section_informations").remove();
+  document.getElementById("informations_part").remove();
+
 }
 
 function add_section(partie, chants) {
@@ -133,7 +154,6 @@ function delete_part(element) {
     console.log("delete_part");
     document.getElementById("part_"+id_part).remove();
     document.getElementById("link_"+id_part).remove();
-    programme.deletePart(decodage_path_javascript(id_part));
 }
 function delete_chant(element) {
     reset_modified_chant();
@@ -164,12 +184,12 @@ function select_chant(element, path) {
 function move_up_part(element) {
     var id_part = element.closest("section").id.slice(5);
     console.log("move_up_part");
-    var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
-    console.log("before : " + part_before);
+    if(!element.closest("section").previousSibling.id.includes("part"))
+        return;
+    var part_before = element.closest("section").previousSibling.id.slice(5);
     if(part_before != null){
         document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
         document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
-        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
     }
 }
 /*function move_up_chant(element) {
@@ -187,12 +207,12 @@ function move_down_part(element) {
     reset_modified_chant();
     var id_part = element.closest("section").id.slice(5);
     console.log("move_down_part");
-    var part_after = programme.getNextPart(decodage_path_javascript(id_part));
-    console.log("After : " + part_after);
+    if(!element.closest("section").nextSibling.id.includes("part"))
+        return;
+    var part_after = element.closest("section").nextSibling.id.slice(5);
     if(part_after != null) {
         document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
         document.querySelector('#link_' + part_after).after(document.querySelector('#link_' + id_part));
-        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_after, "partie", null);
     }
 }
 function add_new_chant(element) {
@@ -220,10 +240,6 @@ function add_new_part(element) {
     reset_modified_chant();
     console.log("add_new_part");
     var id_part = element.closest("section").id.slice(5);
-    if(programme.addPartAfter('nouvelle partie', decodage_path_javascript(id_part)) == null) {
-        alert("Une nouvelle partie à déjà été créé");
-        return;
-    }
     var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
     let parser = new DOMParser();
     let doc = parser.parseFromString(add_section(partie, ""), 'text/html');
@@ -237,11 +253,6 @@ function modify_part(element) {
     var id_part = element.closest("section").id.slice(5);
     var name_part = prompt("Changer de nom :", decodage_path_javascript(id_part));
     if(name_part == null || name_part == "" || name_part == decodage_path_javascript(id_part))return null;
-    if(programme.find(name_part, "partie", null) != null) {
-        alert("le nom existe déjà");
-        return;
-    }
-    programme.modifyPart(decodage_path_javascript(id_part), name_part);
     document.getElementById("h1_"+id_part).innerHTML = name_part;
     document.getElementById("link_"+id_part).innerHTML = link_section(name_part);
     document.getElementById("h1_"+id_part).id = "h1_"+codage_path_javascript(name_part);
@@ -256,4 +267,57 @@ function modify_chant(element) {
     console.log("modify_chant");
     console.log(element);
     testing = element;
+}
+
+function enregistrer() {
+    console.log("enregistrer");
+    var section = document.getElementById("description").nextSibling;
+    var chants = [];
+    while(section.id && section.id.includes("part"))
+    {
+        chants.push({
+            "type" : "partie",
+            "name" : section.childNodes[3].childNodes[1].childNodes[3].firstChild.textContent
+        });
+        var infos = section.childNodes[5].innerText.split("\n");
+        var i=0;
+        while(infos.length > 1 && i<infos.length) {
+            chants.push({
+                "type" : "chant",
+                "name" : infos[i],
+                "path" : infos[i+1]
+            })
+            i += 2;
+        }
+        section = section.nextSibling;
+    }
+    console.log(chants);
+    programme.chants = chants;
+
+    console.log(programme.save());
+    //console.log(JSON.parse(programme.save()));
+    var currentdate = new Date(); 
+    var lastModif = "" + currentdate.getFullYear()
+                 + (currentdate.getMonth()+1).toString().padStart(2, '0')
+                 + currentdate.getDate().toString().padStart(2, '0')
+                 + currentdate.getHours().toString().padStart(2, '0')
+                 + currentdate.getMinutes().toString().padStart(2, '0')
+                 +  currentdate.getSeconds().toString().padStart(2, '0');
+
+    $.ajax({
+        type: 'GET',
+        url: window.location.origin + '/php/programme/update.php',
+        crossDomain: true,
+        data: 'data=' + programme.save() + "&dateModif=" + lastModif,
+        contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+        success: function(data){
+            console.log("fichiers : " + data);
+            if(!data.includes("success"))
+            {
+                alert("Problème dans l'enregistrement du programme");
+            }
+            else
+                alert("Programme enregistré, vous pouvez ferme la page");   
+        }
+    });
 }
