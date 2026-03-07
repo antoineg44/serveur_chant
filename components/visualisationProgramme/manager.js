@@ -27,6 +27,8 @@ async function manager_init()
 
 function manager_open(path_file_programme, path_chant)
 {
+    path_file_programme = path_file_programme.replaceAll("%27","'");
+    path_chant = path_chant.replaceAll("%27","'");
     console.log("manager_open");
     var found = false;
     for(var i=0; i<programme.chants.length; i++)
