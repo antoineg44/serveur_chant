@@ -22,13 +22,18 @@ function nouveau() {
     if($params == null)return;
 
     $auteur = $params["auteur"];    // useless at the moment
+    $description = isset($_GET['description']) ? trim((String)$_GET['description']) : "";
 
-    // Get original file
-    $old_link = (String) "../../pdf/".$params['old_link'];
-    $decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
+    $baseDir = dirname(__DIR__, 2); // /var/www/html
+    $old_link = $baseDir . "/pdf/" . $params['old_link'];
+    if(!file_exists($old_link)) return set_error("Template introuvable : " . $old_link);
+
+    $decoded = json_decode(file_get_contents($old_link), true);
+    if($decoded === null) return set_error("Impossible de lire le template JSON.");
 
     // Informations nouveau fichiers :
     $decoded["paroisse"] = $params['paroisse'];
+    $decoded["description"] = $description;
     $nom = $params['nom'];
 
     // Mise à jour des informations dans le json
@@ -44,7 +49,14 @@ function nouveau() {
     $decoded["dateLastModif"] = date("YmdHis");     // Date de la dernière modification
 
     // vérification de l'existance du programme
-    if(file_exists('../../pdf/programmes/'.$decoded["paroisse"]."/".$nom))return set_error("file already exist");
+    $baseDir = dirname(__DIR__, 2); // /var/www/html
+    $targetDir = $baseDir . '/pdf/programmes/' . $decoded["paroisse"];
+    if(file_exists($targetDir . '/' . $nom)) return set_error("file already exist");
+
+    // create parish directory if needed
+    if(!is_dir($targetDir)) {
+        if(!mkdir($targetDir, 0775, true)) return set_error("Impossible de créer le dossier de la paroisse");
+    }
 
     // enregistrement du nouveau programme
     write_program_json($decoded["paroisse"]."/".$nom, $decoded);

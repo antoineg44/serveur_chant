@@ -3,7 +3,9 @@
 // Ecrire dans un fichier :
 function write_program_json($path, $jsonObj) {
     $json = json_encode($jsonObj);
-    $myfile = fopen('../../pdf/programmes/'.$path, 'w') or die("Unable to open file!");
+    $baseDir = dirname(__DIR__, 2); // /var/www/html
+    $filePath = $baseDir . '/pdf/programmes/' . $path;
+    $myfile = fopen($filePath, 'w') or die("Unable to open file! " . $filePath);
     //$txt = mb_convert_encoding($txt, 'UTF-8', 'ISO-8859-1');
     fwrite($myfile, $json);
     fclose($myfile);

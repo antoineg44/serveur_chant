@@ -15,10 +15,11 @@
     <script src="../../components/program/program.js"></script>
 </head>
 
-<body>
-
+<body class="h-full w-full">
+    <div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+        <img src="../../fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
     <?php
-        if(isset($_GET['programme']) && str_contains(trim($_GET['programme']), "/pdf/")) {
+        if(isset($_GET['programme']) && str_contains(trim($_GET['programme']), "pdf")) {
             $programme = (String) trim($_GET['programme']);
         } else {
             $programme = "";
@@ -27,6 +28,8 @@
 
     <div class="demo-page">
         <div class="demo-page-navigation">
+                <!-- button go to accueil -->
+                <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: left; margin: 0; padding: 0; width: 100%; display: block;"><a href="https://partitions.ovh" style="color: #3498db; display: inline-block;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
             <nav>
                 <ul>
                     <!--<li>
@@ -738,10 +741,21 @@
                     </svg>
                     Enregistrer
                 </a>
+                <a onclick=visualiser() class="to-repo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-external-link">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Visualiser
+                </a>
             </section>
 
             <!--<footer>Made for you ♥</footer>-->
         </main>
+    </div>
     </div>
 
     <script>
@@ -758,9 +772,8 @@
             prevBtn.disabled = currentStep === 0;
             nextBtn.innerText = currentStep === steps.length - 1 ? "Terminer" : "Suivant";
         }
-
         // init :
-        initProgram("http://localhost/pdf/programmes/Lazare Nantes/2024-06-19_Nantes_Semaine.json",initFormulaire);
+        initProgram(window.location.origin + "/" + "<?php echo $programme; ?>",initFormulaire);
 
         $.ajax({
             type: 'GET',

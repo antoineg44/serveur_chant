@@ -32,6 +32,7 @@ var ac = {
       // (B3) KEY PRESS LISTENER
       inst.target.addEventListener("keyup", evt => {
         // (B3-1) CLEAR OLD TIMER & SUGGESTION BOX
+        console.log("key up");
         ac.now = inst;
         if (inst.timer != null) { window.clearTimeout(inst.timer); }
         if (inst.ajax != null) { inst.ajax.abort(); }
@@ -42,6 +43,25 @@ var ac = {
         if (inst.target.value.length >= inst.min) {
           if (typeof inst.data == "string") { inst.timer = setTimeout(() => ac.fetch(), inst.delay); }
           else { inst.timer = setTimeout(() => ac.filter(), inst.delay); }
+        }
+      });
+
+      inst.target.addEventListener("paste", evt => {
+        console.log("paste event detected:");
+        var pastedText = evt.clipboardData.getData('text');
+        if(pastedText.includes(window.location.origin) && pastedText.includes("pdf")) {
+          ac.now = inst;
+          if (inst.timer != null) { window.clearTimeout(inst.timer); }
+          if (inst.ajax != null) { inst.ajax.abort(); }
+          inst.hList.innerHTML = "";
+          inst.hList.style.display = "none";
+          const parsed = new URL(pastedText);
+          var new_path = decodeURI(parsed.pathname.slice(5) + parsed.search + parsed.hash);
+          console.log("parsed path: " + new_path);
+          inst.timer = setTimeout(() => {
+            //inst.target.value =new_path;
+            ac.paste(new_path);
+          }, 10);
         }
       });
     },
@@ -133,6 +153,13 @@ var ac = {
       ac.now.exec(ac.now.target, row.textContent);
       ac.close();
     },
+
+    paste : (value) => { if (ac.now != null) {
+      ac.now.hWrap.style.setProperty("--nf-input-border-color", "green")
+
+      ac.now.exec(ac.now.target, value);
+      ac.close();
+    }},
   
     // (G) CLOSE AUTOCOMPLETE
     close : () => { if (ac.now != null) {

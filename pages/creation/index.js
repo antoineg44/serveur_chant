@@ -1,5 +1,18 @@
 
 chant_modified = null;
+var hasUnsavedChanges = false;
+
+window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
+
+function markAsChanged() {
+    hasUnsavedChanges = true;
+}
 
 function initFormulaire()
 {
@@ -46,6 +59,16 @@ function initFormulaire()
   document.getElementById("title_section").innerHTML = '<div class="href-target" id="intro"></div>' + "<h1 class='package-name'>Messe du " + programme.date + " à " + programme.lieu + " pour " + programme.occasion + "</h1><p>Paroisse de " + programme.paroisse + ".</p>";
   document.getElementById("section_informations").remove();
   document.getElementById("informations_part").remove();
+
+  // Add change listeners to form fields
+  var formFields = ['select_paroisse', 'programme_lieu', 'programme_occasion', 'programme_date', 'programme_description'];
+  formFields.forEach(function(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('input', markAsChanged);
+      field.addEventListener('change', markAsChanged);
+    }
+  });
 
 }
 
@@ -154,11 +177,13 @@ function delete_part(element) {
     console.log("delete_part");
     document.getElementById("part_"+id_part).remove();
     document.getElementById("link_"+id_part).remove();
+    markAsChanged();
 }
 function delete_chant(element) {
     reset_modified_chant();
     console.log(element);
     element.parentElement.parentElement.parentElement.remove();
+    markAsChanged();
 }
 function reset_modified_chant(){
     if(chant_modified != null) {
@@ -171,6 +196,12 @@ function edit_chant(element) {
     chant_modified = element.parentElement.parentElement.parentElement.lastElementChild;
     chant_modified.style.visibility = "visible";
     chant_modified.style.position = "relative";
+    console.log(chant_modified.parentElement.id.slice(6));
+    ac.attach({
+        target: document.getElementById("path_"+chant_modified.parentElement.id.slice(6)),
+        data: "../../components/autocomplete/autocomplete_path.php",
+        exec: select_chant
+    });
 }
 function select_chant(element, path) {
     var name = path.split("/");
@@ -234,6 +265,7 @@ function add_new_chant(element) {
         data: "../../components/autocomplete/autocomplete_path.php",
         exec: select_chant
     });
+    markAsChanged();
 
 }
 function add_new_part(element) {
@@ -246,6 +278,7 @@ function add_new_part(element) {
     let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
     document.querySelector('#part_' + id_part).after(doc.body.firstChild);
     document.querySelector('#link_' + id_part).after(nav.body.firstChild);
+    markAsChanged();
 }
 function modify_part(element) {
     reset_modified_chant();
@@ -260,6 +293,7 @@ function modify_part(element) {
     document.getElementById("link_"+id_part).id = "link_"+codage_path_javascript(name_part);
     document.getElementById(id_part+"_link").id = codage_path_javascript(name_part);+"_link";
     document.getElementById("part_"+id_part).id = "part_"+codage_path_javascript(name_part);
+    markAsChanged();
 
 }
 var testing = null;
@@ -316,8 +350,14 @@ function enregistrer() {
             {
                 alert("Problème dans l'enregistrement du programme");
             }
-            else
-                alert("Programme enregistré, vous pouvez ferme la page");   
+            else {
+                hasUnsavedChanges = false;
+                alert("Programme enregistré, vous pouvez ferme la page");
+            }
         }
     });
+}
+
+function visualiser() {
+    window.open(window.location.origin+"/components/visualisationProgramme/"+"?programme="+programme.path_file);
 }
