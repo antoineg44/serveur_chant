@@ -78,6 +78,12 @@ function activate() {
         });
       });
 }
+
+function ajouterNouveauProgramme() {
+    console.log('Ajouter un nouveau programme clicked');
+    window.open(window.location.origin+"/pages/creation/");
+}
+
 function edit_programme(element) {
     console.log(element);
     var programme = element.parentElement.parentElement.children[0].textContent;
