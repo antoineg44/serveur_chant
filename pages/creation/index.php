@@ -851,7 +851,7 @@
             body.classList.add('pdf-visible');
             mainContainer.classList.add('pdf-visible');
             
-            eventChangePDF(pdfUrl);
+            eventChangePDF(encodeURI(pdfUrl));
         }
 
         // Make function globally available for clicks
