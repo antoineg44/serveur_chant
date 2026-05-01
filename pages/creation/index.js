@@ -123,7 +123,7 @@ function link_section(name) {
 function add_chant(chant, modification_visible=false) {
     var modification_style = "";
     var text_path = chant.path;
-    var click_action = 'onclick="window.open(window.location.origin+\'/pdf/'+chant.path.replaceAll("'","\\'")+'\',\'_blanc\')"';
+    var click_action = 'onclick="if(window.innerWidth > 750) { loadPdfFromUrl(window.location.origin+\'/pdf/'+chant.path.replaceAll("'","\\'")+'\'); } else { window.open(window.location.origin+\'/pdf/'+chant.path.replaceAll("'","\\'")+'\',\'_blank\'); }"';
     if(text_path == "null") {
         text_path = "";
         click_action = "";

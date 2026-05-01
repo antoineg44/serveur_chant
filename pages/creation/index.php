@@ -16,7 +16,7 @@
 </head>
 
 <body class="h-full w-full">
-    <div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+    <div id="main-container" class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
         <img src="../../fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
     <?php
         if(isset($_GET['programme']) && str_contains(trim($_GET['programme']), "pdf")) {
@@ -169,8 +169,9 @@
                 </ul>
             </nav>
         </div>
-        <main class="demo-page-content">
-            <section id="title_section">
+        <div class="demo-page-content-wrapper">
+            <main class="demo-page-content">
+                <section id="title_section">
                 <div class="href-target" id="intro"></div>
                 <h1 class="package-name">Création d'une nouvelle messe</h1>
                 <p>
@@ -755,6 +756,21 @@
 
             <!--<footer>Made for you ♥</footer>-->
         </main>
+        <div class="pdf-viewer-section">
+            <div class="pdf-viewer-header">
+                <div class="pdf-header-top">
+                    <h2>Aperçu PDF</h2>
+                    <button id="close-pdf-btn" class="close-pdf-button" title="Fermer l'aperçu PDF">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <iframe id="pdf-js-viewer" class="pdf-viewer-container" src="../../components/viewer/viewer.html"></iframe>
+        </div>
+        </div>
     </div>
     </div>
 
@@ -806,6 +822,58 @@
                 document.getElementById("select_template").innerHTML = option_html;
             }
         });
+
+        // PDF Viewer functionality using iframe
+        function eventChangePDF(url) {
+            console.log("eventChangePDF : " + url);
+            var if1 = document.getElementById("pdf-js-viewer");
+            var fc = (if1.contentWindow || if1.contentDocument);
+            fc.document.dispatchEvent(new CustomEvent("changePDF", {
+                detail: { file: url }
+            }));
+            console.log("PDF change event sent");
+        }
+
+        // Load PDF from URL
+        function loadPdfFromUrl(pdfUrl) {
+            if (!pdfUrl) return;
+            
+            // Show PDF viewer section
+            const pdfViewerSection = document.querySelector('.pdf-viewer-section');
+            const contentWrapper = document.querySelector('.demo-page-content-wrapper');
+            const demoPage = document.querySelector('.demo-page');
+            const body = document.querySelector('body');
+            const mainContainer = document.getElementById('main-container');
+            
+            pdfViewerSection.classList.add('active');
+            contentWrapper.classList.add('pdf-visible');
+            demoPage.classList.add('pdf-visible');
+            body.classList.add('pdf-visible');
+            mainContainer.classList.add('pdf-visible');
+            
+            eventChangePDF(pdfUrl);
+        }
+
+        // Make function globally available for clicks
+        window.loadPdfFromUrl = loadPdfFromUrl;
+
+        // Close PDF layout
+        function closePdfLayout() {
+            const pdfViewerSection = document.querySelector('.pdf-viewer-section');
+            const contentWrapper = document.querySelector('.demo-page-content-wrapper');
+            const demoPage = document.querySelector('.demo-page');
+            const body = document.querySelector('body');
+            const mainContainer = document.getElementById('main-container');
+            
+            pdfViewerSection.classList.remove('active');
+            contentWrapper.classList.remove('pdf-visible');
+            demoPage.classList.remove('pdf-visible');
+            body.classList.remove('pdf-visible');
+            mainContainer.classList.remove('pdf-visible');
+        }
+        
+        // Close button event listener
+        document.getElementById('close-pdf-btn').addEventListener('click', closePdfLayout);
     </script>
 </body>
 

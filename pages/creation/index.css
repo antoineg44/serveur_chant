@@ -845,11 +845,30 @@ body {
     -moz-osx-font-smoothing: grayscale
 }
 
+body.pdf-visible {
+    padding: 0;
+    margin: 0
+}
+
+#main-container {
+    padding: 0;
+    height: 100vh;
+}
+
+#main-container.pdf-visible {
+    padding: 0;
+    height: 100vh;
+}
+
 .demo-page {
     margin: 0 auto;
     display: -webkit-flex;
     display: flex;
-    max-width: 55em
+    width: 100%
+}
+
+.demo-page.pdf-visible {
+    max-width: 100%
 }
 
 .demo-page .demo-page-navigation {
@@ -897,13 +916,165 @@ body {
 
 .demo-page .demo-page-content {
     padding: 2em 1em;
-    max-width: 100%
+    max-width: 100%;
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
 }
 
 @media only screen and (min-width:750px) {
     .demo-page .demo-page-content {
-        width: calc(100% - 18em)
+        width: 100%;
+        flex: 1;
     }
+    
+    .demo-page-content-wrapper.pdf-visible .demo-page-content {
+        width: calc(50% - 9em);
+        flex: 0 0 calc(50% - 9em);
+        padding: 1.5em 1em;
+        margin: 0
+    }
+}
+
+@media only screen and (max-width:750px) {
+    .demo-page .demo-page-content {
+        width: 100%;
+        max-height: none
+    }
+}
+
+.demo-page-content-wrapper {
+    display: -webkit-flex;
+    display: flex;
+    width: calc(100% - 18em);
+    gap: 1em
+}
+
+.demo-page.pdf-visible .demo-page-content-wrapper {
+    width: calc(100% - 18em);
+    height: 100vh;
+    gap: 0.5em;
+    padding: 0.5em
+}
+
+@media only screen and (max-width:750px) {
+    .demo-page-content-wrapper {
+        width: 100%;
+        height: auto
+    }
+}
+
+.pdf-viewer-section {
+    flex: 1;
+    min-width: 0;
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    border-left: 10px solid #ffffff;
+    border-radius: .75rem;
+    line-height: 1.6;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    overflow: hidden
+}
+
+.pdf-viewer-section.active {
+    display: -webkit-flex;
+    display: flex
+}
+
+.demo-page.pdf-visible .pdf-viewer-section.active {
+    border-radius: 0;
+    border-radius: .75rem;
+    box-shadow: none;
+    padding: 0;
+}
+
+@media only screen and (max-width:750px) {
+    .pdf-viewer-section {
+        display: none
+    }
+}
+
+.pdf-viewer-header {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1em;
+    margin-bottom: 1em
+}
+
+.demo-page.pdf-visible .pdf-viewer-header {
+    border-bottom: none;
+    padding: 0.5em 1em;
+    margin: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: -webkit-flex;
+    display: flex;
+    align-items: center;
+    justify-content: space-between
+}
+
+.pdf-viewer-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #374151
+}
+
+.pdf-header-top {
+    display: -webkit-flex;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%
+}
+
+.pdf-header-top h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #374151
+}
+
+.close-pdf-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0.5em;
+    display: -webkit-flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.close-pdf-button:hover {
+    background: #f3f4f6;
+    color: #1f2937
+}
+
+.close-pdf-button:active {
+    transform: scale(0.95)
+}
+
+.pdf-viewer-header input[type="file"] {
+    padding: 0.5em;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    width: 100%;
+    box-sizing: border-box
+}
+
+.pdf-viewer-container {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    background: #f9fafb;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
 }
 
 footer {
