@@ -3001,6 +3001,11 @@ console.log(e);
 
 		parentelem.appendChild(viewwrap);
 
+		window.addEventListener("message", (event) => {
+			console.log("Received:", event.data);
+			fileinfo.url = event.data.url;
+		});
+
 		var Reload = function() {
 			lastreloadfor = fileinfo.lastmodified;
 
@@ -3028,7 +3033,6 @@ console.log(e);
 			if (id === 'reload')  Reload();
 
 			if (id === 'clipboard_url'){
-				print("current_pdf : " + current_pdf);
 				print("url : " + fileinfo.url);
 				fm.CopyToClipboard(fileinfo.url);
 			}

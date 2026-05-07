@@ -1,4 +1,3 @@
-var current_pdf = null;
 
 function open_pdf(path, el) {
     console.log("open_pdf");
@@ -15,7 +14,7 @@ function open_pdf(path, el) {
 
 function eventChangePDF(url){
     console.log("eventChangePDF : " + url)
-    current_pdf = url;
+    window.parent.postMessage({ url: url }, window.location.origin);
     var if1 = document.getElementById("pdf-js-viewer");
         var fc = (if1.contentWindow || if1.contentDocument);
         fc.document.dispatchEvent(new CustomEvent("changePDF", {
