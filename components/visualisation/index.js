@@ -14,7 +14,7 @@ function open_pdf(path, el) {
 
 function eventChangePDF(url){
     console.log("eventChangePDF : " + url)
-    window.parent.postMessage({ url: decodeURI(url) }, window.location.origin);
+    window.parent.postMessage({ url: decodeURI(url).replace("//", "/") }, window.location.origin);
     var if1 = document.getElementById("pdf-js-viewer");
         var fc = (if1.contentWindow || if1.contentDocument);
         fc.document.dispatchEvent(new CustomEvent("changePDF", {
