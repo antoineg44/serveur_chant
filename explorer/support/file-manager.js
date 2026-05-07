@@ -3001,11 +3001,10 @@ console.log(e);
 
 		parentelem.appendChild(viewwrap);
 
-		window.addEventListener("message", (event) => {
-			console.log("Received:", event.data);
-			//fileinfo.url = event.data.url;
+		window.addEventListener("message", (event) => {			
 			console.log("Updated fileinfo.url:", fileinfo.url);
 			console.log("new url:", event.data.url);
+			fileinfo.url = event.data.url;
 		});
 
 		var Reload = function() {
