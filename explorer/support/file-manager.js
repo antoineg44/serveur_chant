@@ -3027,7 +3027,11 @@ console.log(e);
 		$this.SelectedMenuItem = function(id, item, lastelem, etype) {
 			if (id === 'reload')  Reload();
 
-			if (id === 'clipboard_url')  fm.CopyToClipboard(fileinfo.url);
+			if (id === 'clipboard_url'){
+				print("current_pdf : " + current_pdf);
+				print("url : " + fileinfo.url);
+				fm.CopyToClipboard(fileinfo.url);
+			}
 			if (id === 'clipboard_embed')  fm.CopyToClipboard('<iframe src="' + fm.EscapeHTML(fileinfo.url) + '" width="100%" height="600" frameborder="0"></iframe>');
 		};
 
