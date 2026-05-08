@@ -758,17 +758,26 @@
         </main>
         <div class="pdf-viewer-section">
             <div class="pdf-viewer-header">
-                <div class="pdf-header-top">
+                <div class="pdf-header-top" style="display: flex; align-items: center; justify-content: space-between;">
                     <h2>Aperçu PDF</h2>
-                    <button id="close-pdf-btn" class="close-pdf-button" title="Fermer l'aperçu PDF">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="open-external-pdf-btn" class="open-external-pdf-button" title="Ouvrir le PDF dans un nouvel onglet">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                        </button>
+                        <button id="close-pdf-btn" class="close-pdf-button" title="Fermer l'aperçu PDF">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <iframe id="pdf-js-viewer" class="pdf-viewer-container" src="../../components/viewer/viewer.html"></iframe>
+            <iframe id="pdf-visualisation-viewer" class="pdf-viewer-container" src="../../components/visualisation/index.php?lien=Doxologie/Amen, gloire et louange/Amen, gloire et louange_v8.pdf" style="width:100%;height:100%;border:none;"></iframe>
         </div>
         </div>
     </div>
@@ -779,6 +788,33 @@
         const steps = document.querySelectorAll(".step");
         const prevBtn = document.getElementById("prevBtn");
         const nextBtn = document.getElementById("nextBtn");
+
+        // External PDF button logic
+        document.addEventListener("DOMContentLoaded", function() {
+            const openExternalBtn = document.getElementById("open-external-pdf-btn");
+            if (openExternalBtn) {
+                openExternalBtn.addEventListener("click", function() {
+                    // Try to get the current PDF URL from the iframe
+                    const iframe = document.getElementById("pdf-visualisation-viewer");
+                    let pdfUrl = null;
+                    try {
+                        // Try to access the PDF URL from the viewer
+                        if (iframe && iframe.contentWindow && iframe.contentWindow.PDFViewerApplication) {
+                            pdfUrl = iframe.contentWindow.PDFViewerApplication.url;
+                        }
+                    } catch (e) {}
+                    // Fallback: try to get from data attribute or last loaded
+                    if (!pdfUrl && window.lastLoadedPdfUrl) {
+                        pdfUrl = window.lastLoadedPdfUrl;
+                    }
+                    if (pdfUrl) {
+                        window.open(pdfUrl, "_blank");
+                    } else {
+                        alert("Impossible de récupérer l'URL du PDF.");
+                    }
+                });
+            }
+        });
 
         function changeStep(stepChange) {
             steps[currentStep].classList.remove("active");
@@ -826,11 +862,14 @@
         // PDF Viewer functionality using iframe
         function eventChangePDF(url) {
             console.log("eventChangePDF : " + url);
-            var if1 = document.getElementById("pdf-js-viewer");
+            var if1 = document.getElementById("pdf-visualisation-viewer");
             var fc = (if1.contentWindow || if1.contentDocument);
-            fc.document.dispatchEvent(new CustomEvent("changePDF", {
+            /*fc.document.dispatchEvent(new CustomEvent("eventChangePDF", {
                 detail: { file: url }
-            }));
+            }));*/
+            document.getElementById("pdf-visualisation-viewer").src = "../../components/visualisation/index.php?lien=" + url;
+            // Store last loaded PDF URL for external open
+            window.lastLoadedPdfUrl = url;
             console.log("PDF change event sent");
         }
 
