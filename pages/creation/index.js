@@ -61,7 +61,7 @@ function attachPdfPathListener() {
 
 function openChantPdf(el, chantPath) {
     var normalizedPath = normalizePdfPath(chantPath);
-    var initialUrl = window.location.origin + '/pdf/' + encodeURI(normalizedPath);
+    var initialUrl = window.location.origin + '/pdf/' + normalizedPath;
     var container = el.closest("div[id^='chant_']");
     if (container) {
         currentPreviewLabel = container.querySelector(".text_path_chant");
