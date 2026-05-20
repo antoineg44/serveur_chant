@@ -12,6 +12,15 @@ $iterator = new RecursiveIteratorIterator(
 
 @set_time_limit(0);
 
+$options = array(
+    "windows" => false,
+    "protect_depth" => 0,
+    "thumbs_dir" => false,
+    "base_url" => false,
+    "base_dir" => $path,
+    "started" => time()
+);
+
 $result = array(
     "success" => true,
     "entries" => array()
