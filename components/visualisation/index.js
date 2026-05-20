@@ -9,7 +9,7 @@ function open_pdf(path, el) {
     // Notify listeners with the selected PDF path.
     window.dispatchEvent(new CustomEvent("pdfPathChanged", {
         detail: {
-            path: new_path,
+            path: new_path.replace("//", "/"),
             url: full_url
         }
     }));
