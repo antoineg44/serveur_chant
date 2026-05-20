@@ -18,13 +18,14 @@ $result = array(
 );
 
 $i = 0;
+$data = array();
 
-$search_word = preg_replace('/[^A-Za-z0-9\-]/', '', $search_word);
+$search_word = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $search_word);
 
 foreach ($iterator as $item) 
 {
     $file = $item->getFilename();
-    if (preg_match('/'.$search_word.'/i', preg_replace('/[^A-Za-z0-9\-]/', '', $file)))
+    if (preg_match('/'.$search_word.'/iu', $file))
     {
         if ($item->isFile()) 
         {
