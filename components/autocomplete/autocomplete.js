@@ -140,6 +140,7 @@ var ac = {
       ac.now.target.value = row.dataset.val ? row.dataset.val : row.innerHTML;
       let multi = null;
       if (row.dataset.multi !== undefined) {
+        console.log("To parse : " + row.dataset.multi);
         multi = JSON.parse(row.dataset.multi);
         for (let i in multi) { document.getElementById(i).value = multi[i]; }
       }
