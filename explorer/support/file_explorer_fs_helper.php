@@ -519,6 +519,9 @@
 			if ($info === false || !is_array($info))  return false;
 			
 			$end_path = substr($path, strlen($real_path));
+			
+			// Remove special characters for search compatibility
+			$file_clean = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $file);
 
 			$entry = array(
 				"id" => ".".$end_path."/".$file,
