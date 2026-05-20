@@ -30,11 +30,15 @@ $i = 0;
 $data = array();
 
 $search_word = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $search_word);
+$search_word = trim($search_word);
+
+// Escape regex special characters and make it case-insensitive
+$search_pattern = preg_quote($search_word, '/');
 
 foreach ($iterator as $item) 
 {
     $file = $item->getFilename();
-    if (preg_match('/'.$search_word.'/iu', $file))
+    if (preg_match('/' . $search_pattern . '/iu', $file))
     {
         if ($item->isFile()) 
         {
