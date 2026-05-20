@@ -514,7 +514,7 @@
 		public static function SearchEntry($path, $file, $type, $depth, &$options, $real_path)
 		{
 			$info = @stat($path . "/" . $file);
-			if ($info === false)  return false;
+			if ($info === false || !is_array($info))  return false;
 			
 			$end_path = substr($path, strlen($real_path));
 
@@ -528,7 +528,7 @@
 
 			if ($options["protect_depth"] > $depth + 1)  $entry["attrs"] = array("canmodify" => false);
 
-			if ($type === "file")
+			if ($type === "file" && isset($info["size"]))
 			{
 				$entry["size"] = $info["size"];
 
@@ -538,8 +538,8 @@
 
 					if ($ext === "jpg" || $ext === "jpeg" || $ext === "png" || $ext === "gif")
 					{
-						if (isset($options["base_url"]) && $info["size"] < 25000)  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
-						else if ($info["size"] < 10000000)
+						if (isset($options["base_url"]) && isset($info["size"]) && $info["size"] < 25000)  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
+						else if (isset($info["size"]) && $info["size"] < 10000000)
 						{
 							@mkdir($options["thumbs_dir"] . "/" . substr($entry["hash"], 0, 3), 0775);
 
