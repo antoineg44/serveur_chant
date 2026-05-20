@@ -32,10 +32,18 @@ function handlePdfPathChanged(event) {
     var newPath = normalizePdfPath(event.detail.path || event.detail.url || "");
     if (!newPath) return;
 
+    var updatedUrl = event.detail.url;
+    if (!updatedUrl) {
+        updatedUrl = window.location.origin + "/pdf/" + encodeURI(newPath);
+    }
+
     if (currentPreviewLabel) {
         currentPreviewLabel.textContent = newPath;
         markAsChanged();
     }
+
+    // Used by open-external-pdf-btn fallback logic in the parent page.
+    window.lastLoadedPdfUrl = updatedUrl;
 }
 
 function attachPdfPathListener() {
@@ -53,16 +61,19 @@ function attachPdfPathListener() {
 
 function openChantPdf(el, chantPath) {
     var normalizedPath = normalizePdfPath(chantPath);
+    var initialUrl = window.location.origin + '/pdf/' + encodeURI(normalizedPath);
     var container = el.closest("div[id^='chant_']");
     if (container) {
         currentPreviewLabel = container.querySelector(".text_path_chant");
     }
 
+    window.lastLoadedPdfUrl = initialUrl;
+
     if(window.innerWidth > 750) {
-        loadPdfFromUrl(window.location.origin + '/pdf/' + normalizedPath);
+        loadPdfFromUrl(initialUrl);
         setTimeout(attachPdfPathListener, 0);
     } else {
-        window.open(window.location.origin + '/pdf/' + normalizedPath, '_blank');
+        window.open(initialUrl, '_blank');
     }
 }
 
