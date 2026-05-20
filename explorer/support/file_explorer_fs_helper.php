@@ -539,7 +539,7 @@
 
 				if (isset($options["thumbs_dir"]))
 				{
-					$ext = self::GetFileExt($file);
+					$ext = self::GetFileExt($file_clean);
 
 					if ($ext === "jpg" || $ext === "jpeg" || $ext === "png" || $ext === "gif")
 					{
