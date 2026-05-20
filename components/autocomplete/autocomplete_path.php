@@ -38,7 +38,10 @@ $search_pattern = preg_quote($search_word, '/');
 foreach ($iterator as $item) 
 {
     $file = $item->getFilename();
-    if (preg_match('/' . $search_pattern . '/iu', $file))
+    $file_tested = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $file);
+    $file_tested = trim($file_tested);
+    $file_tested = preg_quote($file_tested, '/');
+    if (preg_match('/' . $search_pattern . '/iu', $file_tested))
     {
         if ($item->isFile()) 
         {
