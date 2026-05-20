@@ -42,8 +42,9 @@ foreach ($iterator as $item)
     {
         if ($item->isFile()) 
         {
-            $entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
-            if ($entry !== false)  $data[] = substr($entry["id"], 1);
+            //$entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
+            //if ($entry !== false) $data[] = substr($entry["id"], 1);
+            $data[] = $item->getFilename();
             $i = $i+1;
             if($i > 9)break;
         }
