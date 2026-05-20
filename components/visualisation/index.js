@@ -4,7 +4,17 @@ function open_pdf(path, el) {
     path = path.replaceAll("£","'");
     console.log(path);
     var new_path = "/pdf/" +path;
-    eventChangePDF(window.location.origin + encodeURI(new_path.replace("//", "/")));
+    var full_url = window.location.origin + encodeURI(new_path.replace("//", "/"));
+
+    // Notify listeners with the selected PDF path.
+    window.dispatchEvent(new CustomEvent("pdfPathChanged", {
+        detail: {
+            path: new_path,
+            url: full_url
+        }
+    }));
+
+    eventChangePDF(full_url);
 
     var list_nav_button = document.getElementsByClassName("nav-button");
     for(var i=0; i<list_nav_button.length; i++) {

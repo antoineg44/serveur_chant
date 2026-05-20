@@ -14,6 +14,68 @@ function markAsChanged() {
     hasUnsavedChanges = true;
 }
 
+var currentPreviewLabel = null;
+var pdfPathListenerAttached = false;
+
+function normalizePdfPath(path) {
+    if (!path) return "";
+    var normalized = decodeURI(path).trim();
+    if (normalized.startsWith("/pdf/")) {
+        normalized = normalized.slice(5);
+    }
+    return normalized;
+}
+
+function handlePdfPathChanged(event) {
+    if (!event || !event.detail) return;
+
+    var newPath = normalizePdfPath(event.detail.path || event.detail.url || "");
+    if (!newPath) return;
+
+    if (currentPreviewLabel) {
+        currentPreviewLabel.textContent = newPath;
+        markAsChanged();
+    }
+}
+
+function attachPdfPathListener() {
+    if (pdfPathListenerAttached) return;
+    var iframe = document.getElementById("pdf-visualisation-viewer");
+    if (!iframe || !iframe.contentWindow) return;
+
+    try {
+        iframe.contentWindow.addEventListener("pdfPathChanged", handlePdfPathChanged);
+        pdfPathListenerAttached = true;
+    } catch (e) {
+        console.log("Unable to attach pdfPathChanged listener", e);
+    }
+}
+
+function openChantPdf(el, chantPath) {
+    var normalizedPath = normalizePdfPath(chantPath);
+    var container = el.closest("div[id^='chant_']");
+    if (container) {
+        currentPreviewLabel = container.querySelector(".text_path_chant");
+    }
+
+    if(window.innerWidth > 750) {
+        loadPdfFromUrl(window.location.origin + '/pdf/' + normalizedPath);
+        setTimeout(attachPdfPathListener, 0);
+    } else {
+        window.open(window.location.origin + '/pdf/' + normalizedPath, '_blank');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var iframe = document.getElementById("pdf-visualisation-viewer");
+    if (iframe) {
+        iframe.addEventListener('load', function() {
+            pdfPathListenerAttached = false;
+            attachPdfPathListener();
+        });
+    }
+});
+
 function initFormulaire()
 {
     example_version = true;
@@ -123,7 +185,7 @@ function link_section(name) {
 function add_chant(chant, modification_visible=false) {
     var modification_style = "";
     var text_path = chant.path;
-    var click_action = 'onclick="if(window.innerWidth > 750) { loadPdfFromUrl(window.location.origin+\'/pdf/'+chant.path.replaceAll("'","\\'")+'\'); } else { window.open(window.location.origin+\'/pdf/'+chant.path.replaceAll("'","\\'")+'\',\'_blank\'); }"';
+    var click_action = 'onclick="openChantPdf(this, \''+chant.path.replaceAll("'","\\'")+'\')"';
     if(text_path == "null") {
         text_path = "";
         click_action = "";
@@ -146,7 +208,7 @@ function add_chant(chant, modification_visible=false) {
             <div class="column" style="margin-left:10px"><img src="/components/icons/down-arrow.png"\
                     style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>-->\
         </div>\
-        <label style="white-space: normal;">'+text_path+'</label>\
+        <label class="text_path_chant" style="white-space: normal;">'+text_path+'</label>\
         <div class="nice-form-group acWrap" '+modification_style+'><input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+text_path+'" id="path_'+codage_path_javascript(chant.name)+'" class="icon-left"/>\
         <script>\
             console.log("attach: '+chant.name+'");\
