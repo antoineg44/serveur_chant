@@ -356,3 +356,13 @@ img {
   :root {
     --navbar-width: 99%; }
 }
+
+#connection_icon:hover #text_connection_button {
+  visibility: visible;
+}
+
+#connection_icon:not(:hover) #text_connection_button {
+  visibility:collapse;
+  width: 0;
+  height: 0;
+}

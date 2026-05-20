@@ -12,24 +12,43 @@ $iterator = new RecursiveIteratorIterator(
 
 @set_time_limit(0);
 
+$options = array(
+    "windows" => false,
+    "protect_depth" => 0,
+    "thumbs_dir" => false,
+    "base_url" => false,
+    "base_dir" => $path,
+    "started" => time()
+);
+
 $result = array(
     "success" => true,
     "entries" => array()
 );
 
 $i = 0;
+$data = array();
 
-$search_word = preg_replace('/[^A-Za-z0-9\-]/', '', $search_word);
+$search_word = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $search_word);
+$search_word = trim($search_word);
+
+// Escape regex special characters and make it case-insensitive
+$search_pattern = preg_quote($search_word, '/');
 
 foreach ($iterator as $item) 
 {
     $file = $item->getFilename();
-    if (preg_match('/'.$search_word.'/i', preg_replace('/[^A-Za-z0-9\-]/', '', $file)))
+    $file_tested = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $file);
+    $file_tested = trim($file_tested);
+    $file_tested = preg_quote($file_tested, '/');
+    if (preg_match('/' . $search_pattern . '/iu', $file_tested))
     {
         if ($item->isFile()) 
         {
             $entry = FileExplorerFSHelper::SearchEntry($item->getPath(), $file, "file", 20, $options, $path);
-            if ($entry !== false)  $data[] = substr($entry["id"], 1);
+            if ($entry !== false) $data[] = substr($entry["id"], 1);
+            $i = $i+1;
+            if($i > 9)break;
         }
         /*elseif ($item->isDir()) 
         {
@@ -39,14 +58,13 @@ foreach ($iterator as $item)
                 if ($entry !== false)  $result["entries"][] = $entry;
             }
         }*/
-        $i = $i+1;
-        if($i > 100)break;
     }
 }
 
 // For test :
 //$data = ["test1", $_GET["search"], "suite", "encore"];
-echo count($data)==0 ? "null" : json_encode($data);
+if($data != null)
+    echo count($data)==0 ? "null" : json_encode($data);
 
 
 ?>

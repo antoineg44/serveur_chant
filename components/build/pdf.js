@@ -19,6 +19,7 @@
  * @licend The above is the entire license notice for the
  * Javascript code in this page
  */
+const workerSrcModified = null;
 
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -2970,8 +2971,10 @@ const PDFWorker = function PDFWorkerClosure() {
           if (!(0, _util.isSameOrigin)(window.location.href, workerSrc)) {
             workerSrc = createCDNWrapper(new URL(workerSrc, window.location).href);
           }
-
-          const worker = new Worker(workerSrc);
+          if(workerSrcModified == null) {
+            workerSrcModified = new Worker(workerSrc);
+          }
+          const worker = workerSrcModified;
           const messageHandler = new _message_handler.MessageHandler("main", "worker", worker);
 
           const terminateEarly = () => {

@@ -1,8 +1,20 @@
+
 function open_pdf(path, el) {
     console.log("open_pdf");
     path = path.replaceAll("£","'");
     console.log(path);
-    eventChangePDF(window.location.origin + "/pdf/" + encodeURI(path));
+    var new_path = "/pdf/" +path;
+    var full_url = window.location.origin + encodeURI(new_path.replace("//", "/"));
+
+    // Notify listeners with the selected PDF path.
+    window.dispatchEvent(new CustomEvent("pdfPathChanged", {
+        detail: {
+            path: new_path.replace("//", "/"),
+            url: full_url
+        }
+    }));
+
+    eventChangePDF(full_url);
 
     var list_nav_button = document.getElementsByClassName("nav-button");
     for(var i=0; i<list_nav_button.length; i++) {
@@ -13,6 +25,7 @@ function open_pdf(path, el) {
 
 function eventChangePDF(url){
     console.log("eventChangePDF : " + url)
+    window.parent.postMessage({ url: decodeURI(url) }, window.location.origin);
     var if1 = document.getElementById("pdf-js-viewer");
         var fc = (if1.contentWindow || if1.contentDocument);
         fc.document.dispatchEvent(new CustomEvent("changePDF", {

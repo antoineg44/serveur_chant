@@ -15,10 +15,21 @@
     <script src="../../components/program/program.js"></script>
 </head>
 
-<body>
+<body class="h-full w-full">
+    <div id="main-container" class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+        <img src="../../fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+    <?php
+        if(isset($_GET['programme']) && str_contains(trim($_GET['programme']), "pdf")) {
+            $programme = (String) trim($_GET['programme']);
+        } else {
+            $programme = "";
+        }
+    ?>
 
     <div class="demo-page">
         <div class="demo-page-navigation">
+                <!-- button go to accueil -->
+                <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: left; margin: 0; padding: 0; width: 100%; display: block;"><a href="https://partitions.ovh" style="color: #3498db; display: inline-block;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
             <nav>
                 <ul>
                     <!--<li>
@@ -32,7 +43,7 @@
                             Paramètres</a>
                     </li>-->
                     <li>
-                        <a href="#informations">
+                        <a href="#informations" id="informations_part">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" class="feather feather-calendar">
@@ -158,8 +169,9 @@
                 </ul>
             </nav>
         </div>
-        <main class="demo-page-content">
-            <section>
+        <div class="demo-page-content-wrapper">
+            <main class="demo-page-content">
+                <section id="title_section">
                 <div class="href-target" id="intro"></div>
                 <h1 class="package-name">Création d'une nouvelle messe</h1>
                 <p>
@@ -192,7 +204,7 @@
                 </p>
             </section>-->
 
-            <section>
+            <section id="section_informations">
                 <div class="href-target" id="informations"></div>
                 <h1>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -212,28 +224,25 @@
 
                 <div class="nice-form-group">
                     <label>Date</label>
-                    <input type="date" />
+                    <input type="date" id="programme_date"/>
                 </div>
 
-                <div class="nice-form-group">
+                <div class="nice-form-group" style="margin-top:15px">
                     <label>Paroisse</label>
                     <small>Si votre paroisse n'apparaît pas, aller la créer sur la page de gestion des messes.</small>
-                    <select>
-                        <option>choisissez votre paroisse</option>
-                        <option>Nantes</option>
-                        <option>Nort-sur-Erdre</option>
+                    <select id="select_paroisse">
                     </select>
                 </div>
 
-                <div class="nice-form-group">
+                <div class="nice-form-group" style="margin-top:15px">
                     <label>Lieu de la messe</label>
-                    <input type="text" placeholder="Ville" />
+                    <input type="text" placeholder="Ville" id="programme_lieu"/>
                 </div>
 
-                <div class="nice-form-group">
+                <div class="nice-form-group" style="margin-top:15px">
                     <label>Pour quelle occasion cette messe est-elle célébrée ?</label>
                     <small>Messe ordinaire, Messe de semaine, Noël, communion, mariage ...</small>
-                    <input type="text" placeholder="Occasion" />
+                    <input type="text" placeholder="Occasion" id="programme_occasion"/>
                 </div>
 
                 <fieldset class="nice-form-group">
@@ -251,6 +260,13 @@
                         </label>
                     </div>
                 </fieldset>
+
+                <div class="nice-form-group" style="margin-top:15px">
+                    <label>Template</label>
+                    <small>Base de fichiers pour démarrer (se trouvent dans programmes/Templates).</small>
+                    <select id="select_template">
+                    </select>
+                </div>
             </section>
 
             <section id="description">
@@ -271,7 +287,7 @@
 
                 <div class="nice-form-group">
                     <label>Description :</label>
-                    <textarea rows="5" placeholder="Your message"></textarea>
+                    <textarea rows="5" placeholder="Your message" id="programme_description"></textarea>
                 </div>
 
 
@@ -713,10 +729,10 @@
                     Fin
                 </h1>
                 <p>
-                    Vous pouvez également continuer à enrichir cette messe sur la page ... après avoir enregistré.
+                    <!--Vous pouvez également continuer à enrichir cette messe sur la page ... après avoir enregistré.-->
                 </p>
 
-                <a href="https://github.com/nielsVoogt/nice-forms.css" class="to-repo" target="_blank">
+                <a onclick=enregistrer() class="to-repo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="feather feather-external-link">
@@ -726,10 +742,45 @@
                     </svg>
                     Enregistrer
                 </a>
+                <a onclick=visualiser() class="to-repo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-external-link">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Visualiser
+                </a>
             </section>
 
-            <footer>Made for you ♥</footer>
+            <!--<footer>Made for you ♥</footer>-->
         </main>
+        <div class="pdf-viewer-section">
+            <div class="pdf-viewer-header">
+                <div class="pdf-header-top" style="display: flex; align-items: center; justify-content: space-between;">
+                    <h2>Aperçu PDF</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="open-external-pdf-btn" class="open-external-pdf-button" title="Ouvrir le PDF dans un nouvel onglet">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                        </button>
+                        <button id="close-pdf-btn" class="close-pdf-button" title="Fermer l'aperçu PDF">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <iframe id="pdf-visualisation-viewer" class="pdf-viewer-container" src="../../components/visualisation/index.php?lien=Doxologie/Amen, gloire et louange/Amen, gloire et louange_v8.pdf" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+        </div>
+    </div>
     </div>
 
     <script>
@@ -737,6 +788,33 @@
         const steps = document.querySelectorAll(".step");
         const prevBtn = document.getElementById("prevBtn");
         const nextBtn = document.getElementById("nextBtn");
+
+        // External PDF button logic
+        document.addEventListener("DOMContentLoaded", function() {
+            const openExternalBtn = document.getElementById("open-external-pdf-btn");
+            if (openExternalBtn) {
+                openExternalBtn.addEventListener("click", function() {
+                    // Try to get the current PDF URL from the iframe
+                    const iframe = document.getElementById("pdf-visualisation-viewer");
+                    let pdfUrl = null;
+                    try {
+                        // Try to access the PDF URL from the viewer
+                        if (iframe && iframe.contentWindow && iframe.contentWindow.PDFViewerApplication) {
+                            pdfUrl = iframe.contentWindow.PDFViewerApplication.url;
+                        }
+                    } catch (e) {}
+                    // Fallback: try to get from data attribute or last loaded
+                    if (!pdfUrl && window.lastLoadedPdfUrl) {
+                        pdfUrl = window.lastLoadedPdfUrl;
+                    }
+                    if (pdfUrl) {
+                        window.open(pdfUrl, "_blank");
+                    } else {
+                        alert("Impossible de récupérer l'URL du PDF.");
+                    }
+                });
+            }
+        });
 
         function changeStep(stepChange) {
             steps[currentStep].classList.remove("active");
@@ -746,9 +824,95 @@
             prevBtn.disabled = currentStep === 0;
             nextBtn.innerText = currentStep === steps.length - 1 ? "Terminer" : "Suivant";
         }
-
         // init :
-        initProgram("../../components/program/example_messe.txt",initFormulaire);
+        initProgram(window.location.origin + "/" + "<?php echo $programme; ?>",initFormulaire);
+
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/programme/interface.php?action=get_list_paroisses',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+               var option_html = "<option>choisissez votre paroisse</option>";
+                var paroisses = data.split("Â£");
+                for(var i=0; i<paroisses.length-1; i++) {
+                    option_html += "<option>" + paroisses[i] + "</option>";
+                }
+                document.getElementById("select_paroisse").innerHTML = option_html;
+            }
+        });
+
+        $.ajax({
+            type: 'GET',
+            url: window.location.origin + '/php/programme/interface.php?action=get_list_templates',
+            crossDomain: true,
+            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
+            success: function(data){
+                console.log("fichiers : " + data);
+               var option_html = "<option>Ne pas utiliser de template</option>";
+                var template = data.split("Â£");
+                for(var i=0; i<template.length-1; i++) {
+                    option_html += "<option>" + template[i] + "</option>";
+                }
+                document.getElementById("select_template").innerHTML = option_html;
+            }
+        });
+
+        // PDF Viewer functionality using iframe
+        function eventChangePDF(url) {
+            console.log("eventChangePDF : " + url);
+            var if1 = document.getElementById("pdf-visualisation-viewer");
+            var fc = (if1.contentWindow || if1.contentDocument);
+            /*fc.document.dispatchEvent(new CustomEvent("eventChangePDF", {
+                detail: { file: url }
+            }));*/
+            document.getElementById("pdf-visualisation-viewer").src = "../../components/visualisation/index.php?lien=" + url;
+            // Store last loaded PDF URL for external open
+            window.lastLoadedPdfUrl = url;
+            console.log("PDF change event sent");
+        }
+
+        // Load PDF from URL
+        function loadPdfFromUrl(pdfUrl) {
+            if (!pdfUrl) return;
+            
+            // Show PDF viewer section
+            const pdfViewerSection = document.querySelector('.pdf-viewer-section');
+            const contentWrapper = document.querySelector('.demo-page-content-wrapper');
+            const demoPage = document.querySelector('.demo-page');
+            const body = document.querySelector('body');
+            const mainContainer = document.getElementById('main-container');
+            
+            pdfViewerSection.classList.add('active');
+            contentWrapper.classList.add('pdf-visible');
+            demoPage.classList.add('pdf-visible');
+            body.classList.add('pdf-visible');
+            mainContainer.classList.add('pdf-visible');
+            
+            eventChangePDF(encodeURI(pdfUrl));
+        }
+
+        // Make function globally available for clicks
+        window.loadPdfFromUrl = loadPdfFromUrl;
+
+        // Close PDF layout
+        function closePdfLayout() {
+            const pdfViewerSection = document.querySelector('.pdf-viewer-section');
+            const contentWrapper = document.querySelector('.demo-page-content-wrapper');
+            const demoPage = document.querySelector('.demo-page');
+            const body = document.querySelector('body');
+            const mainContainer = document.getElementById('main-container');
+            
+            pdfViewerSection.classList.remove('active');
+            contentWrapper.classList.remove('pdf-visible');
+            demoPage.classList.remove('pdf-visible');
+            body.classList.remove('pdf-visible');
+            mainContainer.classList.remove('pdf-visible');
+        }
+        
+        // Close button event listener
+        document.getElementById('close-pdf-btn').addEventListener('click', closePdfLayout);
     </script>
 </body>
 

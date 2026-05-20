@@ -1,5 +1,8 @@
 <?php
 
+header('Content-Type: text/html; charset=ISO-8859-15');
+
+
 function getInformationFromName($name) {
     $nom_sans_ext = explode(".", $name);
     if($nom_sans_ext[1] != "json")return set_error("Problème sur le nom du fichier");
@@ -19,13 +22,18 @@ function nouveau() {
     if($params == null)return;
 
     $auteur = $params["auteur"];    // useless at the moment
+    $description = isset($_GET['description']) ? trim((String)$_GET['description']) : "";
 
-    // Get original file
-    $old_link = (String) "../../pdf/".$params['old_link'];
-    $decoded = json_decode(file_get_contents($old_link),true);     // Get json informations
+    $baseDir = dirname(__DIR__, 2); // /var/www/html
+    $old_link = $baseDir . "/pdf/" . $params['old_link'];
+    if(!file_exists($old_link)) return set_error("Template introuvable : " . $old_link);
+
+    $decoded = json_decode(file_get_contents($old_link), true);
+    if($decoded === null) return set_error("Impossible de lire le template JSON.");
 
     // Informations nouveau fichiers :
     $decoded["paroisse"] = $params['paroisse'];
+    $decoded["description"] = $description;
     $nom = $params['nom'];
 
     // Mise à jour des informations dans le json
@@ -41,7 +49,14 @@ function nouveau() {
     $decoded["dateLastModif"] = date("YmdHis");     // Date de la dernière modification
 
     // vérification de l'existance du programme
-    if(file_exists('../../pdf/programmes/'.$decoded["paroisse"]."/".$nom))return set_error("file already exist");
+    $baseDir = dirname(__DIR__, 2); // /var/www/html
+    $targetDir = $baseDir . '/pdf/programmes/' . $decoded["paroisse"];
+    if(file_exists($targetDir . '/' . $nom)) return set_error("file already exist");
+
+    // create parish directory if needed
+    if(!is_dir($targetDir)) {
+        if(!mkdir($targetDir, 0775, true)) return set_error("Impossible de créer le dossier de la paroisse");
+    }
 
     // enregistrement du nouveau programme
     write_program_json($decoded["paroisse"]."/".$nom, $decoded);
@@ -74,6 +89,80 @@ function nouvelle_paroisse() {
     if(!mkdir($dir))return set_error("Erreur lors de la création de la paroisse");
 
     echo "success";
+}
+
+function get_list_paroisses() {
+    $path = "../../pdf/programmes";
+
+    // création tableau avec liste fichiers :
+    $rep = array();
+
+    // ouverture du répertoire
+    $le_repertoire = opendir($path) or die("Erreur le repertoire $path existe pas");
+
+    // parcours des ficheirs
+    while($var = @readdir($le_repertoire))
+    {
+        if ($var == "." || $var == "..") continue;
+        //if(is_dir($path.'/'.$var)) // si c'est un repertoire
+        //{
+        else
+            $rep[] = $var;
+        //}
+    }
+
+    // tri par ordre alphabétique
+    rsort($rep);
+
+    // affichage des répertoire :
+    foreach($rep as $affichage)
+    {
+        // on remplace les caracteres posants problemes
+        //$a_remplacer = array("  ", " ", "'", "é", "è", "à", "ç", "//", "/");
+        //$affichage_simple = str_replace($a_remplacer, "_", $affichage);
+        $affichage = iconv("utf-8", "iso-8859-1//IGNORE", $affichage);
+        echo $affichage."£";
+    }
+    
+    // fermeture répertoire
+    closedir($le_repertoire);
+}
+
+function get_list_templates() {
+    $path = "../../pdf/programmes/Templates";
+
+    // création tableau avec liste fichiers :
+    $rep = array();
+
+    // ouverture du répertoire
+    $le_repertoire = opendir($path) or die("Erreur le repertoire $path existe pas");
+
+    // parcours des ficheirs
+    while($var = @readdir($le_repertoire))
+    {
+        if ($var == "." || $var == "..") continue;
+        //if(is_dir($path.'/'.$var)) // si c'est un repertoire
+        //{
+        else
+            $rep[] = $var;
+        //}
+    }
+
+    // tri par ordre alphabétique
+    rsort($rep);
+
+    // affichage des répertoire :
+    foreach($rep as $affichage)
+    {
+        // on remplace les caracteres posants problemes
+        //$a_remplacer = array("  ", " ", "'", "é", "è", "à", "ç", "//", "/");
+        //$affichage_simple = str_replace($a_remplacer, "_", $affichage);
+        $affichage = iconv("utf-8", "iso-8859-1//IGNORE", $affichage);
+        echo $affichage."£";
+    }
+    
+    // fermeture répertoire
+    closedir($le_repertoire);
 }
 
 function renommer() {
@@ -122,7 +211,10 @@ function prochains() {
         $name = explode("/", $file);
         $param = explode("_", $name[sizeof($name)-1]);
         $day = explode("-", $param[0]);
-        if(strcmp($day[0], date('Y')) == 0 && strcmp($day[1], date('m')) == 0 && strcmp($day[2], date('d')) == 0)
+        if($day[0][0] != '2') {
+            // pas de date
+        }
+        else if(strcmp($day[0], date('Y')) > 0 || (strcmp($day[0], date('Y')) == 0 && strcmp($day[1], date('m')) > 0) || (strcmp($day[0], date('Y')) == 0 && strcmp($day[1], date('m')) == 0 && strcmp($day[2], date('d')) >= 0))
         {
             $nb_file += 1;
         }

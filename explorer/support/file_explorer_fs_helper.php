@@ -513,52 +513,57 @@
 
 		public static function SearchEntry($path, $file, $type, $depth, &$options, $real_path)
 		{
+			if (!is_array($options))  return false;
+			
 			$info = @stat($path . "/" . $file);
-			if ($info === false)  return false;
+			if ($info === false || !is_array($info))  return false;
 			
 			$end_path = substr($path, strlen($real_path));
+			
+			// Remove special characters for search compatibility
+			$file_clean = preg_replace('/[^\p{L}\p{N}\-\s]/u', '', $file);
 
 			$entry = array(
 				"id" => ".".$end_path."/".$file,
 				"name" => $file,
 				"type" => $type,
 				"hash" => self::GetEntryHash($type, $file, $info),
-				"tooltip" => self::GetTooltip($path, $file, $options["windows"], $type, $info)
+				"tooltip" => self::GetTooltip($path, $file, isset($options["windows"]) ? $options["windows"] : false, $type, $info)
 			);
 
-			if ($options["protect_depth"] > $depth + 1)  $entry["attrs"] = array("canmodify" => false);
+			if (isset($options["protect_depth"]) && $options["protect_depth"] > $depth + 1)  $entry["attrs"] = array("canmodify" => false);
 
-			if ($type === "file")
+			if ($type === "file" && isset($info["size"]))
 			{
 				$entry["size"] = $info["size"];
 
 				if (isset($options["thumbs_dir"]))
 				{
-					$ext = self::GetFileExt($file);
+					$ext = self::GetFileExt($file_clean);
 
 					if ($ext === "jpg" || $ext === "jpeg" || $ext === "png" || $ext === "gif")
 					{
-						if (isset($options["base_url"]) && $info["size"] < 25000)  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
-						else if ($info["size"] < 10000000)
+						if (isset($options["base_url"]) && isset($options["base_dir"]) && isset($info["size"]) && $info["size"] < 25000)  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
+						else if (isset($info["size"]) && $info["size"] < 10000000)
 						{
 							@mkdir($options["thumbs_dir"] . "/" . substr($entry["hash"], 0, 3), 0775);
 
 							$filename = "/" . substr($entry["hash"], 0, 3) . "/" . $entry["hash"] . "." . $ext;
 
 							// Generate thumbnail if less than 5 seconds have passed.
-							if (!file_exists($options["thumbs_dir"] . $filename) && $options["started"] >= time() - 5)
+							if (!file_exists($options["thumbs_dir"] . $filename) && isset($options["started"]) && $options["started"] >= time() - 5)
 							{
 								$result = self::CropAndScaleImage(file_get_contents($path . "/" . $file), "", 200, 200);
 								if ($result["success"])  file_put_contents($options["thumbs_dir"] . $filename, $result["data"]);
 							}
 
-							if (file_exists($options["thumbs_dir"] . $filename))  $entry["thumb"] = $options["thumbs_url"] . $filename;
-							else if (isset($options["thumb_create_url"]) && $options["started"] >= time() - 5)  $entry["thumb"] = $options["thumb_create_url"] . (strpos($options["thumb_create_url"], "?") !== false ? "&" : "?") . "path=" . urlencode(json_encode(explode("/", substr($path, strlen($options["base_dir"]))), JSON_UNESCAPED_SLASHES)) . "&id=" . urlencode($file);
+							if (file_exists($options["thumbs_dir"] . $filename) && isset($options["thumbs_url"]))  $entry["thumb"] = $options["thumbs_url"] . $filename;
+							else if (isset($options["thumb_create_url"]) && isset($options["started"]) && isset($options["base_dir"]) && $options["started"] >= time() - 5)  $entry["thumb"] = $options["thumb_create_url"] . (strpos($options["thumb_create_url"], "?") !== false ? "&" : "?") . "path=" . urlencode(json_encode(explode("/", substr($path, strlen($options["base_dir"]))), JSON_UNESCAPED_SLASHES)) . "&id=" . urlencode($file);
 						}
 					}
 					else if ($ext === "svg" && $info["size"] < 100000)
 					{
-						if (isset($options["base_url"]))  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
+						if (isset($options["base_url"]) && isset($options["base_dir"]))  $entry["thumb"] = $options["base_url"] . substr($path, strlen($options["base_dir"])) . "/" . $file;
 						else
 						{
 							@mkdir($options["thumbs_dir"] . "/" . substr($entry["hash"], 0, 3), 0775);
@@ -567,7 +572,7 @@
 
 							if (!file_exists($options["thumbs_dir"] . $filename))  @copy($options["thumbs_dir"] . $filename, $path . "/" . $file);
 
-							$entry["thumb"] = $options["thumbs_url"] . $filename;
+							if (isset($options["thumbs_url"]))  $entry["thumb"] = $options["thumbs_url"] . $filename;
 						}
 					}
 				}

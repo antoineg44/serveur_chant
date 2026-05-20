@@ -20,6 +20,8 @@ var ac = {
       inst.target.setAttribute("autocomplete", "off");
       inst.hWrap = document.createElement("div"); // autocomplete wrapper
       inst.hList = document.createElement("ul"); // suggestion list
+      inst.hList.style.position = "relative";
+
       inst.hWrap.className = "nice-form-group acWrap";
       inst.hList.className = "acSuggest";
       inst.hList.style.display = "none";
@@ -30,6 +32,7 @@ var ac = {
       // (B3) KEY PRESS LISTENER
       inst.target.addEventListener("keyup", evt => {
         // (B3-1) CLEAR OLD TIMER & SUGGESTION BOX
+        console.log("key up");
         ac.now = inst;
         if (inst.timer != null) { window.clearTimeout(inst.timer); }
         if (inst.ajax != null) { inst.ajax.abort(); }
@@ -40,6 +43,25 @@ var ac = {
         if (inst.target.value.length >= inst.min) {
           if (typeof inst.data == "string") { inst.timer = setTimeout(() => ac.fetch(), inst.delay); }
           else { inst.timer = setTimeout(() => ac.filter(), inst.delay); }
+        }
+      });
+
+      inst.target.addEventListener("paste", evt => {
+        console.log("paste event detected:");
+        var pastedText = evt.clipboardData.getData('text');
+        if(pastedText.includes(window.location.origin) && pastedText.includes("pdf")) {
+          ac.now = inst;
+          if (inst.timer != null) { window.clearTimeout(inst.timer); }
+          if (inst.ajax != null) { inst.ajax.abort(); }
+          inst.hList.innerHTML = "";
+          inst.hList.style.display = "none";
+          const parsed = new URL(pastedText);
+          var new_path = decodeURI(parsed.pathname.slice(5) + parsed.search + parsed.hash);
+          console.log("parsed path: " + new_path);
+          inst.timer = setTimeout(() => {
+            //inst.target.value =new_path;
+            ac.paste(new_path);
+          }, 10);
         }
       });
     },
@@ -88,8 +110,11 @@ var ac = {
       // (E2) DRAW OPTION
       let complex = typeof results[0]=="object";
       for (let row of results) {
+        console.log("nouveau result : " + row);
         // (E2-1) SET "DISPLAY NAME"
         let li = document.createElement("li");
+        li.style.zIndex = 50;
+        li.style.whiteSpace = "normal";
         li.innerHTML = complex ? row.D : row;
   
         // (E2-2) SET SUGGESTION DATA
@@ -115,6 +140,7 @@ var ac = {
       ac.now.target.value = row.dataset.val ? row.dataset.val : row.innerHTML;
       let multi = null;
       if (row.dataset.multi !== undefined) {
+        console.log("To parse : " + row.dataset.multi);
         multi = JSON.parse(row.dataset.multi);
         for (let i in multi) { document.getElementById(i).value = multi[i]; }
       }
@@ -124,8 +150,17 @@ var ac = {
         ac.now.select(row);
       }
       ac.now.hWrap.style.setProperty("--nf-input-border-color", "green")
+
+      ac.now.exec(ac.now.target, row.textContent);
       ac.close();
     },
+
+    paste : (value) => { if (ac.now != null) {
+      ac.now.hWrap.style.setProperty("--nf-input-border-color", "green")
+
+      ac.now.exec(ac.now.target, value);
+      ac.close();
+    }},
   
     // (G) CLOSE AUTOCOMPLETE
     close : () => { if (ac.now != null) {

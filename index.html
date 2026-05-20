@@ -97,9 +97,10 @@
             success: function(data){
                 console.log("fichiers : " + data);
                 var messes_a_venir = data.split("£");
+                var number = messes_a_venir[1].replaceAll("Â", "");
                 if(messes_a_venir.length == 3)
                 {
-                    $('#messes_a_venir').html(messes_a_venir[1]);
+                    $('#messes_a_venir').html(number);
                 }
             }
         });

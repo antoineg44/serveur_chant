@@ -9,8 +9,10 @@
 	<!-- CSS -->
 	<link href="index.css" rel="stylesheet">
   <!-- JS -->
+  <script src="../../js/jquery-latest.js"></script>
   <script src="../program/program.js"></script>
   <script src="index.js"></script>
+  <script src="manager.js"></script>
 </head>
 
 <body><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
@@ -78,7 +80,7 @@ if($error == false) {
         <input id="nav-toggle" class="smartphone" type="checkbox">
         <div class="nav-header nav-header-right">
           <label for="nav-toggle"><span id="nav-toggle-burger"></span></label>
-          <a class="nav-title" style="width: 100%;"><i class="fab fa-codepen"></i><div style="margin-left:50px;text-align: right;" onclick="window.open(window.location.origin+'/explorer','_self')">Fichiers disponibles :</div></a>
+          <a class="nav-title" style="width: 100%;"><i class="fab fa-codepen"></i><div style="margin-left:50px;text-align: right;" ondblclick="window.open(window.location.origin+'/explorer','_self')">Fichiers disponibles :</div></a>
           <hr>
         </div>
         <div class="nav-content">
@@ -117,6 +119,9 @@ if($error == false) {
           ?>
           <div class="nav-content-highlight nav-content-highlight-right"></div>
         </div>
+        <div class="nav-foot nav-foot-right" style="bottom:0px;margin-top:35px;margin-bottom:5px;display:inline-block">
+          <button class = "btn" id="connection_icon" onclick="horsligne()" style="margin-left:10px;width:100%;display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 6px; font-size: 16px; cursor: pointer;"><img src = "../icons/no-connection.png"><div id="text_connection_button">Mode hors-ligne</div></button>
+        </div>
       </div>
 <?php
 }
@@ -126,7 +131,7 @@ if(isset($_GET['programme'])) {
 
       <div id="nav-bar-left" class="nav-bar nav-bar-left computer">
         <input id="nav-toggle-left" class="smartphone" type="checkbox">
-        <div id="testint" class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i><div id="name-program" onclick="window.open(window.location.origin+'/pages/liste_messes','_self')">Fichiers disponibles :</div></a>
+        <div id="testint" class="nav-header nav-header-left"><a class="nav-title"><i class="fab fa-codepen"></i><div id="name-program" ondblclick="window.open(window.location.origin+'/pages/liste_messes','_self')">Fichiers disponibles :</div></a>
           <label for="nav-toggle-left"><span id="nav-toggle-left-burger"></span></label>
           <hr>
         </div>

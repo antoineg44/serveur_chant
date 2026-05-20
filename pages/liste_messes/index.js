@@ -78,11 +78,17 @@ function activate() {
         });
       });
 }
+
+function ajouterNouveauProgramme() {
+    console.log('Ajouter un nouveau programme clicked');
+    window.location.href = window.location.origin+"/pages/nouveau/";
+}
+
 function edit_programme(element) {
     console.log(element);
     var programme = element.parentElement.parentElement.children[0].textContent;
     var paroisse = element.closest("li").children[0].children[0].textContent;
-    window.open(window.location.origin+"/messes/"+"?_pathfile="+window.location.origin+"/pdf/programmes/"+paroisse+"/"+programme);
+    window.open(window.location.origin+"/pages/creation/"+"?programme="+"/pdf/programmes/"+paroisse+"/"+programme);
 }
 
 function view_programme(element) {
