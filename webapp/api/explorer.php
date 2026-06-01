@@ -18,33 +18,42 @@ if ($projectRoot === false) {
     ]);
 }
 
+$pdfRoot = $projectRoot . DIRECTORY_SEPARATOR . 'pdf';
+
+if (!is_dir($pdfRoot)) {
+    respondJson(500, [
+        'success' => false,
+        'message' => 'PDF directory not found.',
+    ]);
+}
+
 $action = (string) ($_REQUEST['action'] ?? 'list');
 
 if ($action === 'download') {
-    handleDownload($projectRoot);
+    handleDownload($pdfRoot);
     exit;
 }
 
 try {
     switch ($action) {
         case 'list':
-            handleList($projectRoot);
+            handleList($pdfRoot);
             break;
 
         case 'mkdir':
-            handleMkdir($projectRoot);
+            handleMkdir($pdfRoot);
             break;
 
         case 'rename':
-            handleRename($projectRoot);
+            handleRename($pdfRoot);
             break;
 
         case 'delete':
-            handleDelete($projectRoot);
+            handleDelete($pdfRoot);
             break;
 
         case 'upload':
-            handleUpload($projectRoot);
+            handleUpload($pdfRoot);
             break;
 
         default:
