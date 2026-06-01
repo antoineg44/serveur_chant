@@ -185,6 +185,9 @@ function handleList(string $root): void
         if ($entry === '.' || $entry === '..') {
             continue;
         }
+        if (str_starts_with($entry, '.')) {
+            continue;
+        }
 
         $fullPath = $directory . DIRECTORY_SEPARATOR . $entry;
         $isDir = is_dir($fullPath);
