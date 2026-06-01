@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+applyCorsHeaders();
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 $projectRoot = realpath(dirname(__DIR__, 2));
 
 if ($projectRoot === false) {
@@ -56,6 +63,24 @@ function respondJson(int $statusCode, array $payload): void
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
     exit;
+}
+
+function applyCorsHeaders(): void
+{
+    $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    $isAllowedOrigin = $origin === 'https://partitions.ovh'
+        || $origin === 'null'
+        || preg_match('/^https?:\/\/localhost(:\d+)?$/i', $origin) === 1
+        || preg_match('/^https?:\/\/127\.0\.0\.1(:\d+)?$/i', $origin) === 1;
+
+    if ($origin !== '' && $isAllowedOrigin) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+    }
+
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
+    header('Access-Control-Max-Age: 86400');
 }
 
 function requestValue(string $key): string
