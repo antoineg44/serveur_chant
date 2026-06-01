@@ -191,6 +191,21 @@ function handleList(string $root): void
 
         $fullPath = $directory . DIRECTORY_SEPARATOR . $entry;
         $isDir = is_dir($fullPath);
+        $isEmpty = null;
+
+        if ($isDir) {
+            $children = scandir($fullPath);
+            if ($children === false) {
+                throw new RuntimeException('Unable to inspect directory.');
+            }
+            $visibleChildren = array_filter(
+                $children,
+                static function (string $child): bool {
+                    return $child !== '.' && $child !== '..' && !str_starts_with($child, '.');
+                }
+            );
+            $isEmpty = count($visibleChildren) === 0;
+        }
 
         $items[] = [
             'name' => $entry,
@@ -198,6 +213,7 @@ function handleList(string $root): void
             'type' => $isDir ? 'dir' : 'file',
             'size' => $isDir ? null : filesize($fullPath),
             'mtime' => filemtime($fullPath),
+            'isEmptyDir' => $isEmpty,
         ];
     }
 
@@ -283,32 +299,6 @@ function handleRename(string $root): void
     ]);
 }
 
-function recursiveDelete(string $path): void
-{
-    if (is_file($path) || is_link($path)) {
-        if (!unlink($path)) {
-            throw new RuntimeException('Unable to delete file.');
-        }
-        return;
-    }
-
-    $items = scandir($path);
-    if ($items === false) {
-        throw new RuntimeException('Unable to scan directory for deletion.');
-    }
-
-    foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
-            continue;
-        }
-        recursiveDelete($path . DIRECTORY_SEPARATOR . $item);
-    }
-
-    if (!rmdir($path)) {
-        throw new RuntimeException('Unable to delete directory.');
-    }
-}
-
 function handleDelete(string $root): void
 {
     $relative = requestValue('path');
@@ -323,7 +313,31 @@ function handleDelete(string $root): void
         throw new RuntimeException('Target not found.');
     }
 
-    recursiveDelete($target);
+    if (is_dir($target)) {
+        $items = scandir($target);
+        if ($items === false) {
+            throw new RuntimeException('Unable to inspect directory.');
+        }
+
+        $visibleChildren = array_filter(
+            $items,
+            static function (string $item): bool {
+                return $item !== '.' && $item !== '..' && !str_starts_with($item, '.');
+            }
+        );
+
+        if (count($visibleChildren) > 0) {
+            throw new RuntimeException('Cannot delete a non-empty folder.');
+        }
+
+        if (!rmdir($target)) {
+            throw new RuntimeException('Unable to delete directory.');
+        }
+    } else {
+        if (!unlink($target)) {
+            throw new RuntimeException('Unable to delete file.');
+        }
+    }
 
     respondJson(200, [
         'success' => true,
