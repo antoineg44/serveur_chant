@@ -11,6 +11,31 @@ if(isset($_SERVER['HTTP_ORIGIN']) && $addr_server_test == $_SERVER['HTTP_ORIGIN'
 
 header('Content-Type: text/html; charset=ISO-8859-15');
 
+if(isset($_GET['fallback']) && $_GET['fallback'] == '1') {
+    $remote_url = 'https://partitions.ovh/pages/liste_messes/get_list.php';
+    if(isset($_GET['nom'])) {
+        $remote_url .= '?nom=' . rawurlencode($_GET['nom']);
+    }
+
+    $context = stream_context_create(array(
+        'http' => array(
+            'method' => 'GET',
+            'timeout' => 10,
+            'header' => "Accept: text/html\r\n"
+        )
+    ));
+
+    $remote_response = @file_get_contents($remote_url, false, $context);
+    if($remote_response !== false) {
+        echo $remote_response;
+        exit;
+    }
+
+    http_response_code(502);
+    echo 'erreur fallback distant';
+    exit;
+}
+
 if(isset($_GET['nom'])){
     $path = (String) trim($_GET['nom']);
     $path = str_replace("¤", "'", $path);
