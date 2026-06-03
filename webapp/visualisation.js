@@ -2,6 +2,7 @@ const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
 const VISUALISATION_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/api/explorer.php`;
 const REMOTE_VIEWER_URL = WEBAPP_CONFIG.VIEWER_URL || `${BASE_URL}components/viewer/viewer.html`;
+const REMOTE_MUSICXML_VIEWER_URL = WEBAPP_CONFIG.MUSICXML_VIEWER_URL || `${BASE_URL}components/musicxml/index.html`;
 const REMOTE_PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 
 let currentRelativePdfPath = '';
@@ -261,7 +262,7 @@ async function loadProgramDefinition(programUrl) {
       action: 'download',
       path: relativeProgramPath,
     }).toString();
-    const response = await fetch(`${VISUALISATION_API_URL}?${query}`);
+    const response = await fetch(`${VISUALISATION_API_URL}?${query}`, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Erreur HTTP ${response.status} pendant le chargement du programme.`);
     }
@@ -384,6 +385,11 @@ function buildProtectedPdfUrl(relativePdfPath) {
   return `${VISUALISATION_API_URL}?${params.toString()}`;
 }
 
+function isMusicXmlPath(path) {
+  const lower = String(path || '').toLowerCase();
+  return lower.endsWith('.musicxml') || lower.endsWith('.mxl') || lower.endsWith('.xml');
+}
+
 function notifyParentPdfChanged(relativePdfPath) {
   if (!window.parent || window.parent === window) {
     return;
@@ -409,7 +415,7 @@ function updateQueryForRelativePath(relativePath) {
 
 async function listDirectory(path) {
   const query = new URLSearchParams({ action: 'list', path: cleanPath(path) }).toString();
-  const response = await fetch(`${VISUALISATION_API_URL}?${query}`);
+  const response = await fetch(`${VISUALISATION_API_URL}?${query}`, { credentials: 'include' });
   const payload = await response.json().catch(() => ({ success: false, message: 'Invalid JSON response.' }));
 
   if (!response.ok || !payload.success) {
@@ -437,16 +443,19 @@ function renderFileList(items, currentFileName, folderPath) {
   files.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
 
   for (const item of files) {
+    const filePath = cleanPath(item.path || `${folderPath}/${item.name}`);
     const isPdf = String(item.name || '').toLowerCase().endsWith('.pdf');
+    const isMusicXml = isMusicXmlPath(filePath);
+    const isSupported = isPdf || isMusicXml;
     const isSelected = item.name === currentFileName;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `file-card${isSelected ? ' is-selected' : ''}${isPdf ? ' is-clickable' : ' is-disabled'}`;
-    button.disabled = !isPdf;
+    button.className = `file-card${isSelected ? ' is-selected' : ''}${isSupported ? ' is-clickable' : ' is-disabled'}`;
+    button.disabled = !isSupported;
 
     const icon = document.createElement('span');
     icon.className = 'file-icon';
-    icon.textContent = isPdf ? 'PDF' : 'DOC';
+    icon.textContent = isPdf ? 'PDF' : (isMusicXml ? 'XML' : 'DOC');
 
     const content = document.createElement('span');
     content.className = 'file-content';
@@ -457,17 +466,16 @@ function renderFileList(items, currentFileName, folderPath) {
 
     const meta = document.createElement('span');
     meta.className = 'file-meta';
-    meta.textContent = isPdf ? '' : 'Fichier non PDF';
+    meta.textContent = isSupported ? '' : 'Fichier non pris en charge';
 
     content.appendChild(name);
     content.appendChild(meta);
     button.appendChild(icon);
     button.appendChild(content);
 
-    if (isPdf) {
+    if (isSupported) {
       button.addEventListener('click', () => {
-        const nextRelativePath = cleanPath(item.path || `${folderPath}/${item.name}`);
-        void loadVisualisation(nextRelativePath);
+        void loadVisualisation(filePath);
       });
     }
 
@@ -581,7 +589,10 @@ function resolvePdfUrl() {
 async function loadVisualisation(relativePdfPath) {
   const iframe = document.getElementById('pdf-viewer');
   const cleanRelativePath = cleanPath(relativePdfPath);
-  const pdfUrl = buildProtectedPdfUrl(cleanRelativePath);
+  const protectedFileUrl = buildProtectedPdfUrl(cleanRelativePath);
+  const viewerUrl = isMusicXmlPath(cleanRelativePath)
+    ? `${REMOTE_MUSICXML_VIEWER_URL}?${new URLSearchParams({ source: protectedFileUrl }).toString()}`
+    : `${REMOTE_VIEWER_URL}?${new URLSearchParams({ file: protectedFileUrl }).toString()}#pagemode=none`;
   currentRelativePdfPath = cleanRelativePath;
 
   if (currentProgram) {
@@ -589,7 +600,7 @@ async function loadVisualisation(relativePdfPath) {
   }
 
   hideMessage();
-  iframe.src = `${REMOTE_VIEWER_URL}?${new URLSearchParams({ file: pdfUrl }).toString()}#pagemode=none`;
+  iframe.src = viewerUrl;
   const siblingFileCount = await renderSiblingFiles(cleanRelativePath);
   updateQueryForRelativePath(cleanRelativePath);
   notifyParentPdfChanged(cleanRelativePath);

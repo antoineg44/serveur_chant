@@ -28,7 +28,7 @@ function createRecycleFolderName() {
 
 async function apiPost(action, payload) {
   const body = new URLSearchParams({ action, ...payload });
-  const response = await fetch(LIBRARY_API_URL, { method: 'POST', body });
+  const response = await fetch(LIBRARY_API_URL, { method: 'POST', body, credentials: 'include' });
 
   if (!response.ok) {
     throw new Error(`Erreur HTTP ${response.status}.`);
@@ -230,7 +230,7 @@ function openCreateProgramPage() {
 
 async function collectLibraryData(rootPath) {
   const query = new URLSearchParams({ action: 'list_tree', path: rootPath }).toString();
-  const response = await fetch(`${LIBRARY_API_URL}?${query}`);
+  const response = await fetch(`${LIBRARY_API_URL}?${query}`, { credentials: 'include' });
 
   if (!response.ok) {
     throw new Error(`Erreur HTTP ${response.status} sur ${rootPath || '/'}.`);

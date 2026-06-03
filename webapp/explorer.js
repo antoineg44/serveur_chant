@@ -251,7 +251,10 @@ async function fetchWithFallback(buildRequest, expectJson = true) {
     const request = buildRequest(baseUrl);
 
     try {
-      const response = await fetch(request.url, request.options);
+      const response = await fetch(request.url, {
+        ...(request.options || {}),
+        credentials: 'include',
+      });
 
       if (!response.ok) {
         if (index < candidates.length - 1 && shouldRetryWithFallback(null, response.status)) {
@@ -360,6 +363,32 @@ function openPdfFromExplorer(item) {
   window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
 }
 
+function isMusicXmlFileName(fileName) {
+  const lower = String(fileName || '').toLowerCase();
+  return lower.endsWith('.musicxml') || lower.endsWith('.mxl') || lower.endsWith('.xml');
+}
+
+async function openMusicXmlFromExplorer(item) {
+  const apiUrl = await resolveApiUrl();
+  const query = encodeQuery({ action: 'download', path: item.path });
+  const sourceUrl = `${apiUrl}?${query}`;
+  const viewerUrl = `../components/musicxml/index.html?${new URLSearchParams({ source: sourceUrl }).toString()}`;
+
+  const pageItem = {
+    name: item.name,
+    title: `MusicXML - ${item.name}`,
+    key: `musicxml-${item.path}`,
+    url: viewerUrl,
+  };
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'openPageTab', item: pageItem }, '*');
+    return;
+  }
+
+  window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+}
+
 /**
  * Render breadcrumb navigation
  */
@@ -461,6 +490,8 @@ function renderList(items) {
         void loadDirectory(item.path);
       } else if (item.name.toLowerCase().endsWith('.pdf')) {
         openPdfFromExplorer(item);
+      } else if (isMusicXmlFileName(item.name)) {
+        void openMusicXmlFromExplorer(item);
       }
     });
 
