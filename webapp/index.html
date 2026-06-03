@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebApp - Interface Onglets</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .user-info {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+    .user-info strong { color: var(--ink); }
+  </style>
+  <style>
+    /* Full-screen fixed layout */
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    .layout {
+      max-width: none;
+      margin: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .tabs {
+      flex-shrink: 0;
+    }
+    .tabs-actions {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 8px;
+    }
+    .panels {
+      flex: 1;
+      min-height: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .viewer-frame-wrap {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+    }
+  </style>
+  <style>
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: url('../fond.jpg');
+      background-size: cover;
+      background-position: center;
+      filter: brightness(20%);
+    }
+  </style>
+  <script src="./config.js"></script>
+  <script>
+    // Auth guard: redirect to login if not authenticated
+    (async () => {
+      try {
+        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+        const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          window.location.replace('./login.html');
+        } else {
+          window.__currentUser = data.user;
+          document.addEventListener('DOMContentLoaded', () => {
+            const info = document.getElementById('user-info');
+            if (info) {
+              info.innerHTML = `Connecté : <strong>${data.user.username}</strong>
+                ${ data.user.role === 'admin'
+                  ? '&nbsp;<a href="./admin-users.html" style="color:var(--accent);font-size:.85rem;">Gérer les utilisateurs</a>'
+                  : ''}`.trim();
+            }
+
+            const settingsTab = document.getElementById('tab-settings');
+            const settingsPanel = document.getElementById('panel-settings');
+            if (settingsTab) {
+              const isAdmin = data.user.role === 'admin';
+              settingsTab.hidden = !isAdmin;
+              settingsTab.setAttribute('aria-hidden', String(!isAdmin));
+            }
+            if (settingsPanel && data.user.role !== 'admin') {
+              settingsPanel.hidden = true;
+            }
+          });
+        }
+      } catch {
+        window.location.replace('./login.html');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+  <!--<header class="topbar">
+    <div>
+      <h1>WebApp Serveur Chant</h1>
+    </div>
+    <div class="user-menu">
+      <span class="user-info" id="user-info"></span>
+    </div>
+  </header>-->
+
+  <main class="layout">
+    <nav class="tabs" role="tablist" aria-label="Navigation principale">
+      <div class="tabs-actions">
+        <button id="btn-logout" class="btn btn-danger icon-btn" type="button" title="Déconnexion" aria-label="Déconnexion">
+          <span class="icon-glyph" aria-hidden="true">&#x21aa;</span><span class="sr-only">Déconnexion</span>
+        </button>
+      </div>
+      <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-explorer" id="tab-explorer" data-tab="explorer">Explorateur</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="panel-library" id="tab-library" data-tab="library">Bibliotheque</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="panel-settings" id="tab-settings" data-tab="settings" hidden aria-hidden="true">Parametres</button>
+    </nav>
+
+    <section class="panels">
+      <article class="panel is-active" role="tabpanel" id="panel-explorer" aria-labelledby="tab-explorer" tabindex="0">
+        <div class="panel-head">
+          <h2>Explorateur de fichiers</h2>
+          <div class="panel-head-actions">
+            <button type="button" class="btn btn-ghost icon-btn open-external-btn" title="Ouvrir dans un nouvel onglet" aria-label="Ouvrir dans un nouvel onglet">
+              <span class="icon-glyph" aria-hidden="true">&#x2197;</span><span class="sr-only">Ouvrir dans un nouvel onglet</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="viewer-frame-wrap">
+          <iframe
+            class="viewer-frame"
+            title="Explorateur"
+            src="./explorer.html"
+            loading="eager"
+          ></iframe>
+        </div>
+      </article>
+
+      <article class="panel" role="tabpanel" id="panel-library" aria-labelledby="tab-library" tabindex="0" hidden>
+        <div class="panel-head">
+          <h2>Bibliotheque des messes</h2>
+          <div class="panel-head-actions">
+            <button type="button" class="btn btn-ghost icon-btn open-external-btn" title="Ouvrir dans un nouvel onglet" aria-label="Ouvrir dans un nouvel onglet">
+              <span class="icon-glyph" aria-hidden="true">&#x2197;</span><span class="sr-only">Ouvrir dans un nouvel onglet</span>
+            </button>
+          </div>
+        </div>
+        <div class="viewer-frame-wrap">
+          <iframe
+            class="viewer-frame"
+            title="Bibliotheque"
+            src="./library.html"
+            loading="eager"
+          ></iframe>
+        </div>
+      </article>
+
+      <article class="panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" tabindex="0" hidden>
+        <div class="placeholder">
+          <h2>Parametres</h2>
+          <p><a href="./admin-users.html">Aller a l'administration des utilisateurs</a></p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+  <script>
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+        || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+      await fetch(`${AUTH_API}?action=logout`, { credentials: 'include' });
+      window.location.replace('./login.html');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebApp - Explorateur</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .explorer-toolbar {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .explorer-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+
+    .explorer-search {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .explorer-search-input {
+      min-width: 260px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+  </style>
+  <script>
+    (async () => {
+      try {
+        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+        const res = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          window.location.replace('./login.html');
+        }
+      } catch {
+        window.location.replace('./login.html');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="explorer-toolbar">
+    <div class="explorer-actions">
+      <button id="go-up" class="btn btn-ghost icon-btn" type="button" title="Monter" aria-label="Monter">
+        <span class="icon-glyph" aria-hidden="true">&uarr;</span><span class="sr-only">Monter</span>
+      </button>
+      <button id="refresh-list" class="btn btn-ghost icon-btn" type="button" title="Rafraichir" aria-label="Rafraichir">
+        <span class="icon-glyph" aria-hidden="true">&#x21bb;</span><span class="sr-only">Rafraichir</span>
+      </button>
+      <button id="new-folder" class="btn icon-btn" type="button" title="Nouveau dossier" aria-label="Nouveau dossier">
+        <span class="icon-glyph" aria-hidden="true">&#x1f4c1;+</span><span class="sr-only">Nouveau dossier</span>
+      </button>
+      <button id="rename-item" class="btn btn-ghost icon-btn" type="button" title="Renommer" aria-label="Renommer">
+        <span class="icon-glyph" aria-hidden="true">&#x270e;</span><span class="sr-only">Renommer</span>
+      </button>
+      <button id="cut-item" class="btn btn-ghost icon-btn" type="button" title="Couper" aria-label="Couper">
+        <span class="icon-glyph" aria-hidden="true">&#x2702;</span><span class="sr-only">Couper</span>
+      </button>
+      <button id="paste-item" class="btn btn-ghost icon-btn" type="button" title="Coller" aria-label="Coller" disabled>
+        <span class="icon-glyph" aria-hidden="true">&#x1f4cb;</span><span class="sr-only">Coller</span>
+      </button>
+      <button id="delete-item" class="btn btn-danger icon-btn" type="button" title="Supprimer" aria-label="Supprimer">
+        <span class="icon-glyph" aria-hidden="true">&#x1f5d1;</span><span class="sr-only">Supprimer</span>
+      </button>
+      <button id="download-item" class="btn btn-ghost icon-btn" type="button" title="Telecharger" aria-label="Telecharger">
+        <span class="icon-glyph" aria-hidden="true">&#x2b07;</span><span class="sr-only">Telecharger</span>
+      </button>
+      <button id="upload-file" class="btn btn-ghost icon-btn" type="button" title="Ajouter un fichier" aria-label="Ajouter un fichier">
+        <span class="icon-glyph" aria-hidden="true">&#x1f4ce;</span><span class="sr-only">Ajouter un fichier</span>
+      </button>
+    </div>
+    <div class="explorer-search">
+      <input id="explorer-search-input" class="explorer-search-input" type="search" placeholder="Rechercher un fichier ou dossier" aria-label="Rechercher un fichier ou dossier" />
+    </div>
+  </div>
+
+  <input id="upload-input" type="file" class="visually-hidden" />
+
+  <div class="breadcrumbs" id="breadcrumbs" aria-label="Chemin courant"></div>
+
+  <div class="explorer-list-wrap">
+    <table class="explorer-table" aria-describedby="explorer-status">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Type</th>
+          <th>Taille</th>
+          <th>Modifie le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="explorer-body"></tbody>
+    </table>
+  </div>
+
+  <p class="hint" id="explorer-status" role="status">Initialisation de l'explorateur...</p>
+
+  <script src="./explorer.js"></script>
+</body>
+</html>

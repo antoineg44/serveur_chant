@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestion des utilisateurs — WebApp Serveur Chant</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .admin-topbar {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .admin-topbar h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .admin-topbar .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .card {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-head h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .users-table th,
+    .users-table td {
+      text-align: left;
+      padding: 11px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .users-table th {
+      background: #fff8eb;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-soft);
+    }
+
+    .users-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .users-table tbody tr:hover {
+      background: #fffbf4;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge-admin  { background: #ccfbf1; color: #065f46; }
+    .badge-user   { background: #f1f5f9; color: #334155; }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; }
+
+    .row-actions { display: flex; gap: 8px; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+    }
+
+    .modal-backdrop.hidden { display: none; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 440px;
+      padding: 30px 28px;
+      animation: pop-in 250ms ease;
+    }
+
+    .modal h3 { margin: 0 0 20px; font-size: 1.15rem; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .field label { font-weight: 600; font-size: 0.9rem; }
+
+    .field input,
+    .field select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 13px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color 150ms ease;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.15);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .error-msg {
+      padding: 9px 13px;
+      border-radius: 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .error-msg.visible { display: block; }
+
+    .status-bar {
+      max-width: 900px;
+      margin: 0 auto 14px;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      min-height: 1.2em;
+    }
+
+    .status-bar.is-error { color: #b91c1c; }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.97) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+  <div class="admin-topbar">
+    <h1>Gestion des utilisateurs</h1>
+    <div class="actions">
+      <a href="./index.html" class="btn btn-ghost">← Retour</a>
+      <button id="btn-logout" class="btn btn-ghost" type="button">Déconnexion</button>
+    </div>
+  </div>
+
+  <p class="status-bar" id="status-bar"></p>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Utilisateurs</h2>
+      <button id="btn-add-user" class="btn" type="button">+ Ajouter</button>
+    </div>
+
+    <table class="users-table" id="users-table">
+      <thead>
+        <tr>
+          <th>Identifiant</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-body">
+        <tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:24px;">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create / Edit modal -->
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h3 id="modal-title">Ajouter un utilisateur</h3>
+
+      <div class="error-msg" id="modal-error"></div>
+
+      <form id="user-form" novalidate>
+        <input type="hidden" id="form-id" value="" />
+
+        <div class="field">
+          <label for="form-username">Identifiant</label>
+          <input id="form-username" type="text" autocomplete="off" required />
+        </div>
+
+        <div class="field" id="field-password">
+          <label for="form-password">Mot de passe <span id="password-hint" style="font-weight:400;color:var(--ink-soft);">(6 caractères min.)</span></label>
+          <input id="form-password" type="password" autocomplete="new-password" />
+        </div>
+
+        <div class="field">
+          <label for="form-role">Rôle</label>
+          <select id="form-role">
+            <option value="user">Utilisateur</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="form-active">Statut</label>
+          <select id="form-active">
+            <option value="true">Actif</option>
+            <option value="false">Inactif</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="btn-modal-cancel">Annuler</button>
+          <button type="submit" class="btn" id="btn-modal-submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+      || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+
+    let currentUser = null;
+
+    // ── Auth guard ────────────────────────────────────────────────────────────
+
+    async function checkAuth() {
+      try {
+        const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          window.location.replace('./login.html');
+          return;
+        }
+        if (data.user.role !== 'admin') {
+          window.location.replace('./index.html');
+          return;
+        }
+        currentUser = data.user;
+      } catch {
+        window.location.replace('./login.html');
+      }
+    }
+
+    // ── Status ────────────────────────────────────────────────────────────────
+
+    const statusBar = document.getElementById('status-bar');
+
+    function setStatus(message, isError = false) {
+      statusBar.textContent = message;
+      statusBar.classList.toggle('is-error', isError);
+    }
+
+    // ── API helpers ───────────────────────────────────────────────────────────
+
+    async function apiPost(action, data) {
+      const body = new URLSearchParams({ ...data, action });
+      const res  = await fetch(AUTH_API, { method: 'POST', credentials: 'include', body });
+      return res.json();
+    }
+
+    async function apiGet(action) {
+      const res = await fetch(`${AUTH_API}?action=${action}`, { credentials: 'include' });
+      return res.json();
+    }
+
+    // ── Users table ───────────────────────────────────────────────────────────
+
+    const usersBody = document.getElementById('users-body');
+
+    function renderUsers(users) {
+      usersBody.innerHTML = '';
+
+      if (!users.length) {
+        usersBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:24px;">Aucun utilisateur.</td></tr>';
+        return;
+      }
+
+      for (const user of users) {
+        const row = document.createElement('tr');
+        const isSelf = currentUser && currentUser.id === user.id;
+
+        row.innerHTML = `
+          <td><strong>${escHtml(user.username)}</strong>${isSelf ? ' <span style="color:var(--ink-soft);font-size:.8rem;">(vous)</span>' : ''}</td>
+          <td><span class="badge badge-${user.role}">${user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</span></td>
+          <td><span class="badge ${user.active ? 'badge-active' : 'badge-inactive'}">${user.active ? 'Actif' : 'Inactif'}</span></td>
+          <td class="row-actions"></td>
+        `;
+
+        const actions = row.querySelector('.row-actions');
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-ghost';
+        editBtn.style.fontSize = '0.85rem';
+        editBtn.textContent = 'Modifier';
+        editBtn.addEventListener('click', () => openEditModal(user));
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn btn-danger';
+        delBtn.style.fontSize = '0.85rem';
+        delBtn.textContent = 'Supprimer';
+        delBtn.disabled = isSelf;
+        delBtn.addEventListener('click', () => deleteUser(user));
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        usersBody.appendChild(row);
+      }
+    }
+
+    async function loadUsers() {
+      setStatus('Chargement…');
+      try {
+        const data = await apiGet('list_users');
+        if (!data.success) throw new Error(data.message);
+        renderUsers(data.users);
+        setStatus(`${data.users.length} utilisateur(s).`);
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    }
+
+    async function deleteUser(user) {
+      if (!confirm(`Supprimer l'utilisateur « ${user.username} » ?`)) return;
+      try {
+        const data = await apiPost('delete_user', { id: user.id });
+        if (!data.success) throw new Error(data.message);
+        setStatus('Utilisateur supprimé.');
+        await loadUsers();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+
+    const backdrop     = document.getElementById('modal-backdrop');
+    const modalTitle   = document.getElementById('modal-title');
+    const userForm     = document.getElementById('user-form');
+    const formId       = document.getElementById('form-id');
+    const formUsername = document.getElementById('form-username');
+    const formPassword = document.getElementById('form-password');
+    const formRole     = document.getElementById('form-role');
+    const formActive   = document.getElementById('form-active');
+    const modalError   = document.getElementById('modal-error');
+    const passwordHint = document.getElementById('password-hint');
+
+    function showModalError(msg) {
+      modalError.textContent = msg;
+      modalError.classList.add('visible');
+    }
+
+    function hideModalError() {
+      modalError.classList.remove('visible');
+    }
+
+    function openCreateModal() {
+      modalTitle.textContent = 'Ajouter un utilisateur';
+      formId.value       = '';
+      formUsername.value = '';
+      formPassword.value = '';
+      formPassword.required = true;
+      passwordHint.textContent = '(6 caractères min.)';
+      formUsername.disabled = false;
+      formRole.value   = 'user';
+      formActive.value = 'true';
+      hideModalError();
+      backdrop.classList.remove('hidden');
+      formUsername.focus();
+    }
+
+    function openEditModal(user) {
+      modalTitle.textContent = `Modifier « ${user.username} »`;
+      formId.value       = String(user.id);
+      formUsername.value = user.username;
+      formUsername.disabled = true;
+      formPassword.value = '';
+      formPassword.required = false;
+      passwordHint.textContent = '(laisser vide pour ne pas changer)';
+      formRole.value   = user.role;
+      formActive.value = String(user.active);
+      hideModalError();
+      backdrop.classList.remove('hidden');
+      formPassword.focus();
+    }
+
+    function closeModal() {
+      backdrop.classList.add('hidden');
+      formUsername.disabled = false;
+    }
+
+    document.getElementById('btn-add-user').addEventListener('click', openCreateModal);
+    document.getElementById('btn-modal-cancel').addEventListener('click', closeModal);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+
+    userForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      hideModalError();
+
+      const isCreate = formId.value === '';
+      const submitBtn = document.getElementById('btn-modal-submit');
+      submitBtn.disabled = true;
+
+      try {
+        let data;
+        if (isCreate) {
+          if (!formPassword.value || formPassword.value.length < 6) {
+            throw new Error('Le mot de passe doit contenir au moins 6 caractères.');
+          }
+          data = await apiPost('create_user', {
+            username: formUsername.value.trim(),
+            password: formPassword.value,
+            role:     formRole.value,
+            active:   formActive.value,
+          });
+        } else {
+          const payload = {
+            id:     formId.value,
+            role:   formRole.value,
+            active: formActive.value,
+          };
+          if (formPassword.value) {
+            if (formPassword.value.length < 6) {
+              throw new Error('Le mot de passe doit contenir au moins 6 caractères.');
+            }
+            payload.password = formPassword.value;
+          }
+          data = await apiPost('update_user', payload);
+        }
+
+        if (!data.success) throw new Error(data.message);
+        closeModal();
+        setStatus(isCreate ? 'Utilisateur créé.' : 'Utilisateur modifié.');
+        await loadUsers();
+      } catch (err) {
+        showModalError(err.message);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      await fetch(`${AUTH_API}?action=logout`, { credentials: 'include' });
+      window.location.replace('./login.html');
+    });
+
+    // ── Escape helper ─────────────────────────────────────────────────────────
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    (async () => {
+      await checkAuth();
+      await loadUsers();
+    })();
+  </script>
+</body>
+</html>

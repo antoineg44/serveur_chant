@@ -2,12 +2,18 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../config.php';
+
+session_start();
+
 applyCorsHeaders();
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
+
+requireAuthenticatedUser();
 
 $projectRoot = realpath(dirname(__DIR__, 2));
 
@@ -89,7 +95,7 @@ function respondJson(int $statusCode, array $payload): void
 function applyCorsHeaders(): void
 {
     $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
-    $isAllowedOrigin = $origin === 'https://partitions.ovh'
+    $isAllowedOrigin = $origin === WEBAPP_ALLOWED_ORIGIN
         || $origin === 'null'
         || preg_match('/^https?:\/\/localhost(:\d+)?$/i', $origin) === 1
         || preg_match('/^https?:\/\/127\.0\.0\.1(:\d+)?$/i', $origin) === 1;
@@ -101,7 +107,18 @@ function applyCorsHeaders(): void
 
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
+    header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
+}
+
+function requireAuthenticatedUser(): void
+{
+    if (empty($_SESSION['user'])) {
+        respondJson(401, [
+            'success' => false,
+            'message' => 'Authentification requise.',
+        ]);
+    }
 }
 
 function requestValue(string $key): string

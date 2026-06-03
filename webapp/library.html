@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebApp - Bibliotheque</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .library-toolbar {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .library-count {
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+    }
+
+    .library-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .library-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+
+    .library-filter-select {
+      min-width: 320px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .library-search-input {
+      min-width: 280px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+  </style>
+  <script>
+    (async () => {
+      try {
+        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+        const res = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          window.location.replace('./login.html');
+        }
+      } catch {
+        window.location.replace('./login.html');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="library-toolbar">
+    <div class="library-filter">
+      <select id="library-folder-filter" class="library-filter-select" aria-label="Filtrer par dossier">
+        <option value="">Tous les dossiers</option>
+      </select>
+      <input id="library-search-input" class="library-search-input" type="search" placeholder="Rechercher un fichier" aria-label="Rechercher un fichier" />
+      <div class="library-actions">
+        <button id="library-create-program" class="btn btn-ghost" type="button">Créer un nouveau programme</button>
+        <button id="library-refresh" class="btn btn-ghost icon-btn" type="button" title="Rafraichir la liste" aria-label="Rafraichir la liste">
+          <span class="icon-glyph" aria-hidden="true">&#x21bb;</span><span class="sr-only">Rafraichir la liste</span>
+        </button>
+        <button id="library-new-folder" class="btn icon-btn" type="button" title="Nouveau dossier" aria-label="Nouveau dossier">
+          <span class="icon-glyph" aria-hidden="true">&#x1f4c1;+</span><span class="sr-only">Nouveau dossier</span>
+        </button>
+        <button id="library-delete" class="btn btn-danger icon-btn" type="button" title="Supprimer le fichier selectionne" aria-label="Supprimer le fichier selectionne" disabled>
+          <span class="icon-glyph" aria-hidden="true">&#x1f5d1;</span><span class="sr-only">Supprimer le fichier selectionne</span>
+        </button>
+        <span id="library-count" class="library-count">0 fichier</span>
+      </div>
+    </div>
+    
+  </div>
+
+  <div class="explorer-list-wrap">
+    <table class="explorer-table" aria-describedby="library-status">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Paroisse</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="library-body">
+        <tr>
+          <td colspan="3" class="empty-cell">Chargement de la bibliotheque...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p id="library-status" class="hint" role="status">En attente de chargement.</p>
+
+  <script src="./library.js"></script>
+</body>
+</html>

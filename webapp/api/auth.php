@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../config.php';
+
 session_start();
 
 applyCorsHeaders();
@@ -67,7 +69,7 @@ function respondJson(int $status, array $payload): void
 function applyCorsHeaders(): void
 {
     $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
-    $isAllowed = $origin === 'https://partitions.ovh'
+    $isAllowed = $origin === WEBAPP_ALLOWED_ORIGIN
         || $origin === 'null'
         || (bool) preg_match('/^https?:\/\/localhost(:\d+)?$/i', $origin)
         || (bool) preg_match('/^https?:\/\/127\.0\.0\.1(:\d+)?$/i', $origin);

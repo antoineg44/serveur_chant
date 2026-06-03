@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Visualisation PDF</title>
+	<style>
+		:root {
+			color-scheme: light;
+			font-family: "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+			background: #0f172a;
+			color: #e2e8f0;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			margin: 0;
+			min-height: 100%;
+		}
+
+		body {
+			min-height: 100vh;
+			overflow: hidden;
+			background:
+				radial-gradient(circle at top, rgba(59, 130, 246, 0.25), transparent 35%),
+				linear-gradient(180deg, #0f172a 0%, #020617 100%);
+		}
+
+		.layout {
+			position: relative;
+			min-height: 100vh;
+		}
+
+		.viewer {
+			position: fixed;
+			inset: 0;
+			display: block;
+			width: 100vw;
+			height: 100vh;
+			border: 0;
+			background: #ffffff;
+			z-index: 1;
+		}
+
+		.sidebar {
+			position: fixed;
+			top: 16px;
+			bottom: 16px;
+			width: min(360px, calc(100vw - 32px));
+			display: flex;
+			flex-direction: column;
+			border: 1px solid rgba(148, 163, 184, 0.18);
+			border-radius: 22px;
+			background: rgba(15, 23, 42, 0.78);
+			backdrop-filter: blur(14px);
+			box-shadow: 0 24px 60px rgba(2, 6, 23, 0.35);
+			z-index: 3;
+		}
+
+		.folder-sidebar {
+			right: 16px;
+		}
+
+		.program-sidebar {
+			left: 16px;
+		}
+
+		#program-sidebar[hidden] {
+			display: none !important;
+		}
+
+		.sidebar-head {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 20px 18px 16px;
+			border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+		}
+
+		.sidebar-title {
+			min-width: 0;
+			flex: 1;
+		}
+
+		.sidebar-head h2 {
+			margin: 0;
+			font-size: 1rem;
+			font-weight: 700;
+		}
+
+		.sidebar-head p {
+			margin: 8px 0 0;
+			font-size: 0.82rem;
+			line-height: 1.45;
+			color: #94a3b8;
+			word-break: break-word;
+		}
+
+		.sidebar-body {
+			flex: 1;
+			overflow: auto;
+			padding: 12px;
+		}
+
+		.sidebar-toggle {
+			flex: 0 0 auto;
+			padding: 8px 12px;
+			border: 1px solid rgba(148, 163, 184, 0.2);
+			border-radius: 999px;
+			background: rgba(30, 41, 59, 0.96);
+			color: #e2e8f0;
+			font: inherit;
+			font-size: 0.78rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: border-color 140ms ease, background 140ms ease;
+		}
+
+		.sidebar-toggle:hover {
+			border-color: rgba(96, 165, 250, 0.45);
+			background: rgba(51, 65, 85, 0.98);
+		}
+
+		.sidebar-toggle-floating,
+		.program-sidebar-toggle-floating {
+			position: fixed;
+			top: 16px;
+			z-index: 4;
+			display: none;
+			padding: 10px 14px;
+			border: 1px solid rgba(148, 163, 184, 0.22);
+			border-radius: 999px;
+			background: rgba(15, 23, 42, 0.9);
+			color: #e2e8f0;
+			font: inherit;
+			font-size: 0.82rem;
+			font-weight: 700;
+			cursor: pointer;
+			box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+		}
+
+		.sidebar-toggle-floating {
+			right: 16px;
+		}
+
+		.program-sidebar-toggle-floating {
+			left: 16px;
+		}
+
+		.program-sidebar-toggle-floating:not([hidden]) {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.layout.is-sidebar-hidden .sidebar {
+			display: none;
+		}
+
+		.layout.is-sidebar-hidden .program-sidebar {
+			display: flex;
+		}
+
+		.program-sidebar.is-hidden {
+			display: none;
+		}
+
+		.layout.is-sidebar-hidden .program-sidebar.is-hidden {
+			display: none;
+		}
+
+		.layout.is-sidebar-hidden + .sidebar-toggle-floating {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.file-list {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.program-part-text {
+			padding: 4px 2px;
+			margin-top: 8px;
+			font-size: 0.82rem;
+			font-weight: 700;
+			letter-spacing: 0.03em;
+			text-transform: uppercase;
+			color: #93c5fd;
+		}
+
+		.file-card {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			width: 100%;
+			padding: 12px 14px;
+			border: 1px solid rgba(148, 163, 184, 0.14);
+			border-radius: 14px;
+			background: rgba(15, 23, 42, 0.78);
+			color: #e2e8f0;
+			text-align: left;
+		}
+
+		.file-card.is-clickable {
+			cursor: pointer;
+			transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+		}
+
+		.file-card.is-clickable:hover {
+			transform: translateX(-2px);
+			border-color: rgba(96, 165, 250, 0.45);
+			background: rgba(30, 41, 59, 0.96);
+		}
+
+		.file-card.is-selected {
+			border-color: rgba(96, 165, 250, 0.72);
+			background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+			box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.22);
+		}
+
+		.file-card.is-disabled {
+			opacity: 0.65;
+		}
+
+		.file-icon {
+			flex: 0 0 34px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 34px;
+			height: 34px;
+			border-radius: 10px;
+			background: rgba(59, 130, 246, 0.18);
+			font-size: 0.85rem;
+			font-weight: 700;
+			color: #bfdbfe;
+		}
+
+		.file-content {
+			min-width: 0;
+			flex: 1;
+		}
+
+		.file-name {
+			display: block;
+			font-size: 0.92rem;
+			font-weight: 600;
+			word-break: break-word;
+		}
+
+		.file-meta {
+			display: block;
+			margin-top: 4px;
+			font-size: 0.76rem;
+			color: #94a3b8;
+		}
+
+		.sidebar-empty {
+			padding: 16px;
+			border: 1px dashed rgba(148, 163, 184, 0.22);
+			border-radius: 14px;
+			font-size: 0.9rem;
+			line-height: 1.5;
+			color: #94a3b8;
+		}
+
+		.message {
+			position: fixed;
+			inset: 0;
+			z-index: 10;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			text-align: center;
+			font-size: 1rem;
+			line-height: 1.5;
+			background: rgba(2, 6, 23, 0.92);
+		}
+
+		.message.is-visible {
+			display: flex;
+		}
+
+		.message-card {
+			max-width: 640px;
+			padding: 24px 28px;
+			border: 1px solid rgba(148, 163, 184, 0.35);
+			border-radius: 18px;
+			background: rgba(15, 23, 42, 0.92);
+			box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+		}
+
+		.message-card h1 {
+			margin: 0 0 12px;
+			font-size: 1.2rem;
+		}
+
+		.message-card p {
+			margin: 0;
+			color: #cbd5e1;
+		}
+
+		@media (max-width: 820px) {
+			.folder-sidebar {
+				top: auto;
+				left: 12px;
+				right: 12px;
+				bottom: 12px;
+				width: auto;
+				max-height: min(48vh, 420px);
+			}
+
+			.program-sidebar {
+				top: 12px;
+				left: 12px;
+				right: auto;
+				bottom: 12px;
+				width: min(340px, calc(100vw - 24px));
+				max-height: none;
+			}
+
+			.sidebar-body {
+				max-height: 100%;
+			}
+
+			.sidebar-toggle-floating {
+				right: 12px;
+				top: 12px;
+			}
+
+			.program-sidebar-toggle-floating {
+				left: 12px;
+				top: 12px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="layout is-sidebar-hidden">
+		<iframe id="pdf-viewer" class="viewer" title="Visualisation PDF"></iframe>
+
+		<aside id="program-sidebar" class="sidebar program-sidebar" aria-label="Programme" hidden>
+			<div class="sidebar-head">
+				<div class="sidebar-title">
+					<h2>Programme</h2>
+					<p id="program-path">Aucun programme charge</p>
+				</div>
+				<button id="program-toggle" class="sidebar-toggle" type="button" aria-controls="program-list" aria-expanded="true">Masquer</button>
+			</div>
+			<div class="sidebar-body">
+				<div id="program-list" class="file-list"></div>
+			</div>
+		</aside>
+
+		<aside class="sidebar folder-sidebar" aria-label="Fichiers du meme dossier">
+			<div class="sidebar-head">
+				<div class="sidebar-title">
+					<h2>Fichiers du dossier</h2>
+					<p id="folder-path">Chargement...</p>
+				</div>
+				<button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-controls="file-list" aria-expanded="true">Masquer</button>
+			</div>
+			<div class="sidebar-body">
+				<div id="file-list" class="file-list"></div>
+			</div>
+		</aside>
+	</div>
+	<button id="sidebar-toggle-floating" class="sidebar-toggle-floating" type="button" aria-controls="file-list" aria-expanded="false">Afficher les fichiers</button>
+	<button id="program-toggle-floating" class="program-sidebar-toggle-floating" type="button" aria-controls="program-list" aria-expanded="false" hidden>Afficher le programme</button>
+
+	<div id="message" class="message" aria-live="polite">
+		<div class="message-card">
+			<h1>PDF introuvable</h1>
+			<p id="message-text">Aucun PDF n'a ete fourni dans l'URL.</p>
+		</div>
+	</div>
+
+	<script src="./config.js"></script>
+	<script src="./visualisation.js"></script>
+</body>
+</html>
