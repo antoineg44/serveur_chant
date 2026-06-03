@@ -40,12 +40,20 @@ try {
             handleList($pdfRoot);
             break;
 
+        case 'search':
+            handleSearch($pdfRoot);
+            break;
+
         case 'mkdir':
             handleMkdir($pdfRoot);
             break;
 
         case 'rename':
             handleRename($pdfRoot);
+            break;
+
+        case 'move':
+            handleMove($pdfRoot);
             break;
 
         case 'delete':
@@ -242,6 +250,97 @@ function handleList(string $root): void
     ]);
 }
 
+function isDirectoryEmptyVisible(string $directory): bool
+{
+    $children = scandir($directory);
+    if ($children === false) {
+        throw new RuntimeException('Unable to inspect directory.');
+    }
+
+    $visibleChildren = array_filter(
+        $children,
+        static function (string $child): bool {
+            return $child !== '.' && $child !== '..' && !str_starts_with($child, '.');
+        }
+    );
+
+    return count($visibleChildren) === 0;
+}
+
+function handleSearch(string $root): void
+{
+    $relative = requestValue('path');
+    $query = mb_strtolower(requestValue('q'));
+
+    if ($query === '') {
+        respondJson(200, [
+            'success' => true,
+            'items' => [],
+            'query' => '',
+            'searchedPath' => normalizeRelativePath($relative),
+        ]);
+    }
+
+    $startDir = absolutePath($root, $relative);
+    if (!is_dir($startDir)) {
+        throw new RuntimeException('Directory not found.');
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($startDir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    $items = [];
+    $startPrefix = rtrim($startDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+    foreach ($iterator as $entry) {
+        $name = (string) $entry->getFilename();
+        if ($name === '' || str_starts_with($name, '.')) {
+            continue;
+        }
+
+        $fullPath = (string) $entry->getPathname();
+        if (!str_starts_with($fullPath, $startPrefix) && $fullPath !== $startDir) {
+            continue;
+        }
+
+        $relativePath = relativePath($root, $fullPath);
+        $haystack = mb_strtolower($name . ' ' . $relativePath);
+
+        if (!str_contains($haystack, $query)) {
+            continue;
+        }
+
+        $isDir = $entry->isDir();
+        $items[] = [
+            'name' => $name,
+            'path' => $relativePath,
+            'type' => $isDir ? 'dir' : 'file',
+            'size' => $isDir ? null : ($entry->getSize() ?: 0),
+            'mtime' => $entry->getMTime(),
+            'isEmptyDir' => $isDir ? isDirectoryEmptyVisible($fullPath) : null,
+        ];
+    }
+
+    usort(
+        $items,
+        static function (array $a, array $b): int {
+            if ($a['type'] !== $b['type']) {
+                return $a['type'] === 'dir' ? -1 : 1;
+            }
+            return strnatcasecmp((string) $a['path'], (string) $b['path']);
+        }
+    );
+
+    respondJson(200, [
+        'success' => true,
+        'items' => $items,
+        'query' => $query,
+        'searchedPath' => normalizeRelativePath($relative),
+    ]);
+}
+
 function handleMkdir(string $root): void
 {
     $relative = requestValue('path');
@@ -296,6 +395,41 @@ function handleRename(string $root): void
     respondJson(200, [
         'success' => true,
         'message' => 'Entry renamed.',
+    ]);
+}
+
+function handleMove(string $root): void
+{
+    $sourceRelative = normalizeRelativePath(requestValue('path'));
+    $targetRelative = normalizeRelativePath(requestValue('targetPath'));
+
+    if ($sourceRelative === '' || $targetRelative === '') {
+        throw new RuntimeException('Source and target paths are required.');
+    }
+
+    $source = absolutePath($root, $sourceRelative);
+    $target = absolutePath($root, $targetRelative);
+
+    if (!file_exists($source)) {
+        throw new RuntimeException('Source not found.');
+    }
+
+    if (file_exists($target)) {
+        throw new RuntimeException('Target already exists.');
+    }
+
+    $targetDir = dirname($target);
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+        throw new RuntimeException('Unable to create target directory.');
+    }
+
+    if (!rename($source, $target)) {
+        throw new RuntimeException('Unable to move entry.');
+    }
+
+    respondJson(200, [
+        'success' => true,
+        'message' => 'Entry moved.',
     ]);
 }
 
