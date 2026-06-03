@@ -106,6 +106,26 @@ function requestValue(string $key): string
     return is_string($value) ? trim($value) : '';
 }
 
+function normalizeSearchText(string $value): string
+{
+    $value = mb_strtolower(trim($value));
+
+    if ($value === '') {
+        return '';
+    }
+
+    if (function_exists('iconv')) {
+        $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($converted !== false) {
+            $value = $converted;
+        }
+    }
+
+    // Ignore punctuation, separators and symbols when searching.
+    $value = preg_replace('/[^a-z0-9]/i', '', $value) ?? '';
+    return $value;
+}
+
 function normalizeRelativePath(string $path): string
 {
     $path = str_replace('\\', '/', trim($path));
@@ -270,7 +290,8 @@ function isDirectoryEmptyVisible(string $directory): bool
 function handleSearch(string $root): void
 {
     $relative = requestValue('path');
-    $query = mb_strtolower(requestValue('q'));
+    $queryRaw = requestValue('q');
+    $query = normalizeSearchText($queryRaw);
 
     if ($query === '') {
         respondJson(200, [
@@ -306,7 +327,7 @@ function handleSearch(string $root): void
         }
 
         $relativePath = relativePath($root, $fullPath);
-        $haystack = mb_strtolower($name . ' ' . $relativePath);
+        $haystack = normalizeSearchText($name . ' ' . $relativePath);
 
         if (!str_contains($haystack, $query)) {
             continue;
@@ -336,7 +357,7 @@ function handleSearch(string $root): void
     respondJson(200, [
         'success' => true,
         'items' => $items,
-        'query' => $query,
+        'query' => $queryRaw,
         'searchedPath' => normalizeRelativePath($relative),
     ]);
 }
