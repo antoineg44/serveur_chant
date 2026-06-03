@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenSheetMusicDisplay Static Demo</title>
+  <meta name="description" content="Static OpenSheetMusicDisplay demo with zero bundling.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="toolbar">
+      <div class="top-tabs" role="tablist" aria-label="Top toolbar tabs">
+        <button id="workspaceTab" class="top-tab" type="button" role="tab" aria-selected="true" aria-controls="workspacePanel" data-tab-target="workspacePanel">Workspace</button>
+        <button id="importTab" class="top-tab" type="button" role="tab" aria-selected="false" aria-controls="importPanel" data-tab-target="importPanel">Import / Export</button>
+        <button id="playTab" class="top-tab" type="button" role="tab" aria-selected="false" aria-controls="playPanel" data-tab-target="playPanel">Play</button>
+        <button id="debugTab" class="top-tab" type="button" role="tab" aria-selected="false" aria-controls="debugPanel" data-tab-target="debugPanel">Debug</button>
+        <button id="editorTab" class="top-tab" type="button" role="tab" aria-selected="false" aria-controls="editorPanel" data-tab-target="editorPanel">MusicXML Editor</button>
+        <button id="editScoreTab" class="top-tab" type="button" role="tab" aria-selected="false" aria-controls="editorPanel" data-tab-target="editorPanel">Edit score</button>
+      </div>
+
+      <div id="workspacePanel" class="top-tab-panel" role="tabpanel" aria-labelledby="workspaceTab">
+        <div class="controls">
+          <button id="zoomOutBtn" type="button">Zoom Out</button>
+          <button id="zoomInBtn" type="button">Zoom In</button>
+        </div>
+        <div class="instrument-visibility-panel" aria-label="Instrument visibility controls">
+          <strong>Instrument Visibility</strong>
+          <div id="instrumentVisibilityContainer" class="instrument-visibility-container">Render a score to manage instrument visibility.</div>
+        </div>
+      </div>
+
+      <div id="importPanel" class="top-tab-panel" role="tabpanel" aria-labelledby="importTab" hidden>
+        <div class="controls" aria-label="Import score controls">
+          <label for="sampleSelect">Score</label>
+          <select id="sampleSelect"></select>
+          <button id="renderBtn" type="button">Render</button>
+          <label for="fileInput">Local file</label>
+          <input id="fileInput" type="file" accept=".xml,.musicxml,.mxl">
+          <button id="renderFileBtn" type="button">Render Local File</button>
+          <button id="downloadMusicXmlBtn" type="button">Download Modified MusicXML</button>
+          <button id="downloadMusicXmlPdfBtn" type="button">Download Modified MusicXML as PDF</button>
+        </div>
+        <section class="local-omr-panel" aria-label="Offline PDF to MusicXML helper">
+          <strong>Local OMR (offline, no server)</strong>
+          <p class="local-omr-help">Paste your PDF absolute path (Windows), then copy and run the generated PowerShell command from the repository root.</p>
+          <div class="local-omr-controls">
+            <label for="omrPdfPathInput">PDF path</label>
+            <input id="omrPdfPathInput" type="text" placeholder="C:\\scores\\my-sheet.pdf" autocomplete="off">
+            <button id="copyOmrCommandBtn" type="button">Copy Windows OMR Command</button>
+          </div>
+          <label for="omrCommandPreview" class="local-omr-preview-label">PowerShell command preview</label>
+          <textarea id="omrCommandPreview" class="local-omr-preview" readonly aria-label="PowerShell command preview"></textarea>
+        </section>
+        <p id="status" class="status" aria-live="polite">Ready.</p>
+      </div>
+
+      <div id="playPanel" class="top-tab-panel" role="tabpanel" aria-labelledby="playTab" hidden>
+        <div class="controls" aria-label="Playback controls">
+          <button id="enableAudioBtn" type="button">Enable Audio</button>
+          <button id="playBtn" type="button">Play</button>
+          <button id="stopBtn" type="button">Stop</button>
+          <label for="speedSlider">Speed</label>
+          <input id="speedSlider" type="range" min="50" max="150" step="5" value="100" aria-label="Playback speed percent">
+          <span id="speedValue" aria-live="polite">120 BPM</span>
+        </div>
+        <div class="mixer-panel" aria-label="Instrument mixer">
+          <strong>Mixer</strong>
+          <div id="mixerContainer" class="mixer-container">Render a score to load instrument channels.</div>
+        </div>
+      </div>
+
+      <div id="debugPanel" class="top-tab-panel" role="tabpanel" aria-labelledby="debugTab" hidden>
+        <div class="debug-head">
+          <strong>Debug</strong>
+          <button id="clearDebugBtn" type="button">Clear Debug</button>
+        </div>
+        <pre id="debugLog" class="debug-log" aria-live="polite"></pre>
+      </div>
+
+      <div id="editorPanel" class="top-tab-panel" role="tabpanel" aria-labelledby="editorTab" hidden>
+      <div class="editor-head">
+        <h2>MusicXML Editor</h2>
+        <div class="editor-controls">
+          <button id="renderEditorBtn" type="button">Render Editor Content</button>
+          <button id="syncEditorBtn" type="button">Load Current Score Into Editor</button>
+          <button id="transposeDownBtn" type="button">Transpose -1</button>
+          <button id="transposeUpBtn" type="button">Transpose +1</button>
+        </div>
+      </div>
+      <label for="xmlEditor" class="editor-label">Edit MusicXML and re-render instantly.</label>
+      <div class="note-tools" aria-label="Note editing tools">
+        <label for="measureSelect">Measure</label>
+        <select id="measureSelect"></select>
+
+        <label for="noteStepSelect">Step</label>
+        <select id="noteStepSelect">
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="G">G</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+        </select>
+
+        <label for="noteAlterSelect">Accidental</label>
+        <select id="noteAlterSelect">
+          <option value="0">Natural</option>
+          <option value="1">Sharp</option>
+          <option value="-1">Flat</option>
+        </select>
+
+        <label for="noteOctaveInput">Octave</label>
+        <input id="noteOctaveInput" type="number" min="0" max="9" value="4">
+
+        <label for="noteTypeSelect">Type</label>
+        <select id="noteTypeSelect">
+          <option value="whole">Whole</option>
+          <option value="half">Half</option>
+          <option value="quarter" selected>Quarter</option>
+          <option value="eighth">Eighth</option>
+          <option value="16th">16th</option>
+        </select>
+
+        <button id="addNoteBtn" type="button">Add Note</button>
+
+        <label for="noteSelect">Select note</label>
+        <select id="noteSelect"></select>
+        <button id="deleteNoteBtn" type="button">Delete</button>
+        <button id="refreshNotesBtn" type="button">Refresh Note List</button>
+      </div>
+      <textarea id="xmlEditor" class="xml-editor" spellcheck="false" aria-label="MusicXML editor"></textarea>
+    </div>
+    </header>
+
+    <section class="sheet-wrapper">
+      <div id="osmdContainer" class="sheet"></div>
+    </section>
+  </main>
+
+  <script src="bootstrap.js"></script>
+</body>
+</html>
