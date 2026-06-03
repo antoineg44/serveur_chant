@@ -40,6 +40,10 @@ try {
             handleList($pdfRoot);
             break;
 
+        case 'list_tree':
+            handleListTree($pdfRoot);
+            break;
+
         case 'search':
             handleSearch($pdfRoot);
             break;
@@ -267,6 +271,72 @@ function handleList(string $root): void
         'currentPath' => $current,
         'parentPath' => $parent,
         'items' => $items,
+    ]);
+}
+
+function handleListTree(string $root): void
+{
+    $relative = requestValue('path');
+    $startDir = absolutePath($root, $relative);
+
+    if (!is_dir($startDir)) {
+        throw new RuntimeException('Directory not found.');
+    }
+
+    $current = normalizeRelativePath($relative);
+    $foldersSet = [];
+    $foldersSet[$current] = true;
+    $files = [];
+
+    $directoryIterator = new RecursiveDirectoryIterator($startDir, FilesystemIterator::SKIP_DOTS);
+    $filterIterator = new RecursiveCallbackFilterIterator(
+        $directoryIterator,
+        static function (SplFileInfo $entry): bool {
+            $name = (string) $entry->getFilename();
+            return $name !== '' && !str_starts_with($name, '.');
+        }
+    );
+    $iterator = new RecursiveIteratorIterator($filterIterator, RecursiveIteratorIterator::SELF_FIRST);
+
+    foreach ($iterator as $entry) {
+        $name = (string) $entry->getFilename();
+        $pathName = (string) $entry->getPathname();
+        $path = relativePath($root, $pathName);
+
+        if ($entry->isDir()) {
+            $foldersSet[$path] = true;
+            continue;
+        }
+
+        $files[] = [
+            'name' => $name,
+            'path' => $path,
+            'type' => 'file',
+            'size' => $entry->getSize() ?: 0,
+            'mtime' => $entry->getMTime(),
+        ];
+    }
+
+    usort(
+        $files,
+        static function (array $a, array $b): int {
+            return strnatcasecmp((string) $a['path'], (string) $b['path']);
+        }
+    );
+
+    $folders = array_keys($foldersSet);
+    usort(
+        $folders,
+        static function (string $a, string $b): int {
+            return strnatcasecmp($a, $b);
+        }
+    );
+
+    respondJson(200, [
+        'success' => true,
+        'currentPath' => $current,
+        'files' => $files,
+        'folders' => $folders,
     ]);
 }
 
