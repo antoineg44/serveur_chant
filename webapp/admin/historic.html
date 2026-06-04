@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Historique — WebApp Serveur Chant</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../config.js"></script>
+
+  <style>
+    .historic-topbar {
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .historic-topbar h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .historic-topbar .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .historic-layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .historic-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .historic-card-head {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .historic-card-head h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .historic-card-head p {
+      margin: 6px 0 0;
+      color: var(--ink-soft);
+    }
+
+    .historic-table-wrap {
+      padding: 14px 18px 18px;
+    }
+
+    .historic-table {
+      width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 6px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    table.dataTable thead th {
+      background: #fff8eb;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.8rem;
+    }
+
+    table.dataTable tbody tr:hover {
+      background: #fffbf4;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+      background: var(--accent) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+    }
+
+    @media (max-width: 760px) {
+      .historic-table-wrap {
+        padding: 8px;
+      }
+
+      .historic-topbar,
+      .historic-layout {
+        width: calc(100% - 16px);
+      }
+    }
+
+    .historic-table.is-fallback-sorting thead th {
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
+
+  <div class="historic-topbar">
+    <h1>Historique des partitions</h1>
+    <div class="actions">
+      <a href="../index.html" class="btn btn-ghost">← Retour</a>
+      <a href="https://partitions.ovh" class="btn btn-ghost">Accueil</a>
+    </div>
+  </div>
+
+  <main class="historic-layout">
+    <section class="historic-card" aria-label="Historique des ajouts">
+      <div class="historic-card-head">
+        <h2>Ajouts</h2>
+        <p>Toutes les partitions ajoutées par les différents utilisateurs.</p>
+      </div>
+      <div class="historic-table-wrap">
+        <table id="ajouter" class="display hover historic-table">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>Date</th>
+              <th>titre</th>
+              <th>auteur</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="historic-card" aria-label="Historique des suppressions">
+      <div class="historic-card-head">
+        <h2>Suppressions</h2>
+        <p>Les partitions supprimées.</p>
+      </div>
+      <div class="historic-table-wrap">
+        <table id="supprimer" class="display hover historic-table">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>Date</th>
+              <th>titre</th>
+              <th>auteur</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    var fallbackTableState = {
+      ajouter: { rows: [], sortColumn: null, sortAsc: true },
+      supprimer: { rows: [], sortColumn: null, sortAsc: true }
+    };
+
+    function loadScriptWithFallback(urls) {
+      return new Promise(function (resolve, reject) {
+        var index = 0;
+
+        function tryNext() {
+          if (index >= urls.length) {
+            reject(new Error('Unable to load DataTables script.'));
+            return;
+          }
+
+          var script = document.createElement('script');
+          script.src = urls[index++];
+          script.async = true;
+          script.onload = function () { resolve(); };
+          script.onerror = function () { tryNext(); };
+          document.head.appendChild(script);
+        }
+
+        tryNext();
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function toSortableValue(value) {
+      var normalized = String(value == null ? '' : value).trim();
+
+      if (/^-?\d+(\.\d+)?$/.test(normalized)) {
+        return Number(normalized);
+      }
+
+      var isoLike = normalized.replace(' ', 'T');
+      var time = Date.parse(isoLike);
+      if (!Number.isNaN(time)) {
+        return time;
+      }
+
+      return normalized.toLocaleLowerCase();
+    }
+
+    function compareValues(a, b) {
+      if (typeof a === 'number' && typeof b === 'number') {
+        return a - b;
+      }
+
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    }
+
+    function renderFallbackRows(tableId) {
+      var table = document.getElementById(tableId);
+      if (!table) {
+        return;
+      }
+
+      var tbody = table.querySelector('tbody');
+      if (!tbody) {
+        return;
+      }
+
+      var state = fallbackTableState[tableId];
+      if (!state) {
+        return;
+      }
+
+      var sortedRows = state.rows.slice();
+      if (state.sortColumn !== null) {
+        var factor = state.sortAsc ? 1 : -1;
+        var columnIndex = state.sortColumn;
+        sortedRows.sort(function (rowA, rowB) {
+          return factor * compareValues(
+            toSortableValue(rowA[columnIndex]),
+            toSortableValue(rowB[columnIndex])
+          );
+        });
+      }
+
+      if (!sortedRows.length) {
+        tbody.innerHTML = '<tr><td colspan="4">Aucune donnée.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = sortedRows.map(function (row) {
+        return '<tr>'
+          + '<td>' + escapeHtml(row[0]) + '</td>'
+          + '<td>' + escapeHtml(row[1]) + '</td>'
+          + '<td>' + escapeHtml(row[2]) + '</td>'
+          + '<td>' + escapeHtml(row[3]) + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    function wireFallbackSorting(tableId) {
+      var table = document.getElementById(tableId);
+      if (!table || table.dataset.sortWired === '1') {
+        return;
+      }
+
+      table.dataset.sortWired = '1';
+      table.classList.add('is-fallback-sorting');
+
+      var headers = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+      headers.forEach(function (header, index) {
+        header.title = 'Cliquer pour trier';
+        header.addEventListener('click', function () {
+          var state = fallbackTableState[tableId];
+          if (!state) {
+            return;
+          }
+
+          if (state.sortColumn === index) {
+            state.sortAsc = !state.sortAsc;
+          } else {
+            state.sortColumn = index;
+            state.sortAsc = true;
+          }
+
+          renderFallbackRows(tableId);
+        });
+      });
+    }
+
+    async function loadSimpleHistory(tableId, endpointUrl) {
+      var table = document.getElementById(tableId);
+      if (!table) {
+        return;
+      }
+
+      var tbody = table.querySelector('tbody');
+      if (!tbody) {
+        return;
+      }
+
+      wireFallbackSorting(tableId);
+
+      tbody.innerHTML = '<tr><td colspan="4">Chargement...</td></tr>';
+
+      var url = endpointUrl
+        + '?draw=1&start=0&length=200'
+        + '&columns[0][data]=0&columns[0][searchable]=true&columns[0][orderable]=true&columns[0][search][value]='
+        + '&columns[1][data]=1&columns[1][searchable]=true&columns[1][orderable]=true&columns[1][search][value]='
+        + '&columns[2][data]=2&columns[2][searchable]=true&columns[2][orderable]=true&columns[2][search][value]='
+        + '&columns[3][data]=3&columns[3][searchable]=true&columns[3][orderable]=true&columns[3][search][value]=';
+
+      try {
+        var response = await fetch(url, { credentials: 'include' });
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        var payload = await response.json();
+        var rows = Array.isArray(payload.data) ? payload.data : [];
+        fallbackTableState[tableId].rows = rows;
+        renderFallbackRows(tableId);
+      } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4">Erreur de chargement.</td></tr>';
+      }
+    }
+
+    function initFallbackTables(apiBase) {
+      void loadSimpleHistory('ajouter', apiBase + 'get_histo.php');
+      void loadSimpleHistory('supprimer', apiBase + 'get_sup.php');
+    }
+
+    function initHistoricTables() {
+      var apiBase = 'https://partitions.ovh/webapp/admin/';
+
+      if (typeof window.DataTable !== 'function') {
+        initFallbackTables(apiBase);
+        return;
+      }
+
+      new DataTable('#ajouter', {
+        ajax: apiBase + 'get_histo.php',
+        processing: true,
+        serverSide: true
+      });
+
+      new DataTable('#supprimer', {
+        ajax: apiBase + 'get_sup.php',
+        processing: true,
+        serverSide: true
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadScriptWithFallback([
+        'https://cdn.datatables.net/2.0.8/js/dataTables.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/datatables/2.0.8/dataTables.min.js',
+        'https://unpkg.com/datatables.net@2.0.8/js/dataTables.min.js'
+      ])
+        .then(initHistoricTables)
+        .catch(function () {
+          initHistoricTables();
+        });
+    });
+  </script>
+</body>
+</html>
