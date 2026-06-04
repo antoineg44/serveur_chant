@@ -480,6 +480,7 @@ function handleRename(string $root): void
     if (!file_exists($source)) {
         throw new RuntimeException('Source not found.');
     }
+    $sourceIsFile = is_file($source);
 
     $normalized = normalizeRelativePath($relative);
     if ($normalized === '') {
@@ -498,6 +499,12 @@ function handleRename(string $root): void
 
     if (!rename($source, $target)) {
         throw new RuntimeException('Unable to rename entry.');
+    }
+
+    if ($sourceIsFile) {
+        $author = currentDeletionAuthor();
+        logDeletedFileInSupprimer($normalized, $author);
+        logAddedFileInAjouter($targetRelative, $author);
     }
 
     respondJson(200, [
@@ -579,12 +586,104 @@ function handleDelete(string $root): void
         if (!unlink($target)) {
             throw new RuntimeException('Unable to delete file.');
         }
+
+        // Mirror legacy behavior from php/suppression.php: keep a deletion trace.
+        logDeletedFileInSupprimer(basename($normalized), currentDeletionAuthor());
     }
 
     respondJson(200, [
         'success' => true,
         'message' => 'Entry deleted.',
     ]);
+}
+
+function currentDeletionAuthor(): string
+{
+    $username = $_SESSION['user']['username'] ?? '';
+    if (!is_string($username) || trim($username) === '') {
+        return 'web';
+    }
+    return trim($username);
+}
+
+function resolveLegacyDeletionPdo(): ?PDO
+{
+    if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
+        return $_SESSION['session'];
+    }
+
+    $legacyConnectionFile = dirname(__DIR__, 2) . '/php/connexion.php';
+    if (!file_exists($legacyConnectionFile)) {
+        return null;
+    }
+
+    require_once $legacyConnectionFile;
+
+    if (function_exists('connexion')) {
+        connexion();
+    } elseif (function_exists('connection')) {
+        connection();
+    }
+
+    return (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO)
+        ? $_SESSION['session']
+        : null;
+}
+
+function logDeletedFileInSupprimer(string $fileName, string $author): void
+{
+    $fileName = trim($fileName);
+    if ($fileName === '') {
+        return;
+    }
+
+    try {
+        $pdo = resolveLegacyDeletionPdo();
+        if (!$pdo) {
+            return;
+        }
+
+        date_default_timezone_set('Europe/Paris');
+        $date = date('Y-m-d H:i:s');
+
+        $statement = $pdo->prepare('INSERT INTO Supprimer (`Date`, titre, auteur) VALUES (:date, :title, :author)');
+        $statement->execute([
+            ':date' => $date,
+            ':title' => $fileName,
+            ':author' => $author,
+        ]);
+    } catch (Throwable $error) {
+        // Deletion should still succeed even if audit logging is unavailable.
+        error_log('Supprimer insert failed: ' . $error->getMessage());
+    }
+}
+
+function logAddedFileInAjouter(string $fileName, string $author): void
+{
+    $fileName = trim($fileName);
+    if ($fileName === '') {
+        return;
+    }
+
+    try {
+        $pdo = resolveLegacyDeletionPdo();
+        if (!$pdo) {
+            return;
+        }
+
+        date_default_timezone_set('Europe/Paris');
+        $date = date('Y-m-d H:i:s');
+
+        $statement = $pdo->prepare('INSERT INTO Ajouter (`Date`, titre, auteur) VALUES (:date, :title, :author)');
+        $statement->execute([
+            ':date' => $date,
+            ':title' => $fileName,
+            ':author' => $author,
+        ]);
+    } catch (Throwable $error) {
+        // Rename should still succeed even if audit logging is unavailable.
+        error_log('Ajouter insert failed: ' . $error->getMessage());
+    }
 }
 
 function handleUpload(string $root): void

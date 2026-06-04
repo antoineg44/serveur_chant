@@ -6,6 +6,10 @@
   <title>WebApp - Interface Onglets</title>
   <link rel="stylesheet" href="./styles.css" />
   <style>
+    [hidden] {
+      display: none !important;
+    }
+
     .user-menu {
       display: flex;
       align-items: center;
@@ -82,26 +86,40 @@
           window.location.replace('./login.html');
         } else {
           window.__currentUser = data.user;
-          document.addEventListener('DOMContentLoaded', () => {
+          const applyUserUi = () => {
             const info = document.getElementById('user-info');
             if (info) {
               info.innerHTML = `Connecté : <strong>${data.user.username}</strong>
                 ${ data.user.role === 'admin'
-                  ? '&nbsp;<a href="./admin-users.html" style="color:var(--accent);font-size:.85rem;">Gérer les utilisateurs</a>'
+                  ? '&nbsp;<a href="./admin/admin-users.html" style="color:var(--accent);font-size:.85rem;">Gérer les utilisateurs</a>'
                   : ''}`.trim();
             }
 
             const settingsTab = document.getElementById('tab-settings');
             const settingsPanel = document.getElementById('panel-settings');
+            const isAdmin = data.user.role === 'admin';
             if (settingsTab) {
-              const isAdmin = data.user.role === 'admin';
               settingsTab.hidden = !isAdmin;
               settingsTab.setAttribute('aria-hidden', String(!isAdmin));
             }
-            if (settingsPanel && data.user.role !== 'admin') {
+
+            if (!isAdmin) {
+              if (settingsTab) {
+                settingsTab.remove();
+              }
+              if (settingsPanel) {
+                settingsPanel.remove();
+              }
+            } else if (settingsPanel) {
               settingsPanel.hidden = true;
             }
-          });
+          };
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyUserUi);
+          } else {
+            applyUserUi();
+          }
         }
       } catch {
         window.location.replace('./login.html');
@@ -177,7 +195,9 @@
       <article class="panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" tabindex="0" hidden>
         <div class="placeholder">
           <h2>Parametres</h2>
-          <p><a href="./admin-users.html">Aller a l'administration des utilisateurs</a></p>
+          <p><a href="./admin/admin-users.html">Aller a l'administration des utilisateurs</a></p>
+          <p><a href="./admin/historic.html">Aller a la page historique</a></p>
+          <p><a href="./admin/logins.html">Aller a la page connexions</a></p>
         </div>
       </article>
     </section>

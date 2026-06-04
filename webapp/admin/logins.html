@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Historique — WebApp Serveur Chant</title>
+  <title>Connexions — WebApp Serveur Chant</title>
   <link rel="stylesheet" href="../styles.css" />
   <script src="../config.js"></script>
 
@@ -68,7 +68,8 @@
     }
 
     .dataTables_wrapper .dataTables_filter input,
-    .dataTables_wrapper .dataTables_length select {
+    .dataTables_wrapper .dataTables_length select,
+    .historic-pager .pager-size select {
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 6px 10px;
@@ -92,17 +93,6 @@
       background: var(--accent) !important;
       color: #fff !important;
       border-color: transparent !important;
-    }
-
-    @media (max-width: 760px) {
-      .historic-table-wrap {
-        padding: 8px;
-      }
-
-      .historic-topbar,
-      .historic-layout {
-        width: calc(100% - 16px);
-      }
     }
 
     .historic-table.is-fallback-sorting thead th {
@@ -137,17 +127,20 @@
       color: var(--ink-soft);
     }
 
-    .historic-pager .pager-size select {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 6px 10px;
-      background: #fff;
-      color: var(--ink);
-    }
-
     .historic-pager button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    @media (max-width: 760px) {
+      .historic-table-wrap {
+        padding: 8px;
+      }
+
+      .historic-topbar,
+      .historic-layout {
+        width: calc(100% - 16px);
+      }
     }
   </style>
 </head>
@@ -156,7 +149,7 @@
   <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
 
   <div class="historic-topbar">
-    <h1>Historique des partitions</h1>
+    <h1>Connexions utilisateurs</h1>
     <div class="actions">
       <a href="../index.html" class="btn btn-ghost">← Retour</a>
       <a href="https://partitions.ovh" class="btn btn-ghost">Accueil</a>
@@ -164,28 +157,30 @@
   </div>
 
   <main class="historic-layout">
-    <section class="historic-card" aria-label="Historique des ajouts">
+    <section class="historic-card" aria-label="Journal des connexions">
       <div class="historic-card-head">
-        <h2>Ajouts</h2>
-        <p>Toutes les partitions ajoutées par les différents utilisateurs.</p>
+        <h2>Connexions réussies</h2>
+        <p>Historique des connexions enregistrées lors des authentifications réussies.</p>
       </div>
       <div class="historic-table-wrap">
-        <table id="ajouter" class="display hover historic-table">
+        <table id="connexions" class="display hover historic-table">
           <thead>
             <tr>
               <th>id</th>
               <th>Date</th>
-              <th>titre</th>
-              <th>auteur</th>
+              <th>utilisateur</th>
+              <th>role</th>
+              <th>ip</th>
+              <th>agent</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
-        <div class="historic-pager" data-pager-for="ajouter">
-          <div class="pager-info" data-pager-info="ajouter">Page 1</div>
-          <label class="pager-size" for="page-size-ajouter">
+        <div class="historic-pager" data-pager-for="connexions">
+          <div class="pager-info" data-pager-info="connexions">Page 1</div>
+          <label class="pager-size" for="page-size-connexions">
             Lignes
-            <select id="page-size-ajouter" data-page-size-for="ajouter">
+            <select id="page-size-connexions" data-page-size-for="connexions">
               <option value="10">10</option>
               <option value="25" selected>25</option>
               <option value="50">50</option>
@@ -193,44 +188,8 @@
             </select>
           </label>
           <div class="pager-actions">
-            <button type="button" class="btn btn-ghost" data-pager-prev="ajouter">← Précédent</button>
-            <button type="button" class="btn btn-ghost" data-pager-next="ajouter">Suivant →</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="historic-card" aria-label="Historique des suppressions">
-      <div class="historic-card-head">
-        <h2>Suppressions</h2>
-        <p>Les partitions supprimées.</p>
-      </div>
-      <div class="historic-table-wrap">
-        <table id="supprimer" class="display hover historic-table">
-          <thead>
-            <tr>
-              <th>id</th>
-              <th>Date</th>
-              <th>titre</th>
-              <th>auteur</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="historic-pager" data-pager-for="supprimer">
-          <div class="pager-info" data-pager-info="supprimer">Page 1</div>
-          <label class="pager-size" for="page-size-supprimer">
-            Lignes
-            <select id="page-size-supprimer" data-page-size-for="supprimer">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </label>
-          <div class="pager-actions">
-            <button type="button" class="btn btn-ghost" data-pager-prev="supprimer">← Précédent</button>
-            <button type="button" class="btn btn-ghost" data-pager-next="supprimer">Suivant →</button>
+            <button type="button" class="btn btn-ghost" data-pager-prev="connexions">← Précédent</button>
+            <button type="button" class="btn btn-ghost" data-pager-next="connexions">Suivant →</button>
           </div>
         </div>
       </div>
@@ -239,8 +198,7 @@
 
   <script>
     var fallbackTableState = {
-      ajouter: { sortColumn: null, sortAsc: true, endpointUrl: '', start: 0, length: 25, recordsTotal: 0 },
-      supprimer: { sortColumn: null, sortAsc: true, endpointUrl: '', start: 0, length: 25, recordsTotal: 0 }
+      connexions: { sortColumn: null, sortAsc: true, endpointUrl: '', start: 0, length: 25, recordsTotal: 0 }
     };
 
     function loadScriptWithFallback(urls) {
@@ -281,22 +239,12 @@
         'draw=1',
         'start=' + encodeURIComponent(String(safeStart)),
         'length=' + encodeURIComponent(String(safeLength)),
-        'columns[0][data]=0',
-        'columns[0][searchable]=true',
-        'columns[0][orderable]=true',
-        'columns[0][search][value]=',
-        'columns[1][data]=1',
-        'columns[1][searchable]=true',
-        'columns[1][orderable]=true',
-        'columns[1][search][value]=',
-        'columns[2][data]=2',
-        'columns[2][searchable]=true',
-        'columns[2][orderable]=true',
-        'columns[2][search][value]=',
-        'columns[3][data]=3',
-        'columns[3][searchable]=true',
-        'columns[3][orderable]=true',
-        'columns[3][search][value]='
+        'columns[0][data]=0', 'columns[0][searchable]=true', 'columns[0][orderable]=true', 'columns[0][search][value]=',
+        'columns[1][data]=1', 'columns[1][searchable]=true', 'columns[1][orderable]=true', 'columns[1][search][value]=',
+        'columns[2][data]=2', 'columns[2][searchable]=true', 'columns[2][orderable]=true', 'columns[2][search][value]=',
+        'columns[3][data]=3', 'columns[3][searchable]=true', 'columns[3][orderable]=true', 'columns[3][search][value]=',
+        'columns[4][data]=4', 'columns[4][searchable]=true', 'columns[4][orderable]=true', 'columns[4][search][value]=',
+        'columns[5][data]=5', 'columns[5][searchable]=true', 'columns[5][orderable]=true', 'columns[5][search][value]='
       ];
 
       if (orderColumn !== null && orderColumn !== undefined) {
@@ -309,14 +257,9 @@
 
     function updatePager(tableId) {
       var state = fallbackTableState[tableId];
-      if (!state) {
-        return;
-      }
-
       var info = document.querySelector('[data-pager-info="' + tableId + '"]');
       var prevButton = document.querySelector('[data-pager-prev="' + tableId + '"]');
       var nextButton = document.querySelector('[data-pager-next="' + tableId + '"]');
-
       var currentPage = state.recordsTotal > 0 ? Math.floor(state.start / state.length) + 1 : 1;
       var totalPages = state.recordsTotal > 0 ? Math.ceil(state.recordsTotal / state.length) : 1;
 
@@ -337,11 +280,9 @@
       var state = fallbackTableState[tableId];
       var select = document.querySelector('[data-page-size-for="' + tableId + '"]');
 
-      if (!state || !select) {
-        return;
+      if (state && select) {
+        select.value = String(state.length);
       }
-
-      select.value = String(state.length);
     }
 
     function setPagerVisibility(tableId, isVisible) {
@@ -353,34 +294,25 @@
 
     function renderFallbackRows(tableId, rows) {
       var table = document.getElementById(tableId);
-      if (!table) {
-        return;
-      }
-
-      var tbody = table.querySelector('tbody');
+      var tbody = table && table.querySelector('tbody');
       if (!tbody) {
         return;
       }
 
-      var state = fallbackTableState[tableId];
-      if (!state) {
-        return;
-      }
-
-      var displayedRows = Array.isArray(rows) ? rows : [];
-
-      if (!displayedRows.length) {
-        tbody.innerHTML = '<tr><td colspan="4">Aucune donnée.</td></tr>';
+      if (!Array.isArray(rows) || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">Aucune donnée.</td></tr>';
         updatePager(tableId);
         return;
       }
 
-      tbody.innerHTML = displayedRows.map(function (row) {
+      tbody.innerHTML = rows.map(function (row) {
         return '<tr>'
           + '<td>' + escapeHtml(row[0]) + '</td>'
           + '<td>' + escapeHtml(row[1]) + '</td>'
           + '<td>' + escapeHtml(row[2]) + '</td>'
           + '<td>' + escapeHtml(row[3]) + '</td>'
+          + '<td>' + escapeHtml(row[4]) + '</td>'
+          + '<td>' + escapeHtml(row[5]) + '</td>'
           + '</tr>';
       }).join('');
 
@@ -396,15 +328,10 @@
       table.dataset.sortWired = '1';
       table.classList.add('is-fallback-sorting');
 
-      var headers = Array.prototype.slice.call(table.querySelectorAll('thead th'));
-      headers.forEach(function (header, index) {
+      Array.prototype.slice.call(table.querySelectorAll('thead th')).forEach(function (header, index) {
         header.title = 'Cliquer pour trier';
         header.addEventListener('click', function () {
           var state = fallbackTableState[tableId];
-          if (!state) {
-            return;
-          }
-
           if (state.sortColumn === index) {
             state.sortAsc = !state.sortAsc;
           } else {
@@ -420,11 +347,7 @@
 
     async function loadSimpleHistory(tableId, endpointUrl, start, length, orderColumn, orderDirection) {
       var table = document.getElementById(tableId);
-      if (!table) {
-        return;
-      }
-
-      var tbody = table.querySelector('tbody');
+      var tbody = table && table.querySelector('tbody');
       if (!tbody) {
         return;
       }
@@ -434,7 +357,7 @@
       fallbackTableState[tableId].start = Number.isFinite(start) && start >= 0 ? Math.floor(start) : 0;
       fallbackTableState[tableId].length = Number.isFinite(length) && length > 0 ? Math.floor(length) : 25;
 
-      tbody.innerHTML = '<tr><td colspan="4">Chargement...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6">Chargement...</td></tr>';
 
       var url = endpointUrl + '?' + buildServerSideQuery(
         fallbackTableState[tableId].start,
@@ -455,18 +378,9 @@
         syncPageSizeSelector(tableId);
         renderFallbackRows(tableId, rows);
       } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="4">Erreur de chargement.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Erreur de chargement.</td></tr>';
         updatePager(tableId);
       }
-    }
-
-    function initFallbackTables(apiBase) {
-      setPagerVisibility('ajouter', true);
-      setPagerVisibility('supprimer', true);
-      bindPagerControls('ajouter');
-      bindPagerControls('supprimer');
-      void loadSimpleHistory('ajouter', apiBase + 'get_histo.php', 0, fallbackTableState.ajouter.length);
-      void loadSimpleHistory('supprimer', apiBase + 'get_sup.php', 0, fallbackTableState.supprimer.length);
     }
 
     function bindPagerControls(tableId) {
@@ -478,7 +392,7 @@
       if (prevButton && prevButton.dataset.pagerWired !== '1') {
         prevButton.dataset.pagerWired = '1';
         prevButton.addEventListener('click', function () {
-          if (!state || state.start <= 0) {
+          if (state.start <= 0) {
             return;
           }
 
@@ -490,7 +404,7 @@
       if (nextButton && nextButton.dataset.pagerWired !== '1') {
         nextButton.dataset.pagerWired = '1';
         nextButton.addEventListener('click', function () {
-          if (!state || state.start + state.length >= state.recordsTotal) {
+          if (state.start + state.length >= state.recordsTotal) {
             return;
           }
 
@@ -503,7 +417,6 @@
         pageSizeSelect.dataset.pagerWired = '1';
         pageSizeSelect.addEventListener('change', function () {
           var nextLength = parseInt(pageSizeSelect.value, 10);
-
           if (!Number.isFinite(nextLength) || nextLength <= 0) {
             return;
           }
@@ -515,6 +428,12 @@
       }
     }
 
+    function initFallbackTables(apiBase) {
+      setPagerVisibility('connexions', true);
+      bindPagerControls('connexions');
+      void loadSimpleHistory('connexions', apiBase + 'get_logins.php', 0, fallbackTableState.connexions.length);
+    }
+
     function initHistoricTables() {
       var apiBase = 'https://partitions.ovh/webapp/admin/';
 
@@ -523,19 +442,10 @@
         return;
       }
 
-      setPagerVisibility('ajouter', false);
-      setPagerVisibility('supprimer', false);
+      setPagerVisibility('connexions', false);
 
-      new DataTable('#ajouter', {
-        ajax: apiBase + 'get_histo.php',
-        processing: true,
-        serverSide: true,
-        pageLength: 25,
-        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]]
-      });
-
-      new DataTable('#supprimer', {
-        ajax: apiBase + 'get_sup.php',
+      new DataTable('#connexions', {
+        ajax: apiBase + 'get_logins.php',
         processing: true,
         serverSide: true,
         pageLength: 25,

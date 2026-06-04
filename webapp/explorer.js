@@ -115,7 +115,7 @@ function renderFilteredExplorerList() {
 
   const total = searchTerm ? explorerItems.length : currentDirectoryItems.length;
   if (searchTerm) {
-    setStatus(`${filteredItems.length} element(s) trouves sur ${total} dans ${currentPath || '/'} (${getApiLabel()}).`);
+    setStatus(`${filteredItems.length} element(s) trouves sur ${total} dans /pdf (${getApiLabel()}).`);
   } else {
     setStatus(`${total} element(s) dans ${currentPath || '/'} (${getApiLabel()}).`);
   }
@@ -129,10 +129,10 @@ async function refreshExplorerSearchResults() {
   }
 
   const requestId = ++searchRequestId;
-  setStatus(`Recherche en cours dans ${currentPath || '/'} et ses sous-dossiers...`);
+  setStatus('Recherche en cours dans /pdf et ses sous-dossiers...');
 
   try {
-    const payload = await apiGet('search', currentPath, { q: searchTerm });
+    const payload = await apiGet('search', '', { q: searchTerm });
     if (requestId !== searchRequestId) {
       return;
     }
@@ -143,6 +143,20 @@ async function refreshExplorerSearchResults() {
       return;
     }
     setStatus(error.message, true);
+  }
+}
+
+function clearSearchFilter() {
+  searchTerm = '';
+  searchRequestId += 1;
+
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+
+  if (searchInput) {
+    searchInput.value = '';
   }
 }
 
@@ -408,6 +422,7 @@ function renderBreadcrumbs(pathValue) {
     button.className = 'crumb';
     button.textContent = node.label;
     button.addEventListener('click', () => {
+      clearSearchFilter();
       void loadDirectory(node.path);
     });
     breadcrumbs.appendChild(button);
@@ -487,6 +502,7 @@ function renderList(items) {
     row.querySelector('.name-btn').addEventListener('click', (event) => {
       event.stopPropagation();
       if (item.type === 'dir') {
+        clearSearchFilter();
         void loadDirectory(item.path);
       } else if (item.name.toLowerCase().endsWith('.pdf')) {
         openPdfFromExplorer(item);
@@ -551,7 +567,25 @@ async function handleRename() {
   if (!nextName) {
     return;
   }
-  await apiPost('rename', { path: selectedItem.path, newName: nextName.trim() });
+
+  const trimmedName = nextName.trim();
+  if (!trimmedName) {
+    return;
+  }
+
+  if (selectedItem.type === 'file') {
+    const normalizedTarget = trimmedName.toLocaleLowerCase();
+    const hasConflict = (currentDirectoryItems || []).some((item) => item
+      && item.type === 'file'
+      && item.path !== selectedItem.path
+      && String(item.name || '').toLocaleLowerCase() === normalizedTarget);
+
+    if (hasConflict) {
+      throw new Error('Renommage annule: un autre fichier porte deja ce nom.');
+    }
+  }
+
+  await apiPost('rename', { path: selectedItem.path, newName: trimmedName });
   await loadDirectory(currentPath);
 }
 
@@ -691,6 +725,15 @@ async function handlePaste() {
   setStatus(`Fichier deplace: ${movedName}.`);
 }
 
+async function triggerRename() {
+  try {
+    await handleRename();
+    setStatus('Element renomme.');
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
 /**
  * Initialize explorer module
  */
@@ -700,6 +743,7 @@ async function initExplorer() {
     if (parentPath === null) {
       return;
     }
+    clearSearchFilter();
     void loadDirectory(parentPath);
   });
 
@@ -717,13 +761,8 @@ async function initExplorer() {
     }
   });
 
-  renameButton.addEventListener('click', async () => {
-    try {
-      await handleRename();
-      setStatus('Element renomme.');
-    } catch (error) {
-      setStatus(error.message, true);
-    }
+  renameButton.addEventListener('click', () => {
+    void triggerRename();
   });
 
   deleteButton.addEventListener('click', async () => {
@@ -831,6 +870,24 @@ async function initExplorer() {
       }, 250);
     });
   }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'F2') {
+      return;
+    }
+
+    const target = event.target;
+    const tagName = target && target.tagName ? target.tagName.toUpperCase() : '';
+    if ((target && target.isContentEditable)
+      || tagName === 'INPUT'
+      || tagName === 'TEXTAREA'
+      || tagName === 'SELECT') {
+      return;
+    }
+
+    event.preventDefault();
+    void triggerRename();
+  });
 
   // Initialize
   updateActionButtons();

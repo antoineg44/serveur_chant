@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+const LOGIN_AUDIT_TABLE = 'Connexions';
 
 session_start();
 
@@ -130,6 +131,85 @@ function sanitizeUserForOutput(array $user): array
     return $user;
 }
 
+function resolveLoginAuditPdo(): ?PDO
+{
+    if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
+        return $_SESSION['session'];
+    }
+
+    $legacyConnectionFile = dirname(__DIR__, 2) . '/php/connexion.php';
+    if (!file_exists($legacyConnectionFile)) {
+        error_log('Login audit connection file not found: ' . $legacyConnectionFile);
+        return null;
+    }
+
+    try {
+        require_once $legacyConnectionFile;
+
+        if (function_exists('connexion')) {
+            connexion();
+        } elseif (function_exists('connection')) {
+            connection();
+        }
+    } catch (Throwable $error) {
+        error_log('Login audit DB bootstrap failed: ' . $error->getMessage());
+        return null;
+    }
+
+    if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
+        return $_SESSION['session'];
+    }
+
+    error_log('Login audit DB connection unavailable after loading legacy connector.');
+    return null;
+}
+
+function ensureLoginAuditTable(PDO $pdo): void
+{
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `' . LOGIN_AUDIT_TABLE . '` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `Date` DATETIME NOT NULL,
+            `username` VARCHAR(190) NOT NULL,
+            `role` VARCHAR(50) NOT NULL,
+            `ip_address` VARCHAR(45) NOT NULL,
+            `user_agent` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_login_date` (`Date`),
+            KEY `idx_login_username` (`username`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+}
+
+function logSuccessfulLogin(array $user): void
+{
+    $pdo = resolveLoginAuditPdo();
+    if (!$pdo) {
+        return;
+    }
+
+    try {
+        ensureLoginAuditTable($pdo);
+
+        date_default_timezone_set('Europe/Paris');
+        $statement = $pdo->prepare(
+            'INSERT INTO `' . LOGIN_AUDIT_TABLE . '` (`Date`, username, role, ip_address, user_agent)
+             VALUES (:date, :username, :role, :ip_address, :user_agent)'
+        );
+
+        $statement->execute([
+            ':date' => date('Y-m-d H:i:s'),
+            ':username' => (string) ($user['username'] ?? ''),
+            ':role' => (string) ($user['role'] ?? 'user'),
+            ':ip_address' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+            ':user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+        ]);
+    } catch (Throwable $error) {
+        // Login must still succeed even if audit logging is unavailable.
+        error_log('Login audit insert failed: ' . $error->getMessage());
+    }
+}
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
 function handleLogin(): void
@@ -157,6 +237,7 @@ function handleLogin(): void
 
     session_regenerate_id(true);
     $_SESSION['user'] = sanitizeUserForOutput($found);
+    logSuccessfulLogin($_SESSION['user']);
 
     respondJson(200, ['success' => true, 'user' => $_SESSION['user']]);
 }
