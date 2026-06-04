@@ -1,13 +1,30 @@
 <?php
 	include("../../php/config.php");
 
-    if(isset($_SERVER['HTTP_ORIGIN']) && $addr_server_test == $_SERVER['HTTP_ORIGIN'])
-    {
-        header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS');
-        header('Access-Control-Max-Age: 1000');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-    }
+	$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim((string) $_SERVER['HTTP_ORIGIN']) : '';
+	$allowedOrigins = array_filter([
+		$addr_server_test ?? '',
+		'https://partitions.ovh',
+		'http://localhost',
+		'http://127.0.0.1',
+		'null'
+	]);
+
+	$isAllowedLocalOrigin = preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i', $origin) === 1;
+
+	if ($origin !== '' && (in_array($origin, $allowedOrigins, true) || $isAllowedLocalOrigin)) {
+		header('Access-Control-Allow-Origin: '.$origin);
+		header('Vary: Origin');
+		header('Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS');
+		header('Access-Control-Max-Age: 1000');
+		header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+		header('Access-Control-Allow-Credentials: true');
+	}
+
+	if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+		http_response_code(204);
+		exit;
+	}
 header( 'content-type: text/html; charset=utf-8' );
 /*
  * DataTables example server-side processing script.
