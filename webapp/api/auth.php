@@ -133,10 +133,6 @@ function sanitizeUserForOutput(array $user): array
 
 function resolveLoginAuditPdo(): ?PDO
 {
-    if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
-        return $_SESSION['session'];
-    }
-
     $legacyConnectionFile = dirname(__DIR__, 2) . '/php/connexion.php';
     if (!file_exists($legacyConnectionFile)) {
         error_log('Login audit connection file not found: ' . $legacyConnectionFile);
@@ -146,22 +142,26 @@ function resolveLoginAuditPdo(): ?PDO
     try {
         require_once $legacyConnectionFile;
 
-        if (function_exists('connexion')) {
-            connexion();
-        } elseif (function_exists('connection')) {
-            connection();
+        // Never store PDO in session: it cannot be serialized when the session closes.
+        if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
+            unset($_SESSION['session']);
         }
+
+        if (!defined('serveur') || !defined('nom_bd') || !defined('db_user') || !defined('db_pass')) {
+            error_log('Login audit DB constants are missing from legacy connector.');
+            return null;
+        }
+
+        return new PDO(
+            'mysql:host=' . serveur . ';dbname=' . nom_bd . ';charset=utf8mb4',
+            db_user,
+            db_pass,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
     } catch (Throwable $error) {
         error_log('Login audit DB bootstrap failed: ' . $error->getMessage());
         return null;
     }
-
-    if (isset($_SESSION['session']) && $_SESSION['session'] instanceof PDO) {
-        return $_SESSION['session'];
-    }
-
-    error_log('Login audit DB connection unavailable after loading legacy connector.');
-    return null;
 }
 
 function ensureLoginAuditTable(PDO $pdo): void
