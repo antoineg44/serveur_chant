@@ -26,7 +26,7 @@
 		exit;
 	}
 
-	header('content-type: text/html; charset=utf-8');
+	header('content-type: application/json; charset=utf-8');
 
 	$table = 'Connexions';
 	$primaryKey = 'id';
@@ -40,16 +40,42 @@
 		array('db' => 'user_agent', 'dt' => 5)
 	);
 
-	$sql_details = array(
-		'user' => 'rino.robotiutna',
-		'pass' => 'AssoIutRino19',
-		'db'   => 'rino_robotiutna',
-		'host' => 'sql.free.fr',
-		'charset' => 'utf8'
+	$draw = isset($_GET['draw']) ? (int) $_GET['draw'] : 0;
+
+	$emptyPayload = array(
+		'draw' => $draw,
+		'recordsTotal' => 0,
+		'recordsFiltered' => 0,
+		'data' => array()
 	);
+
+	$legacyConnectionFile = dirname(__DIR__, 2) . '/php/connexion.php';
+	if (!file_exists($legacyConnectionFile)) {
+		echo json_encode($emptyPayload, JSON_UNESCAPED_UNICODE);
+		exit;
+	}
+
+	require_once($legacyConnectionFile);
+
+	if (!defined('serveur') || !defined('nom_bd') || !defined('db_user') || !defined('db_pass')) {
+		echo json_encode($emptyPayload, JSON_UNESCAPED_UNICODE);
+		exit;
+	}
 
 	require('ssp.class.php');
 
+	try {
+		$pdo = new PDO(
+			"mysql:host=".serveur.";dbname=".nom_bd.";charset=utf8mb4",
+			db_user,
+			db_pass,
+			array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+		);
+	} catch (Throwable $error) {
+		echo json_encode($emptyPayload, JSON_UNESCAPED_UNICODE);
+		exit;
+	}
+
 	echo json_encode(
-		SSP::simple($_GET, $sql_details, $table, $primaryKey, $columns), JSON_UNESCAPED_UNICODE
+		SSP::simple($_GET, $pdo, $table, $primaryKey, $columns), JSON_UNESCAPED_UNICODE
 	);
