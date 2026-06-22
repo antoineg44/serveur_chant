@@ -156,7 +156,7 @@
 
 		public static function ConvertBytesToUserStr($num)
 		{
-			$num = (double)$num;
+			$num = (float)$num;
 
 			if ($num < 0)  return "0 " . self::FETranslate("bytes");
 			if ($num < 1024)  return number_format($num, 0) . " " . self::FETranslate("bytes");
@@ -231,12 +231,10 @@
 				$crop = explode(",", preg_replace('/[^0-9.,]/', "", $crop));
 				if (count($crop) == 4 && $crop[0] !== $crop[2] && $crop[1] !== $crop[3] && $crop[0] >= 0 && $crop[1] >= 0 && $crop[2] >= 0 && $crop[3] >= 0 && $crop[0] < $srcwidth && $crop[1] < $srcheight && $crop[2] < $srcwidth && $crop[3] < $srcheight)
 				{
-					$cropx = (double)$crop[0];
-					$cropy = (double)$crop[1];
-					$cropw = (double)$crop[2];
-					$croph = (double)$crop[3];
-
-					// Normalize.
+						$cropx = (float)$crop[0];
+						$cropy = (float)$crop[1];
+						$cropw = (float)$crop[2];
+						$croph = (float)$crop[3];
 					if ($cropx > $cropw)
 					{
 						$temp = $cropx;
