@@ -58,7 +58,7 @@ var ac = {
           const parsed = new URL(pastedText);
           var new_path = decodeURI(parsed.pathname.slice(5) + parsed.search + parsed.hash);
           // resolve defect virgule when copy and paste url: .replace("%2C", ",")
-          new_path = new_path.toString().replace("%2C", ",");
+          new_path = new_path.toString().replaceAll("%2C", ",");
           console.log("parsed path: " + new_path);
           inst.timer = setTimeout(() => {
             //inst.target.value =new_path;
