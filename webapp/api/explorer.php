@@ -762,7 +762,8 @@ function handleDownloadProgram(string $root): void
     }
 
     $filesToZip = collectProgramFileReferences($root, $programFile, $normalized);
-    $filesToZip[$programFile] = basename($programFile);
+    $filesToZip[] = $programFile;
+    $filesToZip = array_unique($filesToZip);
 
     $zipBaseName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', pathinfo($programFile, PATHINFO_FILENAME));
     if ($zipBaseName === '') {
@@ -787,10 +788,25 @@ function handleDownloadProgram(string $root): void
         ]);
     }
 
-    foreach ($filesToZip as $absolutePath => $zipPath) {
+    $usedNames = [];
+    foreach ($filesToZip as $absolutePath) {
         if (!is_file($absolutePath) || !is_readable($absolutePath)) {
             continue;
         }
+
+        $fileName = basename($absolutePath);
+        $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $zipPath = $fileName;
+        $counter = 1;
+
+        while (isset($usedNames[$zipPath])) {
+            $suffix = ' (' . $counter . ')';
+            $zipPath = $baseName . $suffix . ($extension !== '' ? '.' . $extension : '');
+            $counter++;
+        }
+
+        $usedNames[$zipPath] = true;
         $zip->addFile($absolutePath, $zipPath);
     }
 
@@ -840,7 +856,7 @@ function collectProgramFileReferences(string $root, string $programFile, string 
                 }
                 $resolved = resolveProgramReferencePath($root, $directory, $path);
                 if ($resolved !== null) {
-                    $references[$resolved] = relativePath($root, $resolved);
+                    $references[] = $resolved;
                 }
             }
         }
@@ -868,13 +884,13 @@ function collectProgramFileReferences(string $root, string $programFile, string 
 
                 $resolved = resolveProgramReferencePath($root, $directory, $path);
                 if ($resolved !== null) {
-                    $references[$resolved] = relativePath($root, $resolved);
+                    $references[] = $resolved;
                 }
             }
         }
     }
 
-    return $references;
+    return array_values(array_unique($references));
 }
 
 function resolveProgramReferencePath(string $root, string $programDirectory, string $reference): ?string
