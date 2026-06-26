@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.addEventListener('message', function(event) {
+        console.log("event message !");
+        console.log(event.data);
         if (!event.data || event.data.type !== 'pdfSelectionChanged') return;
         if (event.origin && event.origin !== window.location.origin) return;
         updateCurrentChantPath(event.data.path, event.data.url);
