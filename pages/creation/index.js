@@ -15,6 +15,8 @@ function markAsChanged() {
 }
 
 var currentPreviewLabel = null;
+var currentPreviewInput = null;
+var currentPreviewContainer = null;
 var pdfPathListenerAttached = false;
 
 function normalizePdfPath(path) {
@@ -24,6 +26,27 @@ function normalizePdfPath(path) {
         normalized = normalized.slice(5);
     }
     return normalized;
+}
+
+function updateCurrentChantPath(newPath, updatedUrl) {
+    if (!newPath) return;
+
+    if (currentPreviewLabel) {
+        currentPreviewLabel.textContent = newPath;
+    }
+
+    if (currentPreviewInput) {
+        currentPreviewInput.value = newPath;
+    }
+
+    if (currentPreviewContainer) {
+        currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
+    }
+
+    markAsChanged();
+
+    // Used by open-external-pdf-btn fallback logic in the parent page.
+    window.lastLoadedPdfUrl = updatedUrl || (window.location.origin + "/pdf/" + encodeURI(newPath));
 }
 
 function handlePdfPathChanged(event) {
@@ -37,13 +60,7 @@ function handlePdfPathChanged(event) {
         updatedUrl = window.location.origin + "/pdf/" + encodeURI(newPath);
     }
 
-    if (currentPreviewLabel) {
-        currentPreviewLabel.textContent = newPath;
-        markAsChanged();
-    }
-
-    // Used by open-external-pdf-btn fallback logic in the parent page.
-    window.lastLoadedPdfUrl = updatedUrl;
+    updateCurrentChantPath(newPath, updatedUrl);
 }
 
 function attachPdfPathListener() {
@@ -63,8 +80,14 @@ function openChantPdf(el, chantPath) {
     var normalizedPath = normalizePdfPath(chantPath);
     var initialUrl = window.location.origin + '/pdf/' + normalizedPath;
     var container = el.closest("div[id^='chant_']");
+    currentPreviewLabel = null;
+    currentPreviewInput = null;
+    currentPreviewContainer = null;
+
     if (container) {
+        currentPreviewContainer = container;
         currentPreviewLabel = container.querySelector(".text_path_chant");
+        currentPreviewInput = container.querySelector("input[type='url'][id^='path_']");
     }
 
     window.lastLoadedPdfUrl = initialUrl;
