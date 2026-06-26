@@ -31,6 +31,7 @@ function normalizePdfPath(path) {
 }
 
 function updateCurrentChantPath(newPath, updatedUrl) {
+    console.log('[pdf-debug] updateCurrentChantPath', { newPath: newPath, updatedUrl: updatedUrl, chantName: currentPreviewChantName, hasEntry: !!currentPreviewChantEntry });
     if (!newPath) return;
 
     if (currentPreviewLabel) {
@@ -47,6 +48,7 @@ function updateCurrentChantPath(newPath, updatedUrl) {
 
     if (currentPreviewChantEntry) {
         currentPreviewChantEntry.path = newPath;
+        console.log('[pdf-debug] updated chant entry directly', { name: currentPreviewChantEntry.name, path: currentPreviewChantEntry.path });
     } else if (window.programme && Array.isArray(programme.chants)) {
         var chantNameToUpdate = currentPreviewChantName || (currentPreviewContainer && currentPreviewContainer.querySelector(".part-column h1") ? currentPreviewContainer.querySelector(".part-column h1").textContent.trim() : null);
         if (chantNameToUpdate) {
@@ -104,6 +106,7 @@ function openChantPdf(el, chantPath) {
     currentPreviewChantEntry = null;
 
     if (container) {
+        console.log('[pdf-debug] openChantPdf container found', { chantPath: chantPath, containerId: container.id });
         currentPreviewContainer = container;
         currentPreviewLabel = container.querySelector(".text_path_chant");
         currentPreviewInput = container.querySelector("input[type='url'][id^='path_']");
@@ -114,6 +117,7 @@ function openChantPdf(el, chantPath) {
                 for (var j = 0; j < programme.chants.length; j++) {
                     if (programme.chants[j] && programme.chants[j].type === "chant" && programme.chants[j].name === currentPreviewChantName) {
                         currentPreviewChantEntry = programme.chants[j];
+                        console.log('[pdf-debug] matched chant entry', { name: currentPreviewChantName, path: programme.chants[j].path });
                         break;
                     }
                 }
@@ -141,8 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.addEventListener('message', function(event) {
-        console.log("event message !");
-        console.log(event.data);
+        console.log('[pdf-debug] parent message received', { type: event.data && event.data.type, origin: event.origin, data: event.data });
         if (!event.data || event.data.type !== 'pdfSelectionChanged') return;
         if (event.origin && event.origin !== window.location.origin) return;
         updateCurrentChantPath(event.data.path, event.data.url);

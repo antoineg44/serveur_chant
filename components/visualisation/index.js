@@ -1,8 +1,8 @@
 
 function open_pdf(path, el) {
-    console.log("open_pdf");
+    console.log('[pdf-debug] iframe open_pdf', { path: path });
     path = path.replaceAll("£","'");
-    console.log(path);
+    console.log('[pdf-debug] iframe normalized path', { path: path });
     var new_path = "/pdf/" +path;
     var full_url = window.location.origin + encodeURI(new_path.replace("//", "/"));
 
@@ -14,13 +14,17 @@ function open_pdf(path, el) {
 
     try {
         if (window.parent && typeof window.parent.updateCurrentChantPath === 'function') {
+            console.log('[pdf-debug] calling parent updateCurrentChantPath', payload);
             window.parent.updateCurrentChantPath(payload.path, payload.url);
+        } else {
+            console.log('[pdf-debug] parent updateCurrentChantPath not available');
         }
     } catch (e) {
         console.log("Unable to call parent updateCurrentChantPath", e);
     }
 
     // Notify listeners in the parent page and in the current iframe window.
+    console.log('[pdf-debug] posting message to parent', payload);
     window.parent.postMessage(payload, window.location.origin);
     window.dispatchEvent(new CustomEvent("pdfPathChanged", {
         detail: payload
@@ -36,7 +40,7 @@ function open_pdf(path, el) {
 }
 
 function eventChangePDF(url){
-    console.log("eventChangePDF : " + url)
+    console.log('[pdf-debug] eventChangePDF', { url: url });
     window.parent.postMessage({ url: decodeURI(url) }, window.location.origin);
     var if1 = document.getElementById("pdf-js-viewer");
         var fc = (if1.contentWindow || if1.contentDocument);
