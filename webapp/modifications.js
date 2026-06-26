@@ -148,9 +148,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.addEventListener('message', function(event) {
         console.log('[pdf-debug] parent message received', { type: event.data && event.data.type, origin: event.origin, data: event.data });
-        if (!event.data || event.data.type !== 'pdfSelectionChanged') return;
+        if (!event.data || (event.data.type !== 'pdfSelectionChanged' && event.data.type !== 'visualisationPdfChanged')) return;
         if (event.origin && event.origin !== window.location.origin) return;
-        updateCurrentChantPath(event.data.path, event.data.url);
+
+        var payload = event.data;
+        var newPath = normalizePdfPath(payload.path || payload.relativePath || "");
+        if (!newPath) {
+            console.log('[pdf-debug] no usable path in message payload', payload);
+            return;
+        }
+
+        var updatedUrl = payload.url || payload.fileUrl || (window.location.origin + "/pdf/" + encodeURI(newPath));
+        updateCurrentChantPath(newPath, updatedUrl);
     });
 });
 
