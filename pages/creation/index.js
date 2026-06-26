@@ -17,6 +17,7 @@ function markAsChanged() {
 var currentPreviewLabel = null;
 var currentPreviewInput = null;
 var currentPreviewContainer = null;
+var currentPreviewChantName = null;
 var pdfPathListenerAttached = false;
 
 function normalizePdfPath(path) {
@@ -41,16 +42,15 @@ function updateCurrentChantPath(newPath, updatedUrl) {
 
     if (currentPreviewContainer) {
         currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
+    }
 
-        if (window.programme && Array.isArray(programme.chants)) {
-            var chantTitle = currentPreviewContainer.querySelector(".part-column h1");
-            if (chantTitle) {
-                var chantName = chantTitle.textContent.trim();
-                for (var i = 0; i < programme.chants.length; i++) {
-                    if (programme.chants[i] && programme.chants[i].type === "chant" && programme.chants[i].name === chantName) {
-                        programme.chants[i].path = newPath;
-                        break;
-                    }
+    if (window.programme && Array.isArray(programme.chants)) {
+        var chantNameToUpdate = currentPreviewChantName || (currentPreviewContainer && currentPreviewContainer.querySelector(".part-column h1") ? currentPreviewContainer.querySelector(".part-column h1").textContent.trim() : null);
+        if (chantNameToUpdate) {
+            for (var i = 0; i < programme.chants.length; i++) {
+                if (programme.chants[i] && programme.chants[i].type === "chant" && programme.chants[i].name === chantNameToUpdate) {
+                    programme.chants[i].path = newPath;
+                    break;
                 }
             }
         }
@@ -96,11 +96,16 @@ function openChantPdf(el, chantPath) {
     currentPreviewLabel = null;
     currentPreviewInput = null;
     currentPreviewContainer = null;
+    currentPreviewChantName = null;
 
     if (container) {
         currentPreviewContainer = container;
         currentPreviewLabel = container.querySelector(".text_path_chant");
         currentPreviewInput = container.querySelector("input[type='url'][id^='path_']");
+        var chantTitle = container.querySelector(".part-column h1");
+        if (chantTitle) {
+            currentPreviewChantName = chantTitle.textContent.trim();
+        }
     }
 
     window.lastLoadedPdfUrl = initialUrl;
