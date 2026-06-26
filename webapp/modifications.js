@@ -415,7 +415,7 @@ function enregistrer() {
         type: 'GET',
         url: window.location.origin + '/php/programme/update.php',
         crossDomain: true,
-        data: 'data=' + programme.save() + "&dateModif=" + lastModif,
+        data: { data: programme.save(), dateModif: lastModif },
         contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
         success: function(data){
             console.log("fichiers : " + data);

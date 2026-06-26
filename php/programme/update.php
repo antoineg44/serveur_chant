@@ -30,6 +30,60 @@
     	return $lignes_serveur;
 	}
 
+	function normalize_programme_path($path) {
+		if($path === null) return null;
+
+		$normalized = trim((string) $path);
+		if($normalized === '') return null;
+
+		$parsed = parse_url($normalized);
+		if($parsed !== false && isset($parsed['query'])) {
+			parse_str($parsed['query'], $queryParams);
+			if(!empty($queryParams['path'])) {
+				$normalized = $queryParams['path'];
+			} elseif(!empty($queryParams['file'])) {
+				$normalized = $queryParams['file'];
+			}
+		}
+
+		$normalized = urldecode($normalized);
+		$normalized = str_replace('\\', '/', $normalized);
+		$normalized = preg_replace('/[?#].*$/', '', $normalized);
+		$normalized = ltrim($normalized, '/');
+
+		$forbiddenParts = explode('/', $normalized);
+		if(in_array('..', $forbiddenParts, true)) return null;
+
+		$segments = explode('/pdf/programmes/', $normalized);
+		if(count($segments) > 1) {
+			$normalized = $segments[1];
+		} else {
+			$segments = explode('/programmes/', $normalized);
+			if(count($segments) > 1) {
+				$normalized = $segments[1];
+			} else {
+				$segments = explode('pdf/programmes/', $normalized);
+				if(count($segments) > 1) {
+					$normalized = $segments[1];
+				} else {
+					$segments = explode('programmes/', $normalized);
+					if(count($segments) > 1) {
+						$normalized = $segments[1];
+					}
+				}
+			}
+		}
+
+		$normalized = ltrim($normalized, '/');
+		if($normalized === '') return null;
+		if(substr($normalized, -1) === '/') return null;
+		if(strtolower(pathinfo($normalized, PATHINFO_EXTENSION)) !== 'json') {
+			$normalized = rtrim($normalized, '/') . '.json';
+		}
+
+		return $normalized;
+	}
+
 	header ('Content-type: text/html; charset=iso8859-15');
 
     //include("../php/connexion.php");
@@ -63,19 +117,30 @@
 
     if(isset($_GET['data']) && isset($_GET['dateModif']))
     {
-        $decoded = json_decode($_GET['data'],true);
-        echo $decoded["path_file"]."\n";
+        $decoded = json_decode($_GET['data'], true);
+        if(!is_array($decoded))
+        {
+            echo "invalid data";
+            return;
+        }
 
-        if(str_contains($decoded["path_file"], "..") || !str_contains($decoded["path_file"], "/pdf/programmes/"))
+        $path_file = isset($decoded["path_file"]) ? (string) $decoded["path_file"] : "";
+        $path_prog = normalize_programme_path($path_file);
+
+        if($path_prog === null)
         {
             echo "incorrect path";
             return;
         }
 
-        $path = explode("/pdf/programmes/",$decoded["path_file"]);
-        $extension = explode(".",$path[1]);
-        $path_prog = $extension[0].".json";
-        $decoded["path_file"] = $path[0]."/pdf/programmes/".$path_prog;
+        $parsedPath = parse_url($path_file);
+        $baseUrl = '';
+        if($parsedPath !== false && isset($parsedPath['scheme'], $parsedPath['host'])) {
+            $baseUrl = $parsedPath['scheme'].'://'.$parsedPath['host'];
+        } else {
+            $baseUrl = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'];
+        }
+        $decoded["path_file"] = $baseUrl.'/pdf/programmes/'.$path_prog;
 
         echo $decoded["path_file"]."\n";
 
