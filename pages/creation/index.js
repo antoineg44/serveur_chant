@@ -41,6 +41,19 @@ function updateCurrentChantPath(newPath, updatedUrl) {
 
     if (currentPreviewContainer) {
         currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
+
+        if (window.programme && Array.isArray(programme.chants)) {
+            var chantTitle = currentPreviewContainer.querySelector(".part-column h1");
+            if (chantTitle) {
+                var chantName = chantTitle.textContent.trim();
+                for (var i = 0; i < programme.chants.length; i++) {
+                    if (programme.chants[i] && programme.chants[i].type === "chant" && programme.chants[i].name === chantName) {
+                        programme.chants[i].path = newPath;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     markAsChanged();
@@ -399,28 +412,49 @@ function modify_chant(element) {
     testing = element;
 }
 
+function collectProgramChantsFromDom() {
+    var chants = [];
+    var sections = document.querySelectorAll("section[id^='part_']");
+
+    sections.forEach(function(section) {
+        var partTitle = section.querySelector("h1[id^='h1_']");
+        if (partTitle) {
+            chants.push({
+                type: "partie",
+                name: partTitle.textContent.trim()
+            });
+        }
+
+        var chantRows = section.querySelectorAll("div[id^='chant_']");
+        chantRows.forEach(function(row) {
+            var title = row.querySelector(".part-column h1");
+            if (!title) return;
+
+            var path = "";
+            var label = row.querySelector(".text_path_chant");
+            if (label && label.textContent) {
+                path = label.textContent.trim();
+            } else {
+                var input = row.querySelector("input[type='url'][id^='path_']");
+                if (input) {
+                    path = input.value.trim();
+                }
+            }
+
+            chants.push({
+                type: "chant",
+                name: title.textContent.trim(),
+                path: path || "null"
+            });
+        });
+    });
+
+    return chants;
+}
+
 function enregistrer() {
     console.log("enregistrer");
-    var section = document.getElementById("description").nextSibling;
-    var chants = [];
-    while(section.id && section.id.includes("part"))
-    {
-        chants.push({
-            "type" : "partie",
-            "name" : section.childNodes[3].childNodes[1].childNodes[3].firstChild.textContent
-        });
-        var infos = section.childNodes[5].innerText.split("\n");
-        var i=0;
-        while(infos.length > 1 && i<infos.length) {
-            chants.push({
-                "type" : "chant",
-                "name" : infos[i],
-                "path" : infos[i+1]
-            })
-            i += 2;
-        }
-        section = section.nextSibling;
-    }
+    var chants = collectProgramChantsFromDom();
     console.log(chants);
     programme.chants = chants;
 

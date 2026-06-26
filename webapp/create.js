@@ -14,86 +14,98 @@ function showFormMessage(message, isError) {
     messageEl.className = 'text-sm mb-4 ' + (isError ? 'text-red-400' : 'text-green-400');
 }
 
-$(document).ready(function() {
-    // Load parishes
-    $.ajax({
-        url: window.location.origin + '/php/programme/interface.php?action=get_list_paroisses',
-        type: 'GET',
-        success: function(data) {
-            var option_html = "<option value=''>Choisissez votre paroisse</option>";
-            var paroisses = data.split("Â£");
-            for(var i = 0; i < paroisses.length - 1; i++) {
-                option_html += "<option value='" + paroisses[i] + "'>" + paroisses[i] + "</option>";
-            }
-            document.getElementById("paroisse").innerHTML = option_html;
-        },
-        error: function() {
-            console.error("Erreur lors du chargement des paroisses");
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    function setOptions(selectId, items, defaultLabel, valueFn, labelFn) {
+        var select = document.getElementById(selectId);
+        if (!select) return;
+        var optionHtml = "<option value=''>" + defaultLabel + "</option>";
+        items.forEach(function(item) {
+            optionHtml += "<option value='" + valueFn(item) + "'>" + labelFn(item) + "</option>";
+        });
+        select.innerHTML = optionHtml;
+    }
+
+    function fetchList(url, callback) {
+        fetch(url, { method: 'GET', credentials: 'include' })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(function(text) {
+                callback(text);
+            })
+            .catch(function(error) {
+                console.error('Erreur lors du chargement des données:', error);
+            });
+    }
+
+    fetchList(window.location.origin + '/php/programme/interface.php?action=get_list_paroisses', function(data) {
+        var paroisses = data.split('Â£').filter(Boolean);
+        setOptions('paroisse', paroisses, 'Choisissez votre paroisse', function(item) { return item; }, function(item) { return item; });
     });
 
-    // Load templates
-    $.ajax({
-        url: window.location.origin + '/php/programme/interface.php?action=get_list_templates',
-        type: 'GET',
-        success: function(data) {
-            var option_html = "<option value=''>Choisissez un template</option>";
-            var templates = data.split("Â£");
-            for(var i = 0; i < templates.length - 1; i++) {
-                var templateName = templates[i];
-                var templateValue = 'programmes/Templates/' + templateName;
-                option_html += "<option value='" + templateValue + "'>" + templateName.replace('.json', '') + "</option>";
-            }
-            document.getElementById("template").innerHTML = option_html;
-        },
-        error: function() {
-            console.error("Erreur lors du chargement des templates");
-        }
+    fetchList(window.location.origin + '/php/programme/interface.php?action=get_list_templates', function(data) {
+        var templates = data.split('Â£').filter(Boolean);
+        setOptions('template', templates, 'Choisissez un template', function(item) {
+            return 'programmes/Templates/' + item;
+        }, function(item) {
+            return item.replace('.json', '');
+        });
     });
 
-    $('#create-program-form').on('submit', function(event) {
+    var form = document.getElementById('create-program-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function(event) {
         event.preventDefault();
         showFormMessage('', false);
 
-        var paroisse = $('#paroisse').val().trim();
-        var template = $('#template').val().trim();
-        var occasion = $('#occasion').val().trim();
-        var lieu = $('#lieu').val().trim();
-        var date = $('#date').val().trim();
+        var paroisse = document.getElementById('paroisse').value.trim();
+        var template = document.getElementById('template').value.trim();
+        var occasion = document.getElementById('occasion').value.trim();
+        var lieu = document.getElementById('lieu').value.trim();
+        var date = document.getElementById('date').value.trim();
+        var description = document.getElementById('description').value.trim();
 
-        if(!paroisse || !template || !occasion || !lieu || !date) {
+        if (!paroisse || !template || !occasion || !lieu || !date) {
             showFormMessage('Merci de remplir tous les champs obligatoires.', true);
             return;
         }
 
         var nom = date + '_' + slugForFilename(lieu) + '_' + slugForFilename(occasion) + '.json';
-        var oldLink = template;
+        var params = new URLSearchParams({
+            old_link: template,
+            paroisse: paroisse,
+            nom: nom,
+            description: description,
+            auteur: 'web'
+        });
 
-        $.ajax({
-            url: window.location.origin + '/php/programme/interface.php?action=nouveau',
-            type: 'GET',
-            data: {
-                old_link: oldLink,
-                paroisse: paroisse,
-                nom: nom,
-                description: $('#description').val().trim(),
-                auteur: 'web'
-            },
-            success: function(data) {
+        fetch(window.location.origin + '/php/programme/interface.php?action=nouveau&' + params.toString(), {
+            method: 'GET',
+            credentials: 'include'
+        })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(function(data) {
                 var response = data ? data.trim() : '';
-                if(response === 'success') {
+                if (response === 'success') {
                     showFormMessage('Programme créé avec succès.', false);
-                    // Redirect to creation page
                     var programmePath = 'pdf/programmes/' + paroisse + '/' + nom;
                     window.location.href = '/pages/creation/index.php?programme=' + encodeURIComponent(programmePath);
                 } else {
                     showFormMessage('Erreur : ' + response, true);
                     console.error('nouveau response:', response);
                 }
-            },
-            error: function() {
+            })
+            .catch(function() {
                 showFormMessage('Erreur réseau lors de la création du programme.', true);
-            }
-        });
+            });
     });
 });
