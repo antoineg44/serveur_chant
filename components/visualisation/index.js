@@ -12,6 +12,14 @@ function open_pdf(path, el) {
         url: full_url
     };
 
+    try {
+        if (window.parent && typeof window.parent.updateCurrentChantPath === 'function') {
+            window.parent.updateCurrentChantPath(payload.path, payload.url);
+        }
+    } catch (e) {
+        console.log("Unable to call parent updateCurrentChantPath", e);
+    }
+
     // Notify listeners in the parent page and in the current iframe window.
     window.parent.postMessage(payload, window.location.origin);
     window.dispatchEvent(new CustomEvent("pdfPathChanged", {

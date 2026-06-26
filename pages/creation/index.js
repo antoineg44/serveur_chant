@@ -14,6 +14,8 @@ function markAsChanged() {
     hasUnsavedChanges = true;
 }
 
+window.updateCurrentChantPath = updateCurrentChantPath;
+
 var currentPreviewLabel = null;
 var currentPreviewInput = null;
 var currentPreviewContainer = null;
