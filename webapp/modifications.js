@@ -20,6 +20,7 @@ var currentPreviewLabel = null;
 var currentPreviewInput = null;
 var currentPreviewContainer = null;
 var currentPreviewChantName = null;
+var currentPreviewChantEntry = null;
 var pdfPathListenerAttached = false;
 
 function normalizePdfPath(path) {
@@ -46,7 +47,9 @@ function updateCurrentChantPath(newPath, updatedUrl) {
         currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
     }
 
-    if (window.programme && Array.isArray(programme.chants)) {
+    if (currentPreviewChantEntry) {
+        currentPreviewChantEntry.path = newPath;
+    } else if (window.programme && Array.isArray(programme.chants)) {
         var chantNameToUpdate = currentPreviewChantName || (currentPreviewContainer && currentPreviewContainer.querySelector(".part-column h1") ? currentPreviewContainer.querySelector(".part-column h1").textContent.trim() : null);
         if (chantNameToUpdate) {
             for (var i = 0; i < programme.chants.length; i++) {
@@ -100,6 +103,8 @@ function openChantPdf(el, chantPath) {
     currentPreviewContainer = null;
     currentPreviewChantName = null;
 
+    currentPreviewChantEntry = null;
+
     if (container) {
         currentPreviewContainer = container;
         currentPreviewLabel = container.querySelector(".text_path_chant");
@@ -107,6 +112,14 @@ function openChantPdf(el, chantPath) {
         var chantTitle = container.querySelector(".part-column h1");
         if (chantTitle) {
             currentPreviewChantName = chantTitle.textContent.trim();
+            if (window.programme && Array.isArray(programme.chants)) {
+                for (var j = 0; j < programme.chants.length; j++) {
+                    if (programme.chants[j] && programme.chants[j].type === "chant" && programme.chants[j].name === currentPreviewChantName) {
+                        currentPreviewChantEntry = programme.chants[j];
+                        break;
+                    }
+                }
+            }
         }
     }
 
