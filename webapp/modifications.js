@@ -32,6 +32,17 @@ function normalizePdfPath(path) {
     return normalized;
 }
 
+function buildChantDisplayNameFromPath(path) {
+    var normalizedPath = normalizePdfPath(path);
+    if (!normalizedPath) return "";
+
+    var segments = normalizedPath.split("/");
+    var fileName = segments[segments.length - 1] || "";
+    if (!fileName) return "";
+
+    return fileName.replace(/\.(pdf|PDF)$/i, "");
+}
+
 function updateCurrentChantPath(newPath, updatedUrl) {
     console.log('[pdf-debug] updateCurrentChantPath', { newPath: newPath, updatedUrl: updatedUrl, chantName: currentPreviewChantName, hasEntry: !!currentPreviewChantEntry });
     if (!newPath) return;
@@ -46,10 +57,22 @@ function updateCurrentChantPath(newPath, updatedUrl) {
 
     if (currentPreviewContainer) {
         currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
+        var chantTitleElement = currentPreviewContainer.querySelector(".part-column h1");
+        if (chantTitleElement) {
+            var suggestedName = buildChantDisplayNameFromPath(newPath);
+            if (suggestedName) {
+                chantTitleElement.textContent = suggestedName;
+            }
+        }
     }
 
+    var suggestedName = buildChantDisplayNameFromPath(newPath);
     if (currentPreviewChantEntry) {
         currentPreviewChantEntry.path = newPath;
+        if (suggestedName) {
+            currentPreviewChantEntry.name = suggestedName;
+            currentPreviewChantName = suggestedName;
+        }
         console.log('[pdf-debug] updated chant entry directly', { name: currentPreviewChantEntry.name, path: currentPreviewChantEntry.path });
     } else if (window.programme && Array.isArray(programme.chants)) {
         var chantNameToUpdate = currentPreviewChantName || (currentPreviewContainer && currentPreviewContainer.querySelector(".part-column h1") ? currentPreviewContainer.querySelector(".part-column h1").textContent.trim() : null);
@@ -57,6 +80,9 @@ function updateCurrentChantPath(newPath, updatedUrl) {
             for (var i = 0; i < programme.chants.length; i++) {
                 if (programme.chants[i] && programme.chants[i].type === "chant" && programme.chants[i].name === chantNameToUpdate) {
                     programme.chants[i].path = newPath;
+                    if (suggestedName) {
+                        programme.chants[i].name = suggestedName;
+                    }
                     break;
                 }
             }
