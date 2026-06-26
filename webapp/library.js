@@ -42,12 +42,18 @@ async function apiPost(action, payload) {
   return data;
 }
 
-function updateDeleteButtonState() {
+function updateLibraryActionButtonsState() {
   const deleteBtn = document.getElementById('library-delete');
-  if (!deleteBtn) {
-    return;
+  const downloadBtn = document.getElementById('library-download-program');
+  const isProgramSelected = Boolean(selectedLibraryFilePath && isProgramFile(selectedLibraryFileName));
+
+  if (deleteBtn) {
+    deleteBtn.disabled = !selectedLibraryFilePath || libraryLoading;
   }
-  deleteBtn.disabled = !selectedLibraryFilePath || libraryLoading;
+
+  if (downloadBtn) {
+    downloadBtn.disabled = !isProgramSelected || libraryLoading;
+  }
 }
 
 function setLibraryStatus(message, isError = false) {
@@ -313,7 +319,7 @@ function renderLibraryFiles(files) {
   if (!files.length) {
     selectedLibraryFilePath = '';
     selectedLibraryFileName = '';
-    updateDeleteButtonState();
+    updateLibraryActionButtonsState();
     tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">Aucun fichier trouve dans programmes.</td></tr>';
     updateLibraryCountWithTotal(0, libraryFilesAll.length);
     return;
@@ -376,7 +382,7 @@ function renderLibraryFiles(files) {
       row.classList.add('is-selected');
       selectedLibraryFilePath = file.path;
       selectedLibraryFileName = file.name;
-      updateDeleteButtonState();
+      updateLibraryActionButtonsState();
 
       setLibraryStatus('Fichier selectionne.');
     });
@@ -401,7 +407,7 @@ function renderLibraryFiles(files) {
     tbody.appendChild(row);
   }
 
-  updateDeleteButtonState();
+  updateLibraryActionButtonsState();
   updateLibraryCountWithTotal(files.length, libraryFilesAll.length);
 }
 
@@ -418,7 +424,7 @@ async function deleteSelectedLibraryFile() {
 
   try {
     libraryLoading = true;
-    updateDeleteButtonState();
+    updateLibraryActionButtonsState();
     setLibraryStatus('Deplacement vers Recycle Bin en cours...');
 
     const recycleFolderName = createRecycleFolderName();
@@ -449,8 +455,30 @@ async function deleteSelectedLibraryFile() {
     setLibraryStatus(error.message || 'Erreur pendant le deplacement.', true);
   } finally {
     libraryLoading = false;
-    updateDeleteButtonState();
+    updateLibraryActionButtonsState();
   }
+}
+
+async function downloadSelectedLibraryProgram() {
+  if (!selectedLibraryFilePath) {
+    setLibraryStatus('Selectionnez un programme a telecharger.', true);
+    return;
+  }
+
+  if (!isProgramFile(selectedLibraryFileName)) {
+    setLibraryStatus('Le telechargement n est disponible que pour un programme.', true);
+    return;
+  }
+
+  const downloadUrl = `${LIBRARY_API_URL}?action=download_program&path=${encodeURIComponent(selectedLibraryFilePath)}`;
+  const anchor = document.createElement('a');
+  anchor.href = downloadUrl;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  setLibraryStatus('Preparation du telechargement...');
 }
 
 async function createLibraryFolder() {
@@ -461,7 +489,7 @@ async function createLibraryFolder() {
 
   try {
     libraryLoading = true;
-    updateDeleteButtonState();
+    updateLibraryActionButtonsState();
     setLibraryStatus('Creation du dossier en cours...');
 
     await apiPost('mkdir', {
@@ -476,7 +504,7 @@ async function createLibraryFolder() {
     setLibraryStatus(error.message || 'Erreur pendant la creation du dossier.', true);
   } finally {
     libraryLoading = false;
-    updateDeleteButtonState();
+    updateLibraryActionButtonsState();
   }
 }
 
@@ -598,6 +626,13 @@ function initLibrary() {
     });
   }
 
+  const libraryDownloadBtn = document.getElementById('library-download-program');
+  if (libraryDownloadBtn) {
+    libraryDownloadBtn.addEventListener('click', () => {
+      void downloadSelectedLibraryProgram();
+    });
+  }
+
   const libraryNewFolderBtn = document.getElementById('library-new-folder');
   if (libraryNewFolderBtn) {
     libraryNewFolderBtn.addEventListener('click', () => {
@@ -605,7 +640,7 @@ function initLibrary() {
     });
   }
 
-  updateDeleteButtonState();
+  updateLibraryActionButtonsState();
 
   void loadLibraryFiles(false);
 }

@@ -40,6 +40,11 @@ if ($action === 'download') {
     exit;
 }
 
+if ($action === 'download_program') {
+    handleDownloadProgram($pdfRoot);
+    exit;
+}
+
 try {
     switch ($action) {
         case 'list':
@@ -719,6 +724,188 @@ function handleUpload(string $root): void
         'success' => true,
         'message' => 'File uploaded.',
     ]);
+}
+
+function handleDownloadProgram(string $root): void
+{
+    if (!class_exists('ZipArchive')) {
+        respondJson(500, [
+            'success' => false,
+            'message' => 'ZipArchive n est pas disponible sur le serveur.',
+        ]);
+    }
+
+    $relative = requestValue('path');
+    $normalized = normalizeRelativePath($relative);
+
+    if ($normalized === '') {
+        respondJson(400, [
+            'success' => false,
+            'message' => 'Aucun programme selectionne pour le telechargement.',
+        ]);
+    }
+
+    $programFile = absolutePath($root, $normalized);
+    if (!is_file($programFile)) {
+        respondJson(404, [
+            'success' => false,
+            'message' => 'Fichier de programme introuvable.',
+        ]);
+    }
+
+    $lower = strtolower($programFile);
+    if (!str_ends_with($lower, '.json') && !str_ends_with($lower, '.txt')) {
+        respondJson(400, [
+            'success' => false,
+            'message' => 'Le telechargement de programme est disponible uniquement pour les fichiers .json et .txt.',
+        ]);
+    }
+
+    $filesToZip = collectProgramFileReferences($root, $programFile, $normalized);
+    $filesToZip[$programFile] = basename($programFile);
+
+    $zipBaseName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', pathinfo($programFile, PATHINFO_FILENAME));
+    if ($zipBaseName === '') {
+        $zipBaseName = 'programme';
+    }
+    $zipName = $zipBaseName . '.zip';
+
+    $tempFile = tempnam(sys_get_temp_dir(), 'programme_zip_');
+    if ($tempFile === false) {
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible de creer un fichier temporaire.',
+        ]);
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($tempFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        @unlink($tempFile);
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible d initialiser l archive ZIP.',
+        ]);
+    }
+
+    foreach ($filesToZip as $absolutePath => $zipPath) {
+        if (!is_file($absolutePath) || !is_readable($absolutePath)) {
+            continue;
+        }
+        $zip->addFile($absolutePath, $zipPath);
+    }
+
+    $zip->close();
+
+    if (!is_file($tempFile) || filesize($tempFile) === 0) {
+        @unlink($tempFile);
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible de generer le fichier ZIP.',
+        ]);
+    }
+
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . addslashes($zipName) . '"');
+    header('Content-Length: ' . (string) filesize($tempFile));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Pragma: public');
+
+    readfile($tempFile);
+    @unlink($tempFile);
+    exit;
+}
+
+function collectProgramFileReferences(string $root, string $programFile, string $programRelative): array
+{
+    $directory = dirname($programRelative);
+    $content = file_get_contents($programFile);
+    if ($content === false) {
+        return [];
+    }
+
+    $references = [];
+    $extension = strtolower(pathinfo($programFile, PATHINFO_EXTENSION));
+
+    if ($extension === 'json') {
+        $data = json_decode($content, true);
+        if (is_array($data) && isset($data['chants']) && is_array($data['chants'])) {
+            foreach ($data['chants'] as $chant) {
+                if (!is_array($chant)) {
+                    continue;
+                }
+                $path = isset($chant['path']) && is_string($chant['path']) ? trim($chant['path']) : '';
+                if ($path === '') {
+                    continue;
+                }
+                $resolved = resolveProgramReferencePath($root, $directory, $path);
+                if ($resolved !== null) {
+                    $references[$resolved] = relativePath($root, $resolved);
+                }
+            }
+        }
+    } else {
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        if (is_array($lines)) {
+            $count = count($lines);
+            for ($i = 0; $i < $count; $i++) {
+                $line = trim((string) $lines[$i]);
+                if ($line === '' || $line[0] !== '#') {
+                    continue;
+                }
+
+                $path = '';
+                if ($i + 1 < $count) {
+                    $next = trim((string) $lines[$i + 1]);
+                    if (str_starts_with($next, 'path =')) {
+                        $path = trim(substr($next, 6));
+                    }
+                }
+
+                if ($path === '') {
+                    continue;
+                }
+
+                $resolved = resolveProgramReferencePath($root, $directory, $path);
+                if ($resolved !== null) {
+                    $references[$resolved] = relativePath($root, $resolved);
+                }
+            }
+        }
+    }
+
+    return $references;
+}
+
+function resolveProgramReferencePath(string $root, string $programDirectory, string $reference): ?string
+{
+    $reference = str_replace('\\', '/', trim($reference));
+    if ($reference === '') {
+        return null;
+    }
+
+    if (preg_match('/^https?:\/\//i', $reference)) {
+        return null;
+    }
+
+    $relativeReference = normalizeRelativePath($reference);
+    if ($relativeReference === '') {
+        return null;
+    }
+
+    $candidate = absolutePath($root, $relativeReference);
+    if (is_file($candidate)) {
+        return $candidate;
+    }
+
+    if ($programDirectory !== '') {
+        $candidate = absolutePath($root, $programDirectory . '/' . $relativeReference);
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return null;
 }
 
 function handleDownload(string $root): void
