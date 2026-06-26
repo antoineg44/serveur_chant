@@ -126,6 +126,12 @@ document.addEventListener('DOMContentLoaded', function() {
             attachPdfPathListener();
         });
     }
+
+    window.addEventListener('message', function(event) {
+        if (!event.data || event.data.type !== 'pdfSelectionChanged') return;
+        if (event.origin && event.origin !== window.location.origin) return;
+        updateCurrentChantPath(event.data.path, event.data.url);
+    });
 });
 
 function initFormulaire()

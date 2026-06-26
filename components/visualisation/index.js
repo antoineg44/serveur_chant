@@ -6,12 +6,16 @@ function open_pdf(path, el) {
     var new_path = "/pdf/" +path;
     var full_url = window.location.origin + encodeURI(new_path.replace("//", "/"));
 
-    // Notify listeners with the selected PDF path.
+    var payload = {
+        type: "pdfSelectionChanged",
+        path: new_path.replace("//", "/"),
+        url: full_url
+    };
+
+    // Notify listeners in the parent page and in the current iframe window.
+    window.parent.postMessage(payload, window.location.origin);
     window.dispatchEvent(new CustomEvent("pdfPathChanged", {
-        detail: {
-            path: new_path.replace("//", "/"),
-            url: full_url
-        }
+        detail: payload
     }));
 
     eventChangePDF(full_url);
