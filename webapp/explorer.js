@@ -377,9 +377,9 @@ function openPdfFromExplorer(item) {
   window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
 }
 
-function isMp3FileName(fileName) {
+function isAudioFileName(fileName) {
   const lower = String(fileName || '').toLowerCase();
-  return lower.endsWith('.mp3');
+  return lower.endsWith('.mp3') || lower.endsWith('.m4a');
 }
 
 function isMusicXmlFileName(fileName) {
@@ -471,7 +471,7 @@ function renderList(items) {
       iconClass = 'item-icon-dir';
     } else if (item.name.toLowerCase().endsWith('.pdf')) {
       iconClass = 'item-icon-pdf';
-    } else if (isMp3FileName(item.name)) {
+    } else if (isAudioFileName(item.name)) {
       iconClass = 'item-icon-audio';
     }
     const openExternallyBtn = document.createElement('button');
@@ -520,7 +520,7 @@ function renderList(items) {
         openPdfFromExplorer(item);
       } else if (isMusicXmlFileName(item.name)) {
         void openMusicXmlFromExplorer(item);
-      } else if (isMp3FileName(item.name)) {
+      } else if (isAudioFileName(item.name)) {
         openMp3FromExplorer(item);
       }
     });
