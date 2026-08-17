@@ -115,6 +115,26 @@ function resolveProgramUrl() {
   }
 }
 
+async function ensureAuthenticated() {
+  const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+    || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+
+  try {
+    const response = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+    const payload = await response.json().catch(() => ({ success: false }));
+
+    if (!response.ok || !payload.success) {
+      window.location.replace('./login.html');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    window.location.replace('./login.html');
+    return false;
+  }
+}
+
 function getRelativePathFromPdfUrl(value) {
   const raw = String(value || '').trim();
   if (!raw) {
@@ -263,6 +283,10 @@ async function loadProgramDefinition(programUrl) {
       path: relativeProgramPath,
     }).toString();
     const response = await fetch(`${VISUALISATION_API_URL}?${query}`, { credentials: 'include' });
+    if (response.status === 401) {
+      window.location.replace('./login.html');
+      return null;
+    }
     if (!response.ok) {
       throw new Error(`Erreur HTTP ${response.status} pendant le chargement du programme.`);
     }
@@ -418,6 +442,11 @@ async function listDirectory(path) {
   const response = await fetch(`${VISUALISATION_API_URL}?${query}`, { credentials: 'include' });
   const payload = await response.json().catch(() => ({ success: false, message: 'Invalid JSON response.' }));
 
+  if (response.status === 401 || (payload && payload.success === false && payload.message && payload.message.toLowerCase().includes('authentification requise'))) {
+    window.location.replace('./login.html');
+    return null;
+  }
+
   if (!response.ok || !payload.success) {
     throw new Error(payload.message || 'Erreur de lecture du dossier.');
   }
@@ -554,6 +583,10 @@ async function renderSiblingFiles(relativePdfPath) {
   }
 
   const payload = await listDirectory(split.parent);
+  if (!payload) {
+    return 0;
+  }
+
   const files = Array.isArray(payload.items)
     ? payload.items.filter((item) => item && item.type === 'file')
     : [];
@@ -609,6 +642,10 @@ async function loadVisualisation(relativePdfPath) {
 }
 
 async function initViewer() {
+  if (!(await ensureAuthenticated())) {
+    return;
+  }
+
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('sidebar-toggle-floating').addEventListener('click', showFolderSidebarFromFloating);
   document.getElementById('program-toggle')?.addEventListener('click', toggleProgramSidebar);
@@ -619,7 +656,11 @@ async function initViewer() {
 
   if (programUrl) {
     try {
-      currentProgram = await loadProgramDefinition(programUrl);
+      const programData = await loadProgramDefinition(programUrl);
+      if (programData === null) {
+        return;
+      }
+      currentProgram = programData;
       hasProgramSidebar = true;
       programSidebar.hidden = false;
       setProgramSidebarHidden(false);
