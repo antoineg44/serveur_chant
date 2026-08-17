@@ -417,6 +417,7 @@ window.addEventListener('message', (event) => {
   }
 
   if (event.data && event.data.type === 'openPageTab' && event.data.item) {
+    closeMesseInfoModal();
     openPageInNewTab(event.data.item);
     return;
   }

@@ -14,6 +14,20 @@ function markAsChanged() {
     hasUnsavedChanges = true;
 }
 
+function updateProgrammeInformationFromForm() {
+    var dateField = document.getElementById('programme_date');
+    var lieuField = document.getElementById('programme_lieu');
+    var occasionField = document.getElementById('programme_occasion');
+    var paroisseField = document.getElementById('select_paroisse');
+    var descriptionField = document.getElementById('programme_description');
+
+    if (dateField) programme.date = dateField.value;
+    if (lieuField) programme.lieu = lieuField.value.trim();
+    if (occasionField) programme.occasion = occasionField.value.trim();
+    if (paroisseField) programme.paroisse = paroisseField.value;
+    if (descriptionField) programme.description = descriptionField.value;
+}
+
 window.updateCurrentChantPath = updateCurrentChantPath;
 
 var currentPreviewLabel = null;
@@ -232,8 +246,6 @@ function initFormulaire()
 
   // title
   document.getElementById("title_section").innerHTML = '<div class="href-target" id="intro"></div>' + "<h1 class='package-name'>Messe du " + programme.date + " à " + programme.lieu + " pour " + programme.occasion + "</h1><p>Paroisse de " + programme.paroisse + ".</p>";
-  document.getElementById("section_informations").remove();
-  document.getElementById("informations_part").remove();
 
   // Add change listeners to form fields
   var formFields = ['select_paroisse', 'programme_lieu', 'programme_occasion', 'programme_date', 'programme_description'];
@@ -520,6 +532,7 @@ function collectProgramChantsFromDom() {
 
 function enregistrer() {
     console.log("enregistrer");
+    updateProgrammeInformationFromForm();
     var chants = collectProgramChantsFromDom();
     console.log(chants);
     programme.chants = chants;

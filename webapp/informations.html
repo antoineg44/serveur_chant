@@ -320,6 +320,15 @@
 
       title.textContent = data.title || 'Informations de la messe';
       container.innerHTML = `
+        <div class="messe-popup-section">
+          <h3>Action</h3>
+          <div class="messe-popup-actions">
+            <button type="button" class="messe-popup-action-button" data-action="modify">Modifier</button>
+            <button type="button" class="messe-popup-action-button" data-action="visualize">Visualiser</button>
+            <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
+          </div>
+        </div>
+        
         <div class="messe-popup-grid">
           <div class="messe-popup-card"><strong>Nom</strong><span>${formatDisplayValue(data.name)}</span></div>
           <div class="messe-popup-card"><strong>Date</strong><span>${formatDisplayValue(data.date)}</span></div>
@@ -337,19 +346,11 @@
           <h3>Programme complet</h3>
           <div class="messe-popup-program">${programItems || '<p class="messe-popup-empty">Aucun chant ou partie repertorie.</p>'}</div>
         </div>
-
-        <div class="messe-popup-section">
-          <h3>Action</h3>
-          <div class="messe-popup-actions">
-            <button type="button" class="messe-popup-action-button" data-action="modify">Modifier</button>
-            <button type="button" class="messe-popup-action-button" data-action="visualize">Visualiser</button>
-            <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
-          </div>
-        </div>
       `;
 
       const programmePath = String(data.path || '').trim();
-      const pdfProgrammePath = `/${normalizePath(programmePath)}`;
+      const normalizedProgrammePath = normalizePath(programmePath).replace(/^pdf\//i, '');
+      const pdfProgrammePath = `/pdf/${normalizedProgrammePath}`;
       const programmeQuery = encodeURIComponent(pdfProgrammePath);
       const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.EXPLORER_API)
@@ -360,6 +361,25 @@
         zip: `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
       };
 
+      function openAction(action, actionUrl) {
+        if ((action === 'modify' || action === 'visualize') && window.parent && window.parent !== window) {
+          const actionLabel = action === 'modify' ? 'Modifier' : 'Visualiser';
+          window.parent.postMessage({
+            type: 'openPageTab',
+            item: {
+              key: `${action}-programme-${programmePath}`,
+              name: `${actionLabel} - ${data.name || 'Programme'}`,
+              title: `${actionLabel} - ${data.name || 'Programme'}`,
+              description: actionLabel,
+              url: actionUrl,
+            },
+          }, '*');
+          return;
+        }
+
+        window.open(actionUrl, '_blank', 'noopener,noreferrer');
+      }
+
       container.querySelectorAll('[data-action]').forEach((button) => {
         button.addEventListener('click', () => {
           const actionUrl = actionUrls[button.dataset.action];
@@ -367,7 +387,7 @@
             return;
           }
 
-          window.open(actionUrl, '_blank', 'noopener,noreferrer');
+          openAction(button.dataset.action, actionUrl);
         });
       });
     }
