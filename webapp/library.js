@@ -332,6 +332,9 @@ function renderLibraryFiles(files) {
 
   for (const file of files) {
     const row = document.createElement('tr');
+    row.dataset.programPath = file.path;
+    row.dataset.programName = file.name;
+    row.dataset.programTitle = formatLibraryDisplayName(file.name);
     const encodedPath = encodePathForUrl(file.path);
     const remoteFileUrl = `${PDF_ROOT}${encodedPath}`;
     const displayName = formatLibraryDisplayName(file.name);
@@ -354,6 +357,12 @@ function renderLibraryFiles(files) {
     nameLink.style.textDecoration = 'underline';
     nameLink.addEventListener('click', (event) => {
       event.stopPropagation();
+
+      if (window.openMessePopupFromLibrary && isProgramFile(file.name)) {
+        event.preventDefault();
+        window.openMessePopupFromLibrary(file);
+        return;
+      }
 
       if (!canOpenInViewer) {
         nameLink.target = '_blank';
@@ -383,6 +392,10 @@ function renderLibraryFiles(files) {
       selectedLibraryFilePath = file.path;
       selectedLibraryFileName = file.name;
       updateLibraryActionButtonsState();
+
+      if (window.openMessePopupFromLibrary && isProgramFile(file.name)) {
+        window.openMessePopupFromLibrary(file);
+      }
 
       setLibraryStatus('Fichier selectionne.');
     });
