@@ -409,6 +409,10 @@ function buildProtectedPdfUrl(relativePdfPath) {
   return `${VISUALISATION_API_URL}?${params.toString()}`;
 }
 
+function isMp3Path(path) {
+  return String(path || '').toLowerCase().endsWith('.mp3');
+}
+
 function isMusicXmlPath(path) {
   const lower = String(path || '').toLowerCase();
   return lower.endsWith('.musicxml') || lower.endsWith('.mxl') || lower.endsWith('.xml');
@@ -474,8 +478,9 @@ function renderFileList(items, currentFileName, folderPath) {
   for (const item of files) {
     const filePath = cleanPath(item.path || `${folderPath}/${item.name}`);
     const isPdf = String(item.name || '').toLowerCase().endsWith('.pdf');
+    const isMp3 = isMp3Path(filePath);
     const isMusicXml = isMusicXmlPath(filePath);
-    const isSupported = isPdf || isMusicXml;
+    const isSupported = isPdf || isMusicXml || isMp3;
     const isSelected = item.name === currentFileName;
     const button = document.createElement('button');
     button.type = 'button';
@@ -484,7 +489,7 @@ function renderFileList(items, currentFileName, folderPath) {
 
     const icon = document.createElement('span');
     icon.className = 'file-icon';
-    icon.textContent = isPdf ? 'PDF' : (isMusicXml ? 'XML' : 'DOC');
+    icon.textContent = isPdf ? 'PDF' : (isMusicXml ? 'XML' : (isMp3 ? 'MP3' : 'DOC'));
 
     const content = document.createElement('span');
     content.className = 'file-content';
@@ -504,6 +509,10 @@ function renderFileList(items, currentFileName, folderPath) {
 
     if (isSupported) {
       button.addEventListener('click', () => {
+        if (isMp3) {
+          window.open(buildPdfFileUrl(filePath), '_blank', 'noopener,noreferrer');
+          return;
+        }
         void loadVisualisation(filePath);
       });
     }

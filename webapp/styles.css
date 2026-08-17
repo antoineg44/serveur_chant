@@ -447,6 +447,35 @@ body {
   color: #7f1d1d;
 }
 
+.item-icon-audio {
+  border: 1px solid #0f766e;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ccfbf1 0%, #99f6e4 100%);
+}
+
+.item-icon-audio::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px 2px 0 0;
+  background: #115e59;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 65% 0, 65% 72%, 0 72%);
+}
+
+.item-icon-audio::after {
+  content: 'M';
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 700;
+  color: #134e4a;
+}
+
 .empty-cell {
   text-align: center;
   color: var(--ink-soft);
