@@ -183,10 +183,13 @@
 		$old_path_parts = explode('/', $old_path_prog, 2);
 		$fallback_paroisse = $old_path_parts[0];
 		$path_prog = build_programme_path($decoded, $fallback_paroisse, $old_path_prog);
+		$new_path_parts = explode('/', $path_prog, 2);
+		$decoded['paroisse'] = $new_path_parts[0];
 		$old_absolute_path = '../../pdf/programmes/'.$old_path_prog;
 		$new_absolute_path = '../../pdf/programmes/'.$path_prog;
+		$path_changed = $old_absolute_path !== $new_absolute_path;
 
-		if($old_absolute_path !== $new_absolute_path && file_exists($new_absolute_path))
+		if($path_changed && file_exists($new_absolute_path))
 		{
 			echo "file already exists";
 			return;
@@ -215,10 +218,10 @@
 		if($lignes_serveur == null)
 		{
 			write_file_server($path_prog, $decoded);
-			if($old_absolute_path !== $new_absolute_path && file_exists($old_absolute_path)) {
+			if($path_changed && file_exists($old_absolute_path)) {
 				unlink($old_absolute_path);
 			}
-			echo 'result : success<br/>';
+			echo $path_changed ? 'result : renamed and saved<br/>' : 'result : success<br/>';
 		}
 		else {
 			$cas = getCas($date_derniere_synchronisation, $date_modif, $lignes_serveur["dateLastModif"]);
@@ -234,10 +237,10 @@
 			else echo 'result : no chant change<br/>';
 			if($clientVersionWins && $result !== -1) {
 				write_file_server($path_prog, $lignes_serveur);
-				if($old_absolute_path !== $new_absolute_path && file_exists($old_absolute_path)) {
+				if($path_changed && file_exists($old_absolute_path)) {
 					unlink($old_absolute_path);
 				}
-				echo 'result : success<br/>';
+				echo $path_changed ? 'result : renamed and saved<br/>' : 'result : success<br/>';
 			}
 		}  
     }
