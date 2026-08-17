@@ -173,26 +173,24 @@ function isProgramFile(fileName) {
 }
 
 function requestOpenProgram(file) {
-  const encodedPath = encodePathForUrl(file.path);
-  const programUrl = `${PDF_ROOT}${encodedPath}`;
-  const visualisationUrl = `./visualisation.html?${new URLSearchParams({ programme: programUrl }).toString()}`;
+  const infoUrl = `./informations.html?${new URLSearchParams({ programme: file.path }).toString()}`;
   const tabLabel = formatLibraryDisplayName(file.name);
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
       type: 'openPageTab',
       item: {
-        key: `programme-${file.path}`,
+        key: `programme-info-${file.path}`,
         name: tabLabel,
         title: tabLabel,
-        description: 'Visualisation du programme',
-        url: visualisationUrl,
+        description: 'Informations du programme',
+        url: infoUrl,
       },
     }, '*');
     return;
   }
 
-  window.open(visualisationUrl, '_blank', 'noopener,noreferrer');
+  window.open(infoUrl, '_blank', 'noopener,noreferrer');
 }
 
 function requestModifyProgram(file) {
@@ -358,12 +356,6 @@ function renderLibraryFiles(files) {
     nameLink.addEventListener('click', (event) => {
       event.stopPropagation();
 
-      if (window.openMessePopupFromLibrary && isProgramFile(file.name)) {
-        event.preventDefault();
-        window.openMessePopupFromLibrary(file);
-        return;
-      }
-
       if (!canOpenInViewer) {
         nameLink.target = '_blank';
         nameLink.rel = 'noopener noreferrer';
@@ -393,8 +385,8 @@ function renderLibraryFiles(files) {
       selectedLibraryFileName = file.name;
       updateLibraryActionButtonsState();
 
-      if (window.openMessePopupFromLibrary && isProgramFile(file.name)) {
-        window.openMessePopupFromLibrary(file);
+      if (isProgramFile(file.name)) {
+        requestOpenProgram(file);
       }
 
       setLibraryStatus('Fichier selectionne.');
