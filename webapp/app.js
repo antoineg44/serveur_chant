@@ -6,6 +6,7 @@ const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${WEBAPP_CONFIG.BASE_URL || ''}pdf/`
 
 const tabsContainer = document.querySelector('.tabs');
 const panelsContainer = document.querySelector('.panels');
+const tabHistory = [];
 
 /**
  * Get all tab buttons
@@ -25,6 +26,17 @@ function getPanels() {
  * Activate a tab and show corresponding panel
  */
 function activateTab(tabName) {
+  const tabExists = getTabs().some((tabButton) => tabButton.dataset.tab === tabName);
+  if (!tabExists) {
+    return;
+  }
+
+  const historyIndex = tabHistory.indexOf(tabName);
+  if (historyIndex !== -1) {
+    tabHistory.splice(historyIndex, 1);
+  }
+  tabHistory.push(tabName);
+
   getTabs().forEach((tabButton) => {
     const selected = tabButton.dataset.tab === tabName;
     tabButton.classList.toggle('is-active', selected);
@@ -53,8 +65,17 @@ function closeDynamicTab(tabName) {
   tabButton.remove();
   panel.remove();
 
+  let historyIndex = tabHistory.indexOf(tabName);
+  while (historyIndex !== -1) {
+    tabHistory.splice(historyIndex, 1);
+    historyIndex = tabHistory.indexOf(tabName);
+  }
+
   if (wasActive) {
-    activateTab('explorer');
+    const previousTab = [...tabHistory]
+      .reverse()
+      .find((name) => document.getElementById(`tab-${name}`));
+    activateTab(previousTab || 'explorer');
   }
 }
 

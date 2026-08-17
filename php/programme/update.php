@@ -124,6 +124,19 @@
             return;
         }
 
+		$date_modif = trim((string) $_GET['dateModif']);
+		$date_derniere_synchronisation = isset($decoded["dateLastModif"])
+			? trim((string) $decoded["dateLastModif"])
+			: "";
+		if(!preg_match('/^\d{14}$/', $date_modif))
+		{
+			echo "invalid modification date";
+			return;
+		}
+
+		// La date envoyée avec la requête représente la nouvelle version client.
+		$decoded["dateLastModif"] = $date_modif;
+
         $path_file = isset($decoded["path_file"]) ? (string) $decoded["path_file"] : "";
         $path_prog = normalize_programme_path($path_file);
 
@@ -148,11 +161,11 @@
 
 		if($lignes_serveur == null)
 		{
-			$decoded["dateLastModif"] = $_GET['dateModif'];     // Nouvelle date de modification
 			write_file_server($path_prog, $decoded);
+			echo 'result : success<br/>';
 		}
 		else {
-			$cas = getCas($decoded["dateLastModif"], $_GET['dateModif'], $lignes_serveur["dateLastModif"]);
+			$cas = getCas($date_derniere_synchronisation, $date_modif, $lignes_serveur["dateLastModif"]);
 			
 			echo "Cas : ".$cas;
 
@@ -160,9 +173,13 @@
 
 			echo '\n<pre>ligne client : '.print_r($decoded, true).'</pre>';
 			echo '\n<pre>ligne serveur : '.print_r($lignes_serveur, true).'</pre>';
+			$clientVersionWins = in_array($cas, array(1, 2, 5), true);
 			if($result == true)echo 'result : success<br/>';
-			else echo 'result : false<br/>';
-			if($result == true)write_file_server($path_prog, $lignes_serveur);
+			else echo 'result : no chant change<br/>';
+			if($clientVersionWins && $result !== -1) {
+				write_file_server($path_prog, $lignes_serveur);
+				echo 'result : success<br/>';
+			}
 		}  
     }
     // HELP : https://www.sitepoint.com/jquery-php-ajax-json/

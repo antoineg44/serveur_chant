@@ -28,6 +28,22 @@ function updateProgrammeInformationFromForm() {
     if (descriptionField) programme.description = descriptionField.value;
 }
 
+function initializeParoisseSelect() {
+    var paroisseField = document.getElementById('select_paroisse');
+    if (!paroisseField || !window.programme || !programme.paroisse) {
+        return;
+    }
+
+    var paroisse = String(programme.paroisse).trim();
+    var optionExists = Array.prototype.some.call(paroisseField.options, function(option) {
+        return option.value.trim() === paroisse || option.textContent.trim() === paroisse;
+    });
+
+    if (optionExists) {
+        paroisseField.value = paroisse;
+    }
+}
+
 window.updateCurrentChantPath = updateCurrentChantPath;
 
 var currentPreviewLabel = null;
@@ -230,7 +246,7 @@ function initFormulaire()
   }
 
   // paroisse :
-  document.getElementById("select_paroisse").value = programme.paroisse;
+    initializeParoisseSelect();
 
   // lieu
   document.getElementById("programme_lieu").value = programme.lieu;
