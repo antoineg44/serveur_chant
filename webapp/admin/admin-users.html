@@ -272,12 +272,17 @@
 
     // ── Auth guard ────────────────────────────────────────────────────────────
 
+    function redirectToLoginForAdmin() {
+      const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      window.location.replace(`../login.html?return=${returnUrl}`);
+    }
+
     async function checkAuth() {
       try {
         const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success) {
-          window.location.replace('../login.html');
+          redirectToLoginForAdmin();
           return;
         }
         if (data.user.role !== 'admin') {
@@ -286,7 +291,7 @@
         }
         currentUser = data.user;
       } catch {
-        window.location.replace('../login.html');
+        redirectToLoginForAdmin();
       }
     }
 

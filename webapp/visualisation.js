@@ -115,6 +115,11 @@ function resolveProgramUrl() {
   }
 }
 
+function redirectToLogin() {
+  const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+  window.location.replace(`./login.html?return=${returnUrl}`);
+}
+
 async function ensureAuthenticated() {
   const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
     || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
@@ -124,13 +129,13 @@ async function ensureAuthenticated() {
     const payload = await response.json().catch(() => ({ success: false }));
 
     if (!response.ok || !payload.success) {
-      window.location.replace('./login.html');
+      redirectToLogin();
       return false;
     }
 
     return true;
   } catch (error) {
-    window.location.replace('./login.html');
+    redirectToLogin();
     return false;
   }
 }
@@ -284,7 +289,7 @@ async function loadProgramDefinition(programUrl) {
     }).toString();
     const response = await fetch(`${VISUALISATION_API_URL}?${query}`, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.replace('./login.html');
+      redirectToLogin();
       return null;
     }
     if (!response.ok) {
@@ -447,7 +452,7 @@ async function listDirectory(path) {
   const payload = await response.json().catch(() => ({ success: false, message: 'Invalid JSON response.' }));
 
   if (response.status === 401 || (payload && payload.success === false && payload.message && payload.message.toLowerCase().includes('authentification requise'))) {
-    window.location.replace('./login.html');
+    redirectToLogin();
     return null;
   }
 

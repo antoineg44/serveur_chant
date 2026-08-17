@@ -154,13 +154,30 @@
       errorEl.classList.remove('visible');
     }
 
+    function getReturnTarget() {
+      const params = new URLSearchParams(window.location.search);
+      const fallback = './index.html';
+      const rawTarget = params.get('return');
+
+      if (!rawTarget) {
+        return fallback;
+      }
+
+      try {
+        const target = new URL(rawTarget, window.location.href);
+        return target.pathname + target.search + target.hash;
+      } catch {
+        return fallback;
+      }
+    }
+
     // Redirect if already logged in
     (async () => {
       try {
         const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) {
-          window.location.replace('./index.html');
+          window.location.replace(getReturnTarget());
         }
       } catch {
         // no session — stay on page
@@ -192,7 +209,7 @@
         const data = await res.json();
 
         if (data.success) {
-          window.location.replace('./index.html');
+          window.location.replace(getReturnTarget());
         } else {
           showError(data.message || 'Échec de la connexion.');
         }

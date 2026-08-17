@@ -83,7 +83,8 @@
         const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success) {
-          window.location.replace('./login.html');
+          const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+          window.location.replace(`./login.html?return=${returnUrl}`);
         } else {
           window.__currentUser = data.user;
           const applyUserUi = () => {
