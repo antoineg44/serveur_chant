@@ -211,9 +211,14 @@
     <div class="messe-info-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="messe-info-modal-title">
       <div class="messe-info-modal-head">
         <h2 id="messe-info-modal-title">Informations de la messe</h2>
-        <button id="messe-info-modal-close" class="btn btn-ghost icon-btn" type="button" title="Fermer" aria-label="Fermer">
-          <span class="icon-glyph" aria-hidden="true">&#x00d7;</span>
-        </button>
+        <div class="messe-info-modal-actions">
+          <button id="messe-info-modal-external" class="btn btn-ghost icon-btn" type="button" title="Ouvrir dans un nouvel onglet" aria-label="Ouvrir dans un nouvel onglet">
+            <span class="icon-glyph" aria-hidden="true">&#x2197;</span>
+          </button>
+          <button id="messe-info-modal-close" class="btn btn-ghost icon-btn" type="button" title="Fermer" aria-label="Fermer">
+            <span class="icon-glyph" aria-hidden="true">&#x00d7;</span>
+          </button>
+        </div>
       </div>
       <iframe id="messe-info-modal-frame" class="messe-info-modal-frame" title="Informations de la messe"></iframe>
     </div>

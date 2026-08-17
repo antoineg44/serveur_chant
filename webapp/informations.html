@@ -26,34 +26,17 @@
       color: var(--ink);
       display: grid;
       place-items: center;
-      padding: 24px;
     }
 
     .messe-popup {
-      width: min(820px, 100%);
-      max-height: min(82vh, 820px);
-      overflow: auto;
+     overflow: auto;
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 22px;
       box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
       padding: 28px 28px 22px;
       position: relative;
-    }
-
-    .messe-popup-close {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 34px;
-      height: 34px;
-      border: 0;
-      border-radius: 50%;
-      background: #f1f5f9;
-      color: var(--ink);
-      font-size: 1.6rem;
-      line-height: 1;
-      cursor: pointer;
+      height: 100%;
+      width: 100%;
     }
 
     .messe-popup-title {
@@ -146,11 +129,30 @@
       color: var(--ink-soft);
       padding: 24px 0;
     }
+
+    .messe-popup-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .messe-popup-action-button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .messe-popup-action-button:hover {
+      background: #115e59;
+    }
   </style>
 </head>
 <body>
   <main class="messe-popup" role="dialog" aria-modal="true" aria-labelledby="messe-popup-title">
-    <button id="messe-popup-close" class="messe-popup-close" aria-label="Fermer" type="button">×</button>
     <h1 id="messe-popup-title" class="messe-popup-title">Informations de la messe</h1>
     <div id="messe-popup-content" class="messe-popup-content">
       <div class="messe-popup-loading">Chargement des informations…</div>
@@ -335,7 +337,39 @@
           <h3>Programme complet</h3>
           <div class="messe-popup-program">${programItems || '<p class="messe-popup-empty">Aucun chant ou partie repertorie.</p>'}</div>
         </div>
+
+        <div class="messe-popup-section">
+          <h3>Action</h3>
+          <div class="messe-popup-actions">
+            <button type="button" class="messe-popup-action-button" data-action="modify">Modifier</button>
+            <button type="button" class="messe-popup-action-button" data-action="visualize">Visualiser</button>
+            <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
+          </div>
+        </div>
       `;
+
+      const programmePath = String(data.path || '').trim();
+      const pdfProgrammePath = `/${normalizePath(programmePath)}`;
+      const programmeQuery = encodeURIComponent(pdfProgrammePath);
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.EXPLORER_API)
+        || `${baseUrl}webapp/api/explorer.php`;
+      const actionUrls = {
+        modify: `./modifications.html?programme=${programmeQuery}`,
+        visualize: `./visualisation.html?programme=${programmeQuery}`,
+        zip: `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
+      };
+
+      container.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const actionUrl = actionUrls[button.dataset.action];
+          if (!actionUrl || !programmePath) {
+            return;
+          }
+
+          window.open(actionUrl, '_blank', 'noopener,noreferrer');
+        });
+      });
     }
 
     async function loadProgramInfo() {
@@ -379,22 +413,6 @@
         });
       }
     }
-
-    function closeInformationPage() {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'closeMesseInfoModal' }, '*');
-        return;
-      }
-
-      window.close();
-    }
-
-    document.getElementById('messe-popup-close').addEventListener('click', closeInformationPage);
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        closeInformationPage();
-      }
-    });
 
     void loadProgramInfo();
   </script>

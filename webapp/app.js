@@ -85,6 +85,15 @@ function openMesseInfoModal(item) {
   modal.hidden = false;
 }
 
+function openMesseInfoModalExternally() {
+  const frame = document.getElementById('messe-info-modal-frame');
+  if (!frame || !frame.src || frame.src === 'about:blank') {
+    return;
+  }
+
+  window.open(frame.src, '_blank', 'noopener,noreferrer');
+}
+
 /**
  * Create a safe tab key from a raw value
  */
@@ -384,6 +393,7 @@ function initApp() {
   });
 
   document.getElementById('messe-info-modal-close')?.addEventListener('click', closeMesseInfoModal);
+  document.getElementById('messe-info-modal-external')?.addEventListener('click', openMesseInfoModalExternally);
   document.getElementById('messe-info-modal')?.addEventListener('click', (event) => {
     if (event.target.id === 'messe-info-modal') {
       closeMesseInfoModal();
