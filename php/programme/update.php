@@ -84,6 +84,39 @@
 		return $normalized;
 	}
 
+	function normalize_programme_name_part($value, $fallback) {
+		$normalized = trim((string) $value);
+		$normalized = preg_replace('/[\\\/]+/', '-', $normalized);
+		$normalized = preg_replace('/[\x00-\x1F\x7F]+/', '-', $normalized);
+		$normalized = trim($normalized, " .-");
+		return $normalized !== '' ? $normalized : $fallback;
+	}
+
+	function build_programme_path($decoded, $fallbackParoisse, $fallbackPath) {
+		$paroisse = normalize_programme_name_part(
+			isset($decoded['paroisse']) ? $decoded['paroisse'] : '',
+			$fallbackParoisse
+		);
+		$date = normalize_programme_name_part(
+			isset($decoded['date']) ? $decoded['date'] : '',
+			'programme'
+		);
+		$lieu = normalize_programme_name_part(
+			isset($decoded['lieu']) ? $decoded['lieu'] : '',
+			'lieu'
+		);
+		$occasion = normalize_programme_name_part(
+			isset($decoded['occasion']) ? $decoded['occasion'] : '',
+			'occasion'
+		);
+
+		if($paroisse === '' || $date === 'programme') {
+			return $fallbackPath;
+		}
+
+		return $paroisse.'/'.$date.'_'.$lieu.'_'.$occasion.'.json';
+	}
+
 	header ('Content-type: text/html; charset=iso8859-15');
 
     //include("../php/connexion.php");
@@ -138,13 +171,33 @@
 		$decoded["dateLastModif"] = $date_modif;
 
         $path_file = isset($decoded["path_file"]) ? (string) $decoded["path_file"] : "";
-        $path_prog = normalize_programme_path($path_file);
+		$path_prog = normalize_programme_path($path_file);
 
         if($path_prog === null)
         {
             echo "incorrect path";
             return;
         }
+
+		$old_path_prog = $path_prog;
+		$old_path_parts = explode('/', $old_path_prog, 2);
+		$fallback_paroisse = $old_path_parts[0];
+		$path_prog = build_programme_path($decoded, $fallback_paroisse, $old_path_prog);
+		$old_absolute_path = '../../pdf/programmes/'.$old_path_prog;
+		$new_absolute_path = '../../pdf/programmes/'.$path_prog;
+
+		if($old_absolute_path !== $new_absolute_path && file_exists($new_absolute_path))
+		{
+			echo "file already exists";
+			return;
+		}
+
+		$new_directory = dirname($new_absolute_path);
+		if(!is_dir($new_directory) && !mkdir($new_directory, 0775, true))
+		{
+			echo "unable to create programme directory";
+			return;
+		}
 
         $parsedPath = parse_url($path_file);
         $baseUrl = '';
@@ -157,11 +210,14 @@
 
         echo $decoded["path_file"]."\n";
 
-		$lignes_serveur = get_programme_serveur($path_prog);
+		$lignes_serveur = get_programme_serveur($old_path_prog);
 
 		if($lignes_serveur == null)
 		{
 			write_file_server($path_prog, $decoded);
+			if($old_absolute_path !== $new_absolute_path && file_exists($old_absolute_path)) {
+				unlink($old_absolute_path);
+			}
 			echo 'result : success<br/>';
 		}
 		else {
@@ -178,6 +234,9 @@
 			else echo 'result : no chant change<br/>';
 			if($clientVersionWins && $result !== -1) {
 				write_file_server($path_prog, $lignes_serveur);
+				if($old_absolute_path !== $new_absolute_path && file_exists($old_absolute_path)) {
+					unlink($old_absolute_path);
+				}
 				echo 'result : success<br/>';
 			}
 		}  

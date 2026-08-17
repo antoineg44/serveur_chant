@@ -880,10 +880,12 @@
             success: function(data){
                 console.log("fichiers : " + data);
                var option_html = "<option>choisissez votre paroisse</option>";
-                var paroisses = data.split("Â£");
-                for(var i=0; i<paroisses.length-1; i++) {
-                    option_html += "<option>" + paroisses[i] + "</option>";
-                }
+                var paroisses = data.split(/Â?£/).map(function(paroisse) {
+                    return paroisse.trim();
+                }).filter(Boolean);
+                paroisses.forEach(function(paroisse) {
+                    option_html += "<option>" + paroisse + "</option>";
+                });
                 document.getElementById("select_paroisse").innerHTML = option_html;
                 initializeParoisseSelect();
             }

@@ -24,17 +24,62 @@ function updateProgrammeInformationFromForm() {
     if (dateField) programme.date = dateField.value;
     if (lieuField) programme.lieu = lieuField.value.trim();
     if (occasionField) programme.occasion = occasionField.value.trim();
-    if (paroisseField) programme.paroisse = paroisseField.value;
+    if (paroisseField && paroisseField.value && !paroisseField.value.toLowerCase().startsWith('choisissez')) {
+        programme.paroisse = paroisseField.value.trim();
+    }
     if (descriptionField) programme.description = descriptionField.value;
+}
+
+function getProgrammeParoisseFromPath() {
+    if (!window.programme || !programme.path_file) {
+        return '';
+    }
+
+    var rawPath = String(programme.path_file);
+    try {
+        var parsedUrl = new URL(rawPath, window.location.href);
+        var queryPath = parsedUrl.searchParams.get('path');
+        if (queryPath) {
+            rawPath = queryPath;
+        }
+    } catch (error) {
+        // Use the raw path when it is not a complete URL.
+    }
+
+    for (var decodeAttempt = 0; decodeAttempt < 2; decodeAttempt++) {
+        try {
+            var decodedPath = decodeURIComponent(rawPath);
+            if (decodedPath === rawPath) {
+                break;
+            }
+            rawPath = decodedPath;
+        } catch (error) {
+            break;
+        }
+    }
+
+    var normalizedPath = rawPath.replace(/\\/g, '/').replace(/[?#].*$/, '');
+    var programmesMarker = normalizedPath.match(/(?:^|\/)(?:pdf\/)?programmes\//i);
+    if (!programmesMarker) {
+        return '';
+    }
+
+    var programmeRelativePath = normalizedPath.slice(programmesMarker.index + programmesMarker[0].length);
+    return programmeRelativePath.split('/').filter(Boolean)[0] || '';
 }
 
 function initializeParoisseSelect() {
     var paroisseField = document.getElementById('select_paroisse');
-    if (!paroisseField || !window.programme || !programme.paroisse) {
+    if (!paroisseField || !window.programme) {
         return;
     }
 
-    var paroisse = String(programme.paroisse).trim();
+    var paroisse = getProgrammeParoisseFromPath() || String(programme.paroisse || '').trim();
+    if (!paroisse) {
+        return;
+    }
+
+    programme.paroisse = paroisse;
     var optionExists = Array.prototype.some.call(paroisseField.options, function(option) {
         return option.value.trim() === paroisse || option.textContent.trim() === paroisse;
     });
@@ -546,6 +591,19 @@ function collectProgramChantsFromDom() {
     return chants;
 }
 
+function updateProgrammePathFileFromForm() {
+    var date = String(programme.date || '').trim();
+    var lieu = String(programme.lieu || '').trim().replace(/[\\\/]+/g, '-');
+    var occasion = String(programme.occasion || '').trim().replace(/[\\\/]+/g, '-');
+    var paroisse = String(programme.paroisse || '').trim().replace(/[\\\/]+/g, '-');
+
+    if (!date || !lieu || !occasion || !paroisse) {
+        return;
+    }
+
+    programme.path_file = `${window.location.origin}/pdf/programmes/${paroisse}/${date}_${lieu}_${occasion}.json`;
+}
+
 function enregistrer() {
     console.log("enregistrer");
     updateProgrammeInformationFromForm();
@@ -576,6 +634,7 @@ function enregistrer() {
                 alert("Problème dans l'enregistrement du programme");
             }
             else {
+                updateProgrammePathFileFromForm();
                 hasUnsavedChanges = false;
                 alert("Programme enregistré, vous pouvez ferme la page");
             }

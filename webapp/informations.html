@@ -328,6 +328,7 @@
             <button type="button" class="messe-popup-action-button" data-action="modify">Modifier</button>
             <button type="button" class="messe-popup-action-button" data-action="visualize">Visualiser</button>
             <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
+            <button type="button" class="messe-popup-action-button" data-action="copy">Copier le lien du programme</button>
           </div>
         </div>
         
@@ -355,6 +356,11 @@
       const pdfProgrammePath = `/pdf/${normalizedProgrammePath}`;
       const programmeQuery = encodeURIComponent(pdfProgrammePath);
       const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const programmeFileUrl = `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PDF_ROOT) || '../pdf/'}${normalizedProgrammePath
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/')}`;
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.EXPLORER_API)
         || `${baseUrl}webapp/api/explorer.php`;
       const actionUrls = {
@@ -362,6 +368,37 @@
         visualize: `./visualisation.html?programme=${programmeQuery}`,
         zip: `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
       };
+
+      async function copyProgrammeLink(button) {
+        const originalLabel = button.textContent;
+        let copied = false;
+
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(programmeFileUrl);
+            copied = true;
+          } catch (error) {
+            copied = false;
+          }
+        }
+
+        if (!copied) {
+          const textarea = document.createElement('textarea');
+          textarea.value = programmeFileUrl;
+          textarea.setAttribute('readonly', 'readonly');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          copied = document.execCommand('copy');
+          textarea.remove();
+        }
+
+        button.textContent = copied ? 'Lien copié' : 'Copie impossible';
+        window.setTimeout(() => {
+          button.textContent = originalLabel;
+        }, 1600);
+      }
 
       function openAction(action, actionUrl) {
         if ((action === 'modify' || action === 'visualize') && window.parent && window.parent !== window) {
@@ -384,6 +421,11 @@
 
       container.querySelectorAll('[data-action]').forEach((button) => {
         button.addEventListener('click', () => {
+          if (button.dataset.action === 'copy') {
+            void copyProgrammeLink(button);
+            return;
+          }
+
           const actionUrl = actionUrls[button.dataset.action];
           if (!actionUrl || !programmePath) {
             return;
