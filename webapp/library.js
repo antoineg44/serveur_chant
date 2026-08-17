@@ -178,12 +178,9 @@ function requestOpenProgram(file) {
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
-      type: 'openPageTab',
+      type: 'openMesseInfoModal',
       item: {
-        key: `programme-info-${file.path}`,
-        name: tabLabel,
         title: tabLabel,
-        description: 'Informations du programme',
         url: infoUrl,
       },
     }, '*');

@@ -58,6 +58,33 @@ function closeDynamicTab(tabName) {
   }
 }
 
+function closeMesseInfoModal() {
+  const modal = document.getElementById('messe-info-modal');
+  const frame = document.getElementById('messe-info-modal-frame');
+  if (!modal) {
+    return;
+  }
+
+  modal.hidden = true;
+  if (frame) {
+    frame.src = 'about:blank';
+  }
+}
+
+function openMesseInfoModal(item) {
+  const modal = document.getElementById('messe-info-modal');
+  const frame = document.getElementById('messe-info-modal-frame');
+  const title = document.getElementById('messe-info-modal-title');
+  if (!modal || !frame || !item?.url) {
+    return;
+  }
+
+  title.textContent = item.title || 'Informations de la messe';
+  frame.title = title.textContent;
+  frame.src = item.url;
+  modal.hidden = false;
+}
+
 /**
  * Create a safe tab key from a raw value
  */
@@ -356,6 +383,19 @@ function initApp() {
     wireExternalButton(panel);
   });
 
+  document.getElementById('messe-info-modal-close')?.addEventListener('click', closeMesseInfoModal);
+  document.getElementById('messe-info-modal')?.addEventListener('click', (event) => {
+    if (event.target.id === 'messe-info-modal') {
+      closeMesseInfoModal();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !document.getElementById('messe-info-modal')?.hidden) {
+      closeMesseInfoModal();
+    }
+  });
+
   activateTab('explorer');
 }
 
@@ -368,6 +408,16 @@ window.addEventListener('message', (event) => {
 
   if (event.data && event.data.type === 'openPageTab' && event.data.item) {
     openPageInNewTab(event.data.item);
+    return;
+  }
+
+  if (event.data && event.data.type === 'openMesseInfoModal' && event.data.item) {
+    openMesseInfoModal(event.data.item);
+    return;
+  }
+
+  if (event.data && event.data.type === 'closeMesseInfoModal') {
+    closeMesseInfoModal();
     return;
   }
 

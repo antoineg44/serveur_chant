@@ -109,6 +109,38 @@
       padding-left: 18px;
     }
 
+    .messe-popup-program {
+      display: grid;
+      gap: 8px;
+    }
+
+    .messe-popup-program-part {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .messe-popup-program-song {
+      padding: 10px 12px 10px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .messe-popup-program-song strong {
+      display: block;
+      color: var(--ink);
+    }
+
+    .messe-popup-program-song a {
+      display: block;
+      margin-top: 4px;
+      color: var(--accent);
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+
     .messe-popup-loading {
       text-align: center;
       color: var(--ink-soft);
@@ -140,6 +172,16 @@
 
     function formatDisplayValue(value) {
       return String(value || '').trim() || '—';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>'"]/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      }[character]));
     }
 
     function parseFileMetadata(fileName) {
@@ -179,17 +221,35 @@
         lieu: '',
         occasion: '',
         description: '',
-        sections: [],
-        chants: [],
+        program: [],
       };
+
+      const trimmedText = String(text || '').trim();
+      if (trimmedText.startsWith('{')) {
+        try {
+          const json = JSON.parse(trimmedText);
+          output.date = json.date || '';
+          output.lieu = json.lieu || '';
+          output.occasion = json.occasion || '';
+          output.description = json.description || '';
+          output.program = Array.isArray(json.chants) ? json.chants.map((item) => ({
+            type: item.type === 'partie' ? 'partie' : 'chant',
+            name: item.name || '',
+            path: item.path || '',
+          })) : [];
+          return output;
+        } catch (error) {
+          console.warn('Format JSON du programme invalide.', error);
+        }
+      }
 
       const headerLine = lines.find((line) => line.includes('£'));
       if (headerLine) {
-        const match = headerLine.match(/^(\d{4}-\d{2}-\d{2})£([^£]+)£([^£]+)$/);
-        if (match) {
-          output.date = match[1];
-          output.lieu = match[2].trim();
-          output.occasion = match[3].trim();
+        const headerParts = headerLine.trim().split(/Â?£/);
+        if (headerParts.length === 3) {
+          output.date = headerParts[0].trim();
+          output.lieu = headerParts[1].trim();
+          output.occasion = headerParts[2].trim();
         }
       }
 
@@ -198,19 +258,26 @@
         output.description = description;
       }
 
-      for (const line of lines) {
-        const cleaned = line.trim();
+      for (let index = 0; index < lines.length; index += 1) {
+        const cleaned = lines[index].trim();
         if (!cleaned) {
           continue;
         }
 
         const sectionMatch = cleaned.match(/^\[(.+)\]$/);
         if (sectionMatch) {
-          output.sections.push(sectionMatch[1].trim());
+          output.program.push({ type: 'partie', name: sectionMatch[1].trim(), path: '' });
+          continue;
         }
 
         if (cleaned.startsWith('#')) {
-          output.chants.push(cleaned.slice(1).trim());
+          let path = '';
+          const nextLine = lines[index + 1] ? lines[index + 1].trim() : '';
+          if (nextLine.startsWith('path =')) {
+            path = nextLine.slice('path ='.length).trim();
+            index += 1;
+          }
+          output.program.push({ type: 'chant', name: cleaned.slice(1).trim(), path });
         }
       }
 
@@ -235,9 +302,19 @@
     function renderPopup(data) {
       const title = document.getElementById('messe-popup-title');
       const container = document.getElementById('messe-popup-content');
-      const listItems = (data.chants || []).length
-        ? (data.chants || []).map((chant) => `<li>${chant}</li>`).join('')
-        : '<li>Aucun chant listé dans le programme.</li>';
+      const configRoot = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PDF_ROOT) || '../pdf/';
+      const programItems = (data.program || []).map((item) => {
+        if (item.type === 'partie') {
+          return `<div class="messe-popup-program-part">${escapeHtml(item.name)}</div>`;
+        }
+
+        const path = String(item.path || '').trim();
+        const encodedPath = path.split('/').filter(Boolean).map((part) => encodeURIComponent(part)).join('/');
+        const pathMarkup = path
+          ? `<a href="${configRoot}${encodedPath}" target="_blank" rel="noopener">${escapeHtml(path)}</a>`
+          : '<span>Aucun fichier associé</span>';
+        return `<div class="messe-popup-program-song"><strong>${escapeHtml(item.name)}</strong>${pathMarkup}</div>`;
+      }).join('');
 
       title.textContent = data.title || 'Informations de la messe';
       container.innerHTML = `
@@ -255,13 +332,8 @@
         </div>
 
         <div class="messe-popup-section">
-          <h3>Sections</h3>
-          <p class="messe-popup-empty">${(data.sections || []).length ? data.sections.join(' • ') : 'Aucune section repertoriee.'}</p>
-        </div>
-
-        <div class="messe-popup-section">
-          <h3>Chants</h3>
-          <ul class="messe-popup-list">${listItems}</ul>
+          <h3>Programme complet</h3>
+          <div class="messe-popup-program">${programItems || '<p class="messe-popup-empty">Aucun chant ou partie repertorie.</p>'}</div>
         </div>
       `;
     }
@@ -283,8 +355,7 @@
         lieu: fileInfo.lieu,
         occasion: fileInfo.occasion,
         description: '',
-        sections: [],
-        chants: [],
+        program: [],
       };
 
       renderPopup(baseInfo);
@@ -298,8 +369,7 @@
           lieu: parsed.lieu || baseInfo.lieu,
           occasion: parsed.occasion || baseInfo.occasion,
           description: parsed.description,
-          sections: parsed.sections,
-          chants: parsed.chants,
+          program: parsed.program,
         });
       } catch (error) {
         console.error(error);
@@ -310,8 +380,20 @@
       }
     }
 
-    document.getElementById('messe-popup-close').addEventListener('click', () => {
+    function closeInformationPage() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'closeMesseInfoModal' }, '*');
+        return;
+      }
+
       window.close();
+    }
+
+    document.getElementById('messe-popup-close').addEventListener('click', closeInformationPage);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeInformationPage();
+      }
     });
 
     void loadProgramInfo();
