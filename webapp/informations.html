@@ -37,6 +37,7 @@
       position: relative;
       height: 100%;
       width: 100%;
+      max-width: 1000px;
     }
 
     .messe-popup-title {
@@ -318,7 +319,8 @@
         return `<div class="messe-popup-program-song"><strong>${escapeHtml(item.name)}</strong>${pathMarkup}</div>`;
       }).join('');
 
-      title.textContent = data.title || 'Informations de la messe';
+      const titleText = data.title || 'Informations de la messe';
+      title.textContent = data.lieu ? `${titleText} - ${data.lieu}` : titleText;
       container.innerHTML = `
         <div class="messe-popup-section">
           <h3>Action</h3>

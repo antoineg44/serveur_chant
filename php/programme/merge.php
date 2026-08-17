@@ -131,6 +131,14 @@ function present_apres($recherche, $ligne, $index) {
     return $find;
 }
 
+function copyProgrammeInformation(&$target, $source) {
+    foreach (array("date", "lieu", "occasion", "paroisse", "path_file") as $field) {
+        if (array_key_exists($field, $source)) {
+            $target[$field] = $source[$field];
+        }
+    }
+}
+
 function merge($cas, &$lignes_client, &$lignes_serveur) {
     echo "count1:".count($lignes_client["chants"]).":".count($lignes_serveur["chants"])."br";
     if(DEBUG)echo "<br>client : <br>";
@@ -149,6 +157,7 @@ function merge($cas, &$lignes_client, &$lignes_serveur) {
         case 1:
             $lignes_serveur["dateLastModif"] = $lignes_client["dateLastModif"];
             $lignes_serveur["description"] = $lignes_client["description"];
+            copyProgrammeInformation($lignes_serveur, $lignes_client);
             break;
 
         // Cas 2 : le client a une version plus récente du fichier et besoin d'un merge
@@ -156,12 +165,14 @@ function merge($cas, &$lignes_client, &$lignes_serveur) {
             $lignes_client["dateLastModif"] = date("YmdHis");
             $lignes_serveur["dateLastModif"] = date("YmdHis");
             $lignes_serveur["description"] = $lignes_client["description"];
+            copyProgrammeInformation($lignes_serveur, $lignes_client);
             break;
 
         // Cas 3 : le client n'a pas fait de modif mais le serveur oui -> copie du fichier serveur sur le client
         case 3:
             $lignes_client["dateLastModif"] = $lignes_serveur["dateLastModif"];
             $lignes_client["description"] = $lignes_serveur["description"];
+            copyProgrammeInformation($lignes_client, $lignes_serveur);
             break;
 
         // Cas 4 : le serveur a une version plus récente du fichier et besoin d'un merge
@@ -169,12 +180,14 @@ function merge($cas, &$lignes_client, &$lignes_serveur) {
             $lignes_client["dateLastModif"] = date("YmdHis");
             $lignes_serveur["dateLastModif"] = date("YmdHis");
             $lignes_client["description"] = $lignes_serveur["description"];
+            copyProgrammeInformation($lignes_client, $lignes_serveur);
             break;
 
         // Cas 5 : le client n'a pas encore synchronisé son fichier avec le serveur
         case 5:
             $lignes_serveur["dateLastModif"] = $lignes_client["dateLastModif"];
             $lignes_serveur["description"] = $lignes_client["description"];
+            copyProgrammeInformation($lignes_serveur, $lignes_client);
             break;
         
         default:
