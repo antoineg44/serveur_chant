@@ -22,7 +22,7 @@ const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
 const LOCAL_API_URL = './api/data.php';
 const REMOTE_API_URL = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
-const TABLE_COLUMN_COUNT = 6;
+const TABLE_COLUMN_COUNT = 4;
 
 let activeApiUrl = LOCAL_API_URL;
 let currentPath = '';
@@ -217,8 +217,6 @@ function renderList() {
       nameCell.appendChild(link);
 
       row.appendChild(nameCell);
-      row.appendChild(createCell('Dossier'));
-      row.appendChild(createCell('-'));
       row.appendChild(createCell('-'));
       row.appendChild(createCell('-'));
       row.appendChild(createCell('-'));
@@ -256,10 +254,8 @@ function renderList() {
     nameCell.appendChild(document.createTextNode(chant.nom));
     row.appendChild(nameCell);
 
-    row.appendChild(createCell('Chant'));
     row.appendChild(createCell(formatCote(chant.cote)));
     row.appendChild(createCell(String(chant.fileCount)));
-    row.appendChild(createCell(formatDate(chant.dateAjout)));
     row.appendChild(createCell(searchTerm ? `/${chant.path}` : (chant.informations || '-')));
 
     dataBody.appendChild(row);
