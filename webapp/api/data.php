@@ -43,6 +43,10 @@ try {
             handleChantSave($pdo);
             break;
 
+        case 'auteurs':
+            handleAuteurs($pdo);
+            break;
+
         case 'chant_delete':
             handleChantDelete($pdo);
             break;
@@ -172,6 +176,28 @@ function ensureSchema(PDO $pdo): void
                 REFERENCES `Chant` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `Auteur` (
+            `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `Nom` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (`ID`),
+            UNIQUE KEY `uq_auteur_nom` (`Nom`(191))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `ChantAuteur` (
+            `ChantID` INT UNSIGNED NOT NULL,
+            `AuteurID` INT UNSIGNED NOT NULL,
+            PRIMARY KEY (`ChantID`, `AuteurID`),
+            KEY `idx_chant_auteur_auteur` (`AuteurID`),
+            CONSTRAINT `fk_chant_auteur_chant` FOREIGN KEY (`ChantID`)
+                REFERENCES `Chant` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `fk_chant_auteur_auteur` FOREIGN KEY (`AuteurID`)
+                REFERENCES `Auteur` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 }
 
 function requestValue(string $key): string
@@ -274,7 +300,10 @@ function handleList(PDO $pdo): void
 
     $statement = $pdo->prepare(
         'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
-                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID) AS FileCount
+                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID) AS FileCount,
+                (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
+                 FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
+                 WHERE ca.ChantID = c.ID) AS Auteurs
          FROM `Chant` c
          WHERE c.Path = :path
          ORDER BY c.Nom ASC'
@@ -422,9 +451,66 @@ function handleChantSave(PDO $pdo): void
         ]);
     }
 
+    saveChantAuteurs($pdo, $id, requestValue('auteurs'));
+
     respondJson(200, [
         'success' => true,
         'id' => $id,
+    ]);
+}
+
+/**
+ * Authors are entered as a comma separated list and created on the fly.
+ */
+function saveChantAuteurs(PDO $pdo, int $chantId, string $rawAuteurs): void
+{
+    $names = [];
+    foreach (explode(',', $rawAuteurs) as $name) {
+        $name = mb_substr(trim($name), 0, DATA_MAX_NAME_LENGTH);
+        if ($name !== '' && !in_array($name, $names, true)) {
+            $names[] = $name;
+        }
+    }
+
+    $delete = $pdo->prepare('DELETE FROM `ChantAuteur` WHERE ChantID = :chant');
+    $findAuteur = $pdo->prepare('SELECT ID FROM `Auteur` WHERE Nom = :nom');
+    $insertAuteur = $pdo->prepare('INSERT INTO `Auteur` (Nom) VALUES (:nom)');
+    $link = $pdo->prepare('INSERT INTO `ChantAuteur` (ChantID, AuteurID) VALUES (:chant, :auteur)');
+
+    $pdo->beginTransaction();
+
+    try {
+        $delete->execute([':chant' => $chantId]);
+
+        foreach ($names as $name) {
+            $findAuteur->execute([':nom' => $name]);
+            $auteurId = $findAuteur->fetchColumn();
+
+            if ($auteurId === false) {
+                $insertAuteur->execute([':nom' => $name]);
+                $auteurId = $pdo->lastInsertId();
+            }
+
+            $link->execute([':chant' => $chantId, ':auteur' => $auteurId]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        $pdo->rollBack();
+        throw $error;
+    }
+}
+
+function handleAuteurs(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT ID, Nom FROM `Auteur` ORDER BY Nom ASC')->fetchAll();
+
+    respondJson(200, [
+        'success' => true,
+        'auteurs' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+        ], $rows),
     ]);
 }
 
@@ -947,6 +1033,7 @@ function mapChantRow(array $row): array
         'dateAjout' => (string) $row['DateAjout'],
         'cote' => $row['Cote'] === null ? null : (int) $row['Cote'],
         'informations' => $row['Informations'] === null ? '' : (string) $row['Informations'],
+        'auteurs' => isset($row['Auteurs']) && $row['Auteurs'] !== null ? (string) $row['Auteurs'] : '',
         'fileCount' => (int) ($row['FileCount'] ?? 0),
     ];
 }

@@ -14,6 +14,7 @@ const chantColumnHeaders = document.querySelectorAll('[data-chant-column]');
 const chantDialog = document.getElementById('chant-dialog');
 const chantForm = document.getElementById('chant-form');
 const chantDialogTitle = document.getElementById('chant-dialog-title');
+const auteurSuggestions = document.getElementById('auteur-suggestions');
 const fileDialog = document.getElementById('file-dialog');
 const fileForm = document.getElementById('file-form');
 const fileDialogTitle = document.getElementById('file-dialog-title');
@@ -597,8 +598,24 @@ function openChantDialog(chant) {
   chantForm.elements.nom.value = chant ? chant.nom : '';
   chantForm.elements.path.value = chant ? chant.path : currentPath;
   chantForm.elements.cote.value = chant && chant.cote !== null ? String(chant.cote) : '';
+  chantForm.elements.auteurs.value = chant ? (chant.auteurs || '') : '';
   chantForm.elements.informations.value = chant ? chant.informations : '';
+  loadAuteurSuggestions();
   chantDialog.showModal();
+}
+
+async function loadAuteurSuggestions() {
+  try {
+    const payload = await apiGet('auteurs');
+    auteurSuggestions.innerHTML = '';
+    (payload.auteurs || []).forEach((auteur) => {
+      const option = document.createElement('option');
+      option.value = auteur.nom;
+      auteurSuggestions.appendChild(option);
+    });
+  } catch {
+    // Suggestions are optional.
+  }
 }
 
 function openFileDialog(chant, file) {
@@ -688,6 +705,7 @@ chantForm.addEventListener('submit', async (event) => {
     nom: chantForm.elements.nom.value.trim(),
     path: normalizePath(chantForm.elements.path.value),
     cote: chantForm.elements.cote.value.trim(),
+    auteurs: chantForm.elements.auteurs.value.trim(),
     informations: chantForm.elements.informations.value.trim(),
   };
   if (editingChantId !== null) {
