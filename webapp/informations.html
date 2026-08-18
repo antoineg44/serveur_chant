@@ -443,7 +443,37 @@
       });
     }
 
+    function redirectToLogin() {
+      const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      window.location.replace(`./login.html?return=${returnUrl}`);
+    }
+
+    async function ensureAuthenticated() {
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+        || `${baseUrl}webapp/api/auth.php`;
+
+      try {
+        const response = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const payload = await response.json().catch(() => ({ success: false }));
+
+        if (!response.ok || !payload.success) {
+          redirectToLogin();
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        redirectToLogin();
+        return false;
+      }
+    }
+
     async function loadProgramInfo() {
+      if (!(await ensureAuthenticated())) {
+        return;
+      }
+
       const programmePath = getQueryParam('programme');
       if (!programmePath) {
         document.getElementById('messe-popup-content').innerHTML = '<p class="messe-popup-empty">Aucune messe sélectionnée.</p>';
