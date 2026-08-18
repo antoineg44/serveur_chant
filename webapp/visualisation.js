@@ -666,7 +666,12 @@ async function initViewer() {
   document.getElementById('program-toggle')?.addEventListener('click', toggleProgramSidebar);
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);
   document.getElementById('program-info')?.addEventListener('click', () => {
-    window.open('./informations.html', '_blank');
+    if (currentProgram?.sourceUrl) {
+      const programPath = encodeURIComponent(currentProgram.sourceUrl);
+      window.open(`./informations.html?programme=${programPath}`, '_blank');
+    } else {
+      window.open('./informations.html', '_blank');
+    }
   });
   const programSidebar = document.getElementById('program-sidebar');
   const programFloatingButton = document.getElementById('program-toggle-floating');
