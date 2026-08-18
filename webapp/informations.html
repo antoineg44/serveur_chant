@@ -335,6 +335,7 @@
             <button type="button" class="messe-popup-action-button" data-action="modify">Modifier</button>
             <button type="button" class="messe-popup-action-button" data-action="visualize">Visualiser</button>
             <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
+            <button type="button" class="messe-popup-action-button" data-action="complete-zip">Créer un zip complet avec les fichiers dérivés</button>
             <button type="button" class="messe-popup-action-button" data-action="copy">Copier le lien du programme</button>
           </div>
         </div>
@@ -374,6 +375,7 @@
         modify: `./modifications.html?programme=${programmeQuery}`,
         visualize: `./visualisation.html?programme=${programmeQuery}`,
         zip: `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
+        'complete-zip': `${apiUrl}?action=download_program_complete&path=${encodeURIComponent(programmePath)}`,
       };
 
       async function copyProgrammeLink(button) {
