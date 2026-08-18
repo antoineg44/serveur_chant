@@ -543,7 +543,35 @@ function handleChantDetail(PDO $pdo): void
         'success' => true,
         'chant' => mapChantRow($chant),
         'files' => array_map('mapFileRow', $files->fetchAll()),
+        'programmes' => loadChantProgrammes($pdo, $id),
     ]);
+}
+
+/**
+ * Programmes are managed by programme.php, so their tables may not exist yet.
+ */
+function loadChantProgrammes(PDO $pdo, int $chantId): array
+{
+    try {
+        $statement = $pdo->prepare(
+            'SELECT DISTINCT p.ID, p.Date, p.Lieu, p.Occasion, p.Paroisse
+             FROM `ProgrammeChant` pc
+             INNER JOIN `Programme` p ON p.ID = pc.ProgrammeID
+             WHERE pc.ChantID = :chant
+             ORDER BY p.Date DESC'
+        );
+        $statement->execute([':chant' => $chantId]);
+    } catch (Throwable $error) {
+        return [];
+    }
+
+    return array_map(static fn (array $row): array => [
+        'id' => (int) $row['ID'],
+        'date' => (string) $row['Date'],
+        'lieu' => (string) $row['Lieu'],
+        'occasion' => (string) $row['Occasion'],
+        'paroisse' => (string) $row['Paroisse'],
+    ], $statement->fetchAll());
 }
 
 function handleAuteurs(PDO $pdo): void

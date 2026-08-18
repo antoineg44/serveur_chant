@@ -13,6 +13,58 @@
       padding: 24px 16px 40px;
     }
 
+    .chant-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chant-layout.is-preview-visible {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .chant-layout.is-preview-visible .chant-page {
+      max-width: none;
+    }
+
+    .chant-preview {
+      display: none;
+      flex-direction: column;
+      position: sticky;
+      top: 16px;
+      height: calc(100vh - 32px);
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .chant-layout.is-preview-visible .chant-preview {
+      display: flex;
+    }
+
+    .chant-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chant-preview-head h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .chant-preview-frame {
+      flex: 1;
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+    }
+
     .chant-title {
       margin: 0 0 4px;
       font-size: clamp(1.4rem, 2vw, 1.9rem);
@@ -91,16 +143,156 @@
     .chant-file-link:hover {
       text-decoration: underline;
     }
+
+    .chant-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .chant-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .chant-dialog {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      min-width: min(460px, 92vw);
+      color: var(--ink);
+    }
+
+    .chant-dialog h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .chant-form-grid {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .chant-form-grid label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .chant-form-grid input,
+    .chant-form-grid textarea {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .chant-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
-  <main class="chant-page">
+  <div id="chant-layout" class="chant-layout">
+    <main class="chant-page">
     <h1 id="chant-title" class="chant-title">Informations du chant</h1>
     <p id="chant-subtitle" class="chant-subtitle"></p>
+    <div class="chant-actions">
+      <button id="edit-chant" class="btn" type="button" disabled>Modifier le chant</button>
+    </div>
     <div id="chant-content">
       <p class="hint" role="status">Chargement des informations...</p>
     </div>
-  </main>
+    </main>
+
+    <aside id="chant-preview" class="chant-preview" aria-label="Apercu du fichier">
+      <div class="chant-preview-head">
+        <h2 id="preview-title">Apercu</h2>
+        <div style="display: flex; gap: 8px;">
+          <button id="preview-external" class="btn btn-ghost" type="button">Nouvel onglet</button>
+          <button id="preview-close" class="btn btn-ghost" type="button">Fermer</button>
+        </div>
+      </div>
+      <iframe id="preview-frame" class="chant-preview-frame" title="Apercu du fichier"></iframe>
+    </aside>
+  </div>
+
+  <dialog id="chant-dialog" class="chant-dialog">
+    <form id="chant-form" method="dialog">
+      <h2>Modifier le chant</h2>
+      <div class="chant-form-grid">
+        <label>Nom
+          <input type="text" name="nom" maxlength="255" required />
+        </label>
+        <label>Dossier (Path)
+          <input type="text" name="path" maxlength="500" pattern="[^/\\]*" title="Un seul nom de dossier, sans /" />
+        </label>
+        <label>Cote (0 a 5)
+          <input type="number" name="cote" min="0" max="5" step="1" />
+        </label>
+        <label>Auteurs (separes par des virgules)
+          <input type="text" name="auteurs" maxlength="1000" list="auteur-suggestions" />
+          <datalist id="auteur-suggestions"></datalist>
+        </label>
+        <label>Informations
+          <textarea name="informations" rows="4" maxlength="5000"></textarea>
+        </label>
+      </div>
+      <div class="chant-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="file-dialog" class="chant-dialog">
+    <form id="file-form" method="dialog">
+      <h2>Modifier le fichier</h2>
+      <div class="chant-form-grid">
+        <label>Nom du fichier
+          <input type="text" name="nom_fichier" maxlength="255" required />
+        </label>
+        <label>Tonalite
+          <input type="text" name="tonalite" maxlength="16" />
+        </label>
+        <label>Nombre de voix
+          <input type="number" name="nb_voix" min="0" max="32" step="1" />
+        </label>
+        <label>
+          <span><input type="checkbox" name="accords" /> Accords</span>
+        </label>
+        <label>Informations
+          <textarea name="informations" rows="3" maxlength="5000"></textarea>
+        </label>
+      </div>
+      <div class="chant-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="move-dialog" class="chant-dialog">
+    <form id="move-form" method="dialog">
+      <h2>Deplacer le fichier</h2>
+      <div class="chant-form-grid">
+        <label>Rechercher un chant
+          <input id="move-search" type="search" autocomplete="off" placeholder="Nom du chant ou dossier" />
+        </label>
+        <label>Chant de destination
+          <select name="chant_id" size="8" required></select>
+        </label>
+      </div>
+      <div class="chant-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Deplacer</button>
+      </div>
+    </form>
+  </dialog>
 
   <script>
     const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
@@ -128,6 +320,14 @@
       }
       const date = new Date(String(value).replace(' ', 'T'));
       return Number.isNaN(date.getTime()) ? escapeHtml(value) : date.toLocaleString('fr-FR');
+    }
+
+    function formatDay(value) {
+      if (!value) {
+        return '—';
+      }
+      const date = new Date(`${value}T00:00:00`);
+      return Number.isNaN(date.getTime()) ? escapeHtml(value) : date.toLocaleDateString('fr-FR');
     }
 
     function redirectToLogin() {
@@ -179,28 +379,119 @@
       throw new Error(errors.join(' | ') || 'API inaccessible');
     }
 
+    let previewUrl = '';
+
     function openFile(chant, file) {
       const path = [chant.path, chant.nom, file.nomFichier].filter(Boolean).join('/');
-      const url = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
+      previewUrl = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
+
+      document.getElementById('preview-title').textContent = file.nomFichier;
+      document.getElementById('preview-frame').src = previewUrl;
+      document.getElementById('chant-layout').classList.add('is-preview-visible');
+    }
+
+    function closePreview() {
+      previewUrl = '';
+      document.getElementById('preview-frame').src = 'about:blank';
+      document.getElementById('chant-layout').classList.remove('is-preview-visible');
+    }
+
+    function openPreviewExternally() {
+      if (!previewUrl) {
+        return;
+      }
 
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({
           type: 'openPageTab',
           item: {
-            key: `visualisation-${path}`,
-            name: file.nomFichier,
-            title: file.nomFichier,
+            key: `visualisation-${previewUrl}`,
+            name: document.getElementById('preview-title').textContent,
+            title: document.getElementById('preview-title').textContent,
             description: 'Visualisation',
-            url,
+            url: previewUrl,
           },
         }, '*');
+        return;
+      }
+
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    document.getElementById('preview-close').addEventListener('click', closePreview);
+    document.getElementById('preview-external').addEventListener('click', openPreviewExternally);
+
+    function openProgramme(programmeId) {
+      const url = `./informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'openMesseInfoModal', item: { url, title: 'Informations de la messe' } }, '*');
         return;
       }
 
       window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    function render(chant, files) {
+    async function postData(action, payload) {
+      const endpoints = [LOCAL_DATA_API, DATA_API];
+      const errors = [];
+
+      for (let index = 0; index < endpoints.length; index += 1) {
+        const baseUrl = endpoints[index];
+        const isLast = index === endpoints.length - 1;
+
+        try {
+          const body = new FormData();
+          body.append('action', action);
+          Object.entries(payload).forEach(([key, value]) => {
+            body.append(key, value);
+          });
+
+          const response = await fetch(baseUrl, { method: 'POST', body, credentials: 'include' });
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            if (!isLast && (response.status === 404 || response.status >= 500)) {
+              errors.push(`HTTP ${response.status} on ${baseUrl}`);
+              continue;
+            }
+            throw new Error((result && result.message) || `HTTP ${response.status}`);
+          }
+
+          if (!result || !result.success) {
+            throw new Error((result && result.message) || 'Erreur API');
+          }
+
+          return result;
+        } catch (error) {
+          if (!isLast) {
+            errors.push(`${baseUrl}: ${error.message}`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new Error(errors.join(' | ') || 'API inaccessible');
+    }
+
+    async function loadAuteurSuggestions() {
+      try {
+        const response = await fetch(`${LOCAL_DATA_API}?action=auteurs`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        const list = document.getElementById('auteur-suggestions');
+        list.innerHTML = '';
+        ((payload && payload.auteurs) || []).forEach((auteur) => {
+          const option = document.createElement('option');
+          option.value = auteur.nom;
+          list.appendChild(option);
+        });
+      } catch {
+        // Suggestions are optional.
+      }
+    }
+
+    function render(chant, files, programmes) {
       document.getElementById('chant-title').textContent = chant.nom;
       document.getElementById('chant-subtitle').textContent = chant.path ? `Dossier : ${chant.path}` : 'A la racine';
 
@@ -212,6 +503,20 @@
           <td>${file.nbVoix === null ? '—' : escapeHtml(String(file.nbVoix))}</td>
           <td>${formatDate(file.dateAjout)}</td>
           <td>${formatValue(file.informations)}</td>
+          <td>
+            <button type="button" class="btn btn-ghost" data-file-edit="${file.id}">Modifier</button>
+            <button type="button" class="btn btn-ghost" data-file-move="${file.id}">Deplacer</button>
+            <button type="button" class="btn btn-danger" data-file-delete="${file.id}">Supprimer</button>
+          </td>
+        </tr>
+      `).join('');
+
+      const programmesRows = programmes.map((programme) => `
+        <tr>
+          <td><button type="button" class="chant-file-link" data-programme-id="${programme.id}">${formatDay(programme.date)}</button></td>
+          <td>${formatValue(programme.lieu)}</td>
+          <td>${formatValue(programme.occasion)}</td>
+          <td>${formatValue(programme.paroisse)}</td>
         </tr>
       `).join('');
 
@@ -242,11 +547,29 @@
                   <th>Nb voix</th>
                   <th>Date d'ajout</th>
                   <th>Informations</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>${filesRows}</tbody>
             </table>
           ` : '<p class="hint">Aucun fichier lie a ce chant.</p>'}
+        </section>
+
+        <section class="chant-section">
+          <h2>Programmes</h2>
+          ${programmes.length ? `
+            <table class="chant-files">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Lieu</th>
+                  <th>Occasion</th>
+                  <th>Paroisse</th>
+                </tr>
+              </thead>
+              <tbody>${programmesRows}</tbody>
+            </table>
+          ` : '<p class="hint">Ce chant n\'est utilise dans aucun programme.</p>'}
         </section>
       `;
 
@@ -254,6 +577,87 @@
         const file = files.find((item) => String(item.id) === button.dataset.fileId);
         button.addEventListener('click', () => openFile(chant, file));
       });
+
+      document.querySelectorAll('[data-programme-id]').forEach((button) => {
+        button.addEventListener('click', () => openProgramme(button.dataset.programmeId));
+      });
+
+      document.querySelectorAll('[data-file-edit]').forEach((button) => {
+        const file = files.find((item) => String(item.id) === button.dataset.fileEdit);
+        button.addEventListener('click', () => openFileDialog(file));
+      });
+
+      document.querySelectorAll('[data-file-move]').forEach((button) => {
+        button.addEventListener('click', () => openMoveDialog(Number(button.dataset.fileMove)));
+      });
+
+      document.querySelectorAll('[data-file-delete]').forEach((button) => {
+        const file = files.find((item) => String(item.id) === button.dataset.fileDelete);
+        button.addEventListener('click', () => deleteFile(file));
+      });
+    }
+
+    let reloadChant = async () => {};
+    let moveOptions = [];
+    let movingFileId = null;
+
+    function openFileDialog(file) {
+      const form = document.getElementById('file-form');
+      form.dataset.fileId = String(file.id);
+      form.elements.nom_fichier.value = file.nomFichier;
+      form.elements.tonalite.value = file.tonalite || '';
+      form.elements.nb_voix.value = file.nbVoix === null ? '' : String(file.nbVoix);
+      form.elements.accords.checked = Boolean(file.accords);
+      form.elements.informations.value = file.informations || '';
+      document.getElementById('file-dialog').showModal();
+    }
+
+    function renderMoveOptions() {
+      const select = document.getElementById('move-form').elements.chant_id;
+      const filter = document.getElementById('move-search').value.trim().toLowerCase();
+      select.innerHTML = '';
+
+      moveOptions
+        .filter((option) => !filter || `${option.path} ${option.nom}`.toLowerCase().includes(filter))
+        .forEach((option) => {
+          const element = document.createElement('option');
+          element.value = String(option.id);
+          element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
+          select.appendChild(element);
+        });
+    }
+
+    async function openMoveDialog(fileId) {
+      movingFileId = fileId;
+      document.getElementById('move-search').value = '';
+
+      try {
+        const response = await fetch(`${LOCAL_DATA_API}?action=chant_options`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload || !payload.success) {
+          throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+        }
+
+        moveOptions = payload.chants || [];
+        renderMoveOptions();
+        document.getElementById('move-dialog').showModal();
+      } catch (error) {
+        window.alert(error.message);
+      }
+    }
+
+    async function deleteFile(file) {
+      if (!window.confirm(`Supprimer le fichier "${file.nomFichier}" ?`)) {
+        return;
+      }
+
+      try {
+        await postData('file_delete', { id: file.id });
+        await reloadChant();
+      } catch (error) {
+        window.alert(error.message);
+      }
     }
 
     (async () => {
@@ -264,11 +668,115 @@
         return;
       }
 
-      try {
+      const dialog = document.getElementById('chant-dialog');
+      const form = document.getElementById('chant-form');
+      const editButton = document.getElementById('edit-chant');
+
+      async function reload() {
         const payload = await fetchChant(chantId);
-        if (payload) {
-          render(payload.chant, payload.files || []);
+        if (!payload) {
+          return null;
         }
+        render(payload.chant, payload.files || [], payload.programmes || []);
+        editButton.disabled = false;
+        return payload.chant;
+      }
+
+      let currentChant = null;
+
+      editButton.addEventListener('click', () => {
+        if (!currentChant) {
+          return;
+        }
+        form.elements.nom.value = currentChant.nom;
+        form.elements.path.value = currentChant.path;
+        form.elements.cote.value = currentChant.cote === null ? '' : String(currentChant.cote);
+        form.elements.auteurs.value = currentChant.auteurs || '';
+        form.elements.informations.value = currentChant.informations || '';
+        loadAuteurSuggestions();
+        dialog.showModal();
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        try {
+          await postData('chant_save', {
+            id: chantId,
+            nom: form.elements.nom.value.trim(),
+            path: form.elements.path.value.trim(),
+            cote: form.elements.cote.value.trim(),
+            auteurs: form.elements.auteurs.value.trim(),
+            informations: form.elements.informations.value.trim(),
+          });
+          dialog.close();
+          currentChant = await reload();
+        } catch (error) {
+          window.alert(error.message);
+        }
+      });
+
+      dialog.querySelectorAll('[data-close-dialog]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+      });
+
+      reloadChant = reload;
+
+      const fileDialog = document.getElementById('file-dialog');
+      const fileForm = document.getElementById('file-form');
+      const moveDialog = document.getElementById('move-dialog');
+      const moveForm = document.getElementById('move-form');
+
+      fileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        try {
+          await postData('file_save', {
+            id: fileForm.dataset.fileId,
+            chant_id: chantId,
+            nom_fichier: fileForm.elements.nom_fichier.value.trim(),
+            tonalite: fileForm.elements.tonalite.value.trim(),
+            nb_voix: fileForm.elements.nb_voix.value.trim(),
+            accords: fileForm.elements.accords.checked ? '1' : '0',
+            informations: fileForm.elements.informations.value.trim(),
+          });
+          fileDialog.close();
+          currentChant = await reload();
+        } catch (error) {
+          window.alert(error.message);
+        }
+      });
+
+      moveForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (movingFileId === null) {
+          return;
+        }
+
+        try {
+          await postData('file_move', {
+            id: movingFileId,
+            chant_id: moveForm.elements.chant_id.value,
+          });
+          moveDialog.close();
+          movingFileId = null;
+          currentChant = await reload();
+        } catch (error) {
+          window.alert(error.message);
+        }
+      });
+
+      document.getElementById('move-search').addEventListener('input', renderMoveOptions);
+
+      [fileDialog, moveDialog].forEach((element) => {
+        element.querySelectorAll('[data-close-dialog]').forEach((button) => {
+          button.addEventListener('click', () => element.close());
+        });
+      });
+
+      try {
+        currentChant = await reload();
       } catch (error) {
         document.getElementById('chant-content').innerHTML = `<p class="hint is-error">${escapeHtml(error.message)}</p>`;
       }
