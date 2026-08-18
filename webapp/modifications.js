@@ -1,372 +1,736 @@
-// Program editor
-// Edits a Programme row and its ordered Partie / Chant entries.
 
-const layout = document.getElementById('editor-layout');
-const programmeForm = document.getElementById('programme-form');
-const paroisseSuggestions = document.getElementById('paroisse-suggestions');
-const itemsList = document.getElementById('editor-items');
-const statusElement = document.getElementById('editor-status');
-const addPartieButton = document.getElementById('add-partie');
-const addChantButton = document.getElementById('add-chant');
-const previewFrame = document.getElementById('editor-preview-frame');
-const closePreviewButton = document.getElementById('close-preview');
+chant_modified = null;
+var hasUnsavedChanges = false;
 
-const chantPickerDialog = document.getElementById('chant-picker-dialog');
-const chantPickerForm = document.getElementById('chant-picker-form');
-const chantPickerSearch = document.getElementById('chant-picker-search');
-const partiePickerDialog = document.getElementById('partie-picker-dialog');
-const partiePickerForm = document.getElementById('partie-picker-form');
+window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
 
-const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
-const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
-const PROGRAMME_API = WEBAPP_CONFIG.PROGRAMME_API || `${BASE_URL}webapp/api/programme.php`;
-const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
-const LOCAL_PROGRAMME_API = './api/programme.php';
-const LOCAL_DATA_API = './api/data.php';
-
-const programmeId = new URLSearchParams(window.location.search).get('programmeId') || '';
-
-let items = [];
-let chantOptions = [];
-
-function setStatus(message, isError = false) {
-  statusElement.textContent = message;
-  statusElement.classList.toggle('is-error', isError);
+function markAsChanged() {
+    hasUnsavedChanges = true;
 }
 
-async function callApi(endpoints, action, params = {}, method = 'GET') {
-  const errors = [];
+function updateProgrammeInformationFromForm() {
+    var dateField = document.getElementById('programme_date');
+    var lieuField = document.getElementById('programme_lieu');
+    var occasionField = document.getElementById('programme_occasion');
+    var paroisseField = document.getElementById('select_paroisse');
+    var descriptionField = document.getElementById('programme_description');
 
-  for (let index = 0; index < endpoints.length; index += 1) {
-    const baseUrl = endpoints[index];
-    const isLast = index === endpoints.length - 1;
+    if (dateField) programme.date = dateField.value;
+    if (lieuField) programme.lieu = lieuField.value.trim();
+    if (occasionField) programme.occasion = occasionField.value.trim();
+    if (paroisseField && paroisseField.value && !paroisseField.value.toLowerCase().startsWith('choisissez')) {
+        programme.paroisse = paroisseField.value.trim();
+    }
+    if (descriptionField) programme.description = descriptionField.value;
+}
+
+function getProgrammeParoisseFromPath() {
+    if (!window.programme || !programme.path_file) {
+        return '';
+    }
+
+    var rawPath = String(programme.path_file);
+    try {
+        var parsedUrl = new URL(rawPath, window.location.href);
+        var queryPath = parsedUrl.searchParams.get('path');
+        if (queryPath) {
+            rawPath = queryPath;
+        }
+    } catch (error) {
+        // Use the raw path when it is not a complete URL.
+    }
+
+    for (var decodeAttempt = 0; decodeAttempt < 2; decodeAttempt++) {
+        try {
+            var decodedPath = decodeURIComponent(rawPath);
+            if (decodedPath === rawPath) {
+                break;
+            }
+            rawPath = decodedPath;
+        } catch (error) {
+            break;
+        }
+    }
+
+    var normalizedPath = rawPath.replace(/\\/g, '/').replace(/[?#].*$/, '');
+    var programmesMarker = normalizedPath.match(/(?:^|\/)(?:pdf\/)?programmes\//i);
+    if (!programmesMarker) {
+        return '';
+    }
+
+    var programmeRelativePath = normalizedPath.slice(programmesMarker.index + programmesMarker[0].length);
+    return programmeRelativePath.split('/').filter(Boolean)[0] || '';
+}
+
+function initializeParoisseSelect() {
+    var paroisseField = document.getElementById('select_paroisse');
+    if (!paroisseField || !window.programme) {
+        return;
+    }
+
+    var paroisse = getProgrammeParoisseFromPath() || String(programme.paroisse || '').trim();
+    if (!paroisse) {
+        return;
+    }
+
+    programme.paroisse = paroisse;
+    var optionExists = Array.prototype.some.call(paroisseField.options, function(option) {
+        return option.value.trim() === paroisse || option.textContent.trim() === paroisse;
+    });
+
+    if (optionExists) {
+        paroisseField.value = paroisse;
+    }
+}
+
+window.updateCurrentChantPath = updateCurrentChantPath;
+
+var currentPreviewLabel = null;
+var currentPreviewInput = null;
+var currentPreviewContainer = null;
+var currentPreviewChantName = null;
+var currentPreviewChantEntry = null;
+var pdfPathListenerAttached = false;
+
+function normalizePdfPath(path) {
+    if (!path) return "";
+    var normalized = decodeURI(path).trim();
+    if (normalized.startsWith("/pdf/")) {
+        normalized = normalized.slice(5);
+    }
+    return normalized;
+}
+
+function buildChantDisplayNameFromPath(path) {
+    var normalizedPath = normalizePdfPath(path);
+    if (!normalizedPath) return "";
+
+    var segments = normalizedPath.split("/");
+    var fileName = segments[segments.length - 1] || "";
+    if (!fileName) return "";
+
+    return fileName.replace(/\.(pdf|PDF)$/i, "");
+}
+
+function updateCurrentChantPath(newPath, updatedUrl) {
+    console.log('[pdf-debug] updateCurrentChantPath', { newPath: newPath, updatedUrl: updatedUrl, chantName: currentPreviewChantName, hasEntry: !!currentPreviewChantEntry });
+    if (!newPath) return;
+
+    if (currentPreviewLabel) {
+        currentPreviewLabel.textContent = newPath;
+    }
+
+    if (currentPreviewInput) {
+        currentPreviewInput.value = newPath;
+    }
+
+    if (currentPreviewContainer) {
+        currentPreviewContainer.setAttribute("data-current-pdf-path", newPath);
+        var chantTitleElement = currentPreviewContainer.querySelector(".part-column h1");
+        if (chantTitleElement) {
+            var suggestedName = buildChantDisplayNameFromPath(newPath);
+            if (suggestedName) {
+                chantTitleElement.textContent = suggestedName;
+            }
+        }
+    }
+
+    var suggestedName = buildChantDisplayNameFromPath(newPath);
+    if (currentPreviewChantEntry) {
+        currentPreviewChantEntry.path = newPath;
+        if (suggestedName) {
+            currentPreviewChantEntry.name = suggestedName;
+            currentPreviewChantName = suggestedName;
+        }
+        console.log('[pdf-debug] updated chant entry directly', { name: currentPreviewChantEntry.name, path: currentPreviewChantEntry.path });
+    } else if (window.programme && Array.isArray(programme.chants)) {
+        var chantNameToUpdate = currentPreviewChantName || (currentPreviewContainer && currentPreviewContainer.querySelector(".part-column h1") ? currentPreviewContainer.querySelector(".part-column h1").textContent.trim() : null);
+        if (chantNameToUpdate) {
+            for (var i = 0; i < programme.chants.length; i++) {
+                if (programme.chants[i] && programme.chants[i].type === "chant" && programme.chants[i].name === chantNameToUpdate) {
+                    programme.chants[i].path = newPath;
+                    if (suggestedName) {
+                        programme.chants[i].name = suggestedName;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    markAsChanged();
+
+    // Used by open-external-pdf-btn fallback logic in the parent page.
+    window.lastLoadedPdfUrl = updatedUrl || (window.location.origin + "/pdf/" + encodeURI(newPath));
+}
+
+function handlePdfPathChanged(event) {
+    if (!event || !event.detail) return;
+
+    var newPath = normalizePdfPath(event.detail.path || event.detail.url || "");
+    if (!newPath) return;
+
+    var updatedUrl = event.detail.url;
+    if (!updatedUrl) {
+        updatedUrl = window.location.origin + "/pdf/" + encodeURI(newPath);
+    }
+
+    updateCurrentChantPath(newPath, updatedUrl);
+}
+
+function attachPdfPathListener() {
+    if (pdfPathListenerAttached) return;
+    var iframe = document.getElementById("pdf-visualisation-viewer");
+    if (!iframe || !iframe.contentWindow) return;
 
     try {
-      let response;
+        iframe.contentWindow.addEventListener("pdfPathChanged", handlePdfPathChanged);
+        pdfPathListenerAttached = true;
+    } catch (e) {
+        console.log("Unable to attach pdfPathChanged listener", e);
+    }
+}
 
-      if (method === 'POST') {
-        const body = new FormData();
-        body.append('action', action);
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== null && value !== undefined && value !== '') {
-            body.append(key, value);
-          }
-        });
-        response = await fetch(baseUrl, { method: 'POST', body, credentials: 'include' });
-      } else {
-        const query = new URLSearchParams({ action, ...params }).toString();
-        response = await fetch(`${baseUrl}?${query}`, { credentials: 'include' });
-      }
+function openChantPdf(el, chantPath) {
+    var normalizedPath = normalizePdfPath(chantPath);
+    var initialUrl = window.location.origin + '/pdf/' + normalizedPath;
+    var container = el.closest("div[id^='chant_']");
+    currentPreviewLabel = null;
+    currentPreviewInput = null;
+    currentPreviewContainer = null;
+    currentPreviewChantName = null;
 
-      const payload = await response.json().catch(() => null);
+    currentPreviewChantEntry = null;
 
-      if (!response.ok) {
-        if (!isLast && (response.status === 404 || response.status >= 500)) {
-          errors.push(`HTTP ${response.status} on ${baseUrl}`);
-          continue;
+    if (container) {
+        console.log('[pdf-debug] openChantPdf container found', { chantPath: chantPath, containerId: container.id });
+        currentPreviewContainer = container;
+        currentPreviewLabel = container.querySelector(".text_path_chant");
+        currentPreviewInput = container.querySelector("input[type='url'][id^='path_']");
+        var chantTitle = container.querySelector(".part-column h1");
+        if (chantTitle) {
+            currentPreviewChantName = chantTitle.textContent.trim();
+            if (window.programme && Array.isArray(programme.chants)) {
+                for (var j = 0; j < programme.chants.length; j++) {
+                    if (programme.chants[j] && programme.chants[j].type === "chant" && programme.chants[j].name === currentPreviewChantName) {
+                        currentPreviewChantEntry = programme.chants[j];
+                        console.log('[pdf-debug] matched chant entry', { name: currentPreviewChantName, path: programme.chants[j].path });
+                        break;
+                    }
+                }
+            }
         }
-        throw new Error((payload && payload.message) || `HTTP ${response.status}`);
-      }
-
-      if (!payload || !payload.success) {
-        throw new Error((payload && payload.message) || 'Erreur API');
-      }
-
-      return payload;
-    } catch (error) {
-      if (!isLast) {
-        errors.push(`${baseUrl}: ${error.message}`);
-        continue;
-      }
-      throw error;
     }
-  }
 
-  throw new Error(errors.join(' | ') || 'API inaccessible');
-}
+    window.lastLoadedPdfUrl = initialUrl;
 
-const programmeApi = (action, params, method) => callApi([LOCAL_PROGRAMME_API, PROGRAMME_API], action, params, method);
-const dataApi = (action, params, method) => callApi([LOCAL_DATA_API, DATA_API], action, params, method);
-
-function buildFilePath(item) {
-  return [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/');
-}
-
-function openPreview(item) {
-  const path = buildFilePath(item);
-  if (!item.nomFichier || !path) {
-    setStatus('Aucun fichier associe a ce chant.', true);
-    return;
-  }
-
-  layout.classList.remove('is-preview-hidden');
-  previewFrame.src = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
-}
-
-function createActionButton(label, title, handler, extraClass = 'btn-ghost') {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = `btn ${extraClass}`;
-  button.textContent = label;
-  button.title = title;
-  button.addEventListener('click', handler);
-  return button;
-}
-
-function renderItems() {
-  itemsList.innerHTML = '';
-
-  if (!items.length) {
-    const empty = document.createElement('li');
-    empty.className = 'editor-item';
-    empty.textContent = 'Ce programme est vide.';
-    itemsList.appendChild(empty);
-    return;
-  }
-
-  items.forEach((item) => {
-    const row = document.createElement('li');
-    row.className = 'editor-item';
-    row.classList.toggle('is-partie', item.type === 'partie');
-
-    const label = document.createElement('button');
-    label.type = 'button';
-    label.className = 'editor-item-label';
-
-    if (item.type === 'partie') {
-      label.textContent = item.partieNom;
-      label.disabled = true;
+    if(window.innerWidth > 750) {
+        loadPdfFromUrl(initialUrl);
+        setTimeout(attachPdfPathListener, 0);
     } else {
-      label.textContent = item.chantNom;
-      const sub = document.createElement('span');
-      sub.className = 'editor-item-sub';
-      sub.textContent = item.nomFichier ? ` - ${item.nomFichier}` : ' - aucun fichier';
-      label.appendChild(sub);
-      label.title = 'Afficher le fichier';
-      label.addEventListener('click', () => openPreview(item));
+        window.open(initialUrl, '_blank');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var iframe = document.getElementById("pdf-visualisation-viewer");
+    if (iframe) {
+        iframe.addEventListener('load', function() {
+            pdfPathListenerAttached = false;
+            attachPdfPathListener();
+        });
     }
 
-    row.appendChild(label);
-    row.appendChild(createActionButton('\u2191', 'Monter', () => moveItem(item.position, 'up')));
-    row.appendChild(createActionButton('\u2193', 'Descendre', () => moveItem(item.position, 'down')));
-    row.appendChild(createActionButton('\u2715', 'Retirer', () => removeItem(item.position), 'btn-danger'));
+    window.addEventListener('message', function(event) {
+        console.log('[pdf-debug] parent message received', { type: event.data && event.data.type, origin: event.origin, data: event.data });
+        if (!event.data || (event.data.type !== 'pdfSelectionChanged' && event.data.type !== 'visualisationPdfChanged')) return;
+        if (event.origin && event.origin !== window.location.origin) return;
 
-    itemsList.appendChild(row);
+        var payload = event.data;
+        var newPath = normalizePdfPath(payload.path || payload.relativePath || "");
+        if (!newPath) {
+            console.log('[pdf-debug] no usable path in message payload', payload);
+            return;
+        }
+
+        var updatedUrl = payload.url || payload.fileUrl || (window.location.origin + "/pdf/" + encodeURI(newPath));
+        updateCurrentChantPath(newPath, updatedUrl);
+    });
+});
+
+function initFormulaire()
+{
+    example_version = true;
+  console.log("initFormulaire");
+  console.log(programme.chants);
+  var html_chants = "";
+  for(var i=programme.chants.length-1; i>=0; i--)
+  {
+    if(programme.chants[i].type == "partie")
+    {
+        if(html_chants != "")html_chants = '<div class="nice-form-group" id="list_'+codage_path_javascript(programme.chants[i].name)+'">' + html_chants + '</div>';
+      var code_html = add_section(programme.chants[i], html_chants);
+      $('#description').after(code_html);
+      $('#description_list').after(add_link_section(programme.chants[i].name));
+      html_chants = "";
+    }
+    else
+    {
+      html_chants = add_chant(programme.chants[i]) + html_chants;
+    }
+    
+  }
+  if(html_chants != "") {
+    // TO DO !!!
+  }
+
+  // paroisse :
+    initializeParoisseSelect();
+
+  // lieu
+  document.getElementById("programme_lieu").value = programme.lieu;
+
+  // occation
+  document.getElementById("programme_occasion").value = programme.occasion;
+
+  // date
+  document.getElementById("programme_date").value = programme.date;
+
+  // description
+  document.getElementById("programme_description").value = programme.description;
+
+  // title
+  document.getElementById("title_section").innerHTML = '<div class="href-target" id="intro"></div>' + "<h1 class='package-name'>Messe du " + programme.date + " à " + programme.lieu + " pour " + programme.occasion + "</h1><p>Paroisse de " + programme.paroisse + ".</p>";
+
+  // Add change listeners to form fields
+  var formFields = ['select_paroisse', 'programme_lieu', 'programme_occasion', 'programme_date', 'programme_description'];
+  formFields.forEach(function(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('input', markAsChanged);
+      field.addEventListener('change', markAsChanged);
+    }
   });
+
 }
 
-async function loadProgramme() {
-  if (!programmeId) {
-    setStatus('Aucun programme selectionne.', true);
-    return;
-  }
-
-  try {
-    const payload = await programmeApi('detail', { id: programmeId });
-    const programme = payload.programme;
-
-    programmeForm.elements.date.value = programme.date;
-    programmeForm.elements.lieu.value = programme.lieu;
-    programmeForm.elements.occasion.value = programme.occasion;
-    programmeForm.elements.paroisse.value = programme.paroisse;
-
-    items = payload.items || [];
-    renderItems();
-    setStatus(`${items.length} element(s) dans ce programme.`);
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+function add_section(partie, chants) {
+    return '<section id="part_'+codage_path_javascript(partie.name)+'">\
+    <div class="href-target" id="'+codage_path_javascript(partie.name)+'_link"></div>\
+    <div id="" onclick="" ondblclick="">\
+        <div class="row">\
+            <div class="column"><h1>\
+                <div class="row"><div class="column"><img src="../components/icons/double_note.svg" style="height:1.4em">\
+            </h1></div>\
+            <div class="column part-column"><h1 id="h1_'+codage_path_javascript(partie.name)+'">'+partie.name+'</h1></div>\
+            <div class="column"><img class="button" src="../components/icons/edit.png"\
+                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_part(this)"></div>\
+            <div class="column"><img class="button" src="../components/icons/delete.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_part(this)"></div>\
+            <div class="column" style="margin-left:10px"><img class="button" src="../components/icons/up-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_part(this)"></div>\
+            <div class="column" style="margin-left:10px"><img class="button" src="../components/icons/down-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_part(this)"></div>\
+        </div>\
+    </div>\
+    <div id="doc_'+codage_path_javascript(partie.name)+'">\
+        '+chants+'<!-- Chants here -->\
+    </div>\
+    <details>\
+        <summary>\
+            <div class="toggle-code" onclick="add_new_chant(this)">+ Ajouter un chant en plus</div>\
+            <div class="toggle-code" onclick="add_new_part(this)">\
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">\
+                    <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />\
+                </svg>Ajouter une partie ci-dessous</div>\
+        </summary>\
+    </details>\
+</section>';
 }
 
-async function loadParoisseSuggestions() {
-  try {
-    const payload = await programmeApi('list');
-    paroisseSuggestions.innerHTML = '';
-    (payload.paroisses || []).forEach((paroisse) => {
-      const option = document.createElement('option');
-      option.value = paroisse;
-      paroisseSuggestions.appendChild(option);
+function add_link_section(name) {   // For the navigation
+    return '<li id="link_'+codage_path_javascript(name)+'">\
+    <a href="#'+codage_path_javascript(name)+'_link">\
+        <img src="../components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
+        '+name+'</a>\
+    </li>';
+}
+
+function link_section(name) {
+    return '<a href="#'+codage_path_javascript(name)+'_link">\
+        <img src="../components/icons/double_note.svg" style="height: 1.25em;width: 1.25em;margin-right: 1em;">\
+        '+name+'</a>';
+}
+
+function add_chant(chant, modification_visible=false) {
+    var modification_style = "";
+    var text_path = chant.path;
+    var click_action = 'onclick="openChantPdf(this, \''+chant.path.replaceAll("'","\\'")+'\')"';
+    if(text_path == "null") {
+        text_path = "";
+        click_action = "";
+    }
+    if(modification_visible == false)
+        modification_style = 'style="position:absolute;visibility:collapse"';
+    return '<div id="chant_'+codage_path_javascript(chant.name)+'" style="margin-top:24px"><div class="row">\
+            <div class="column"><h1>\
+                <div class="row"><div class="column"><img src="../components/icons/pdf.png" style="height:1em">\
+            </h1></div>\
+            <div class="column part-column"><h1 '+click_action+' style="white-space: normal;">'+chant.name+'</h1></div>\
+            <!--<div class="column"><img src="../components/icons/edit.png"\
+                    style="height:1.2em;right:0px;margin-right:16px" onclick="modify_chant(this)"></div>-->\
+            <div class="column"><img class="button" src="../components/icons/edit.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="edit_chant(this)"></div>\
+            <div class="column"><img class="button" src="../components/icons/delete.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="delete_chant(this)"></div>\
+            <!--<div class="column" style="margin-left:10px"><img src="../components/icons/up-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_up_chant(this)"></div>\
+            <div class="column" style="margin-left:10px"><img src="../components/icons/down-arrow.png"\
+                    style="height:1.2em;right:0px;margin-right:8px" onclick="move_down_chant(this)"></div>-->\
+        </div>\
+        <label class="text_path_chant" style="white-space: normal;">'+text_path+'</label>\
+        <div class="nice-form-group acWrap" '+modification_style+'><input type="url" placeholder="/type/chant... (ex: cantique/chantez avec moi/)" value="'+text_path+'" id="path_'+codage_path_javascript(chant.name)+'" class="icon-left"/>\
+        <script>\
+            console.log("attach: '+chant.name+'");\
+            ac.attach({\
+                target: document.getElementById("path_'+codage_path_javascript(chant.name)+'"),\
+                data: "../../components/autocomplete/autocomplete_path.php",\
+                exec: select_chant\
+            });\
+        </script></div></div>';
+}
+
+
+// Manage ID
+function codage_path_javascript(path)
+{
+    return path.replaceAll(",","µ").replaceAll("/","°").replaceAll("\.","¨").replaceAll("'","¤").replaceAll(" ","§") // remplacement des caractères spéciaux pour éviter les problèmes avec le javascript
+}
+
+function decodage_path_javascript(path)
+{
+    return path.replaceAll("µ",",").replaceAll("°","/").replaceAll("¨","\.").replaceAll("¤","'").replaceAll("§"," ")
+}
+
+// Action
+function delete_part(element) {
+    reset_modified_chant();
+    var id_part = element.closest("section").id.slice(5);
+    console.log("delete_part");
+    document.getElementById("part_"+id_part).remove();
+    document.getElementById("link_"+id_part).remove();
+    markAsChanged();
+}
+function delete_chant(element) {
+    reset_modified_chant();
+    console.log(element);
+    element.parentElement.parentElement.parentElement.remove();
+    markAsChanged();
+}
+function reset_modified_chant(){
+    if(chant_modified != null) {
+        chant_modified.style.visibility = "collapse";
+        chant_modified.style.position = "absolute";
+    }
+}
+function edit_chant(element) {
+    reset_modified_chant();
+    chant_modified = element.parentElement.parentElement.parentElement.lastElementChild;
+    chant_modified.style.visibility = "visible";
+    chant_modified.style.position = "relative";
+    console.log(chant_modified.parentElement.id.slice(6));
+    ac.attach({
+        target: document.getElementById("path_"+chant_modified.parentElement.id.slice(6)),
+        data: "../../components/autocomplete/autocomplete_path.php",
+        exec: select_chant
     });
-  } catch {
-    // Suggestions are optional.
-  }
 }
-
-async function moveItem(position, direction) {
-  try {
-    await programmeApi('item_move', { programme_id: programmeId, position, direction }, 'POST');
-    await loadProgramme();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+function select_chant(element, path) {
+    var name = path.split("/");
+    var chant = {
+        name: name[name.length-1],
+        path: path
+    };
+    element.parentElement.parentElement.parentElement.outerHTML = add_chant(chant);
+    
 }
-
-async function removeItem(position) {
-  try {
-    await programmeApi('item_remove', { programme_id: programmeId, position }, 'POST');
-    await loadProgramme();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+function move_up_part(element) {
+    var id_part = element.closest("section").id.slice(5);
+    console.log("move_up_part");
+    if(!element.closest("section").previousSibling.id.includes("part"))
+        return;
+    var part_before = element.closest("section").previousSibling.id.slice(5);
+    if(part_before != null){
+        document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
+    }
 }
-
-function renderChantOptions() {
-  const select = chantPickerForm.elements.chant_id;
-  const filter = chantPickerSearch.value.trim().toLowerCase();
-  select.innerHTML = '';
-
-  chantOptions
-    .filter((option) => !filter || `${option.path} ${option.nom}`.toLowerCase().includes(filter))
-    .forEach((option) => {
-      const element = document.createElement('option');
-      element.value = String(option.id);
-      element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
-      select.appendChild(element);
+/*function move_up_chant(element) {
+    var id_part = element.closest("span").id.slice(5);
+    console.log("move_up_part");
+    var part_before = programme.getPreviousPart(decodage_path_javascript(id_part));
+    console.log("before : " + part_before);
+    if(part_before != null){
+        document.querySelector('#part_' + part_before).before(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_before).before(document.querySelector('#link_' + id_part));
+        programme.echange2(decodage_path_javascript(id_part), "partie", null, part_before, "partie", null);
+    }
+}*/
+function move_down_part(element) {
+    reset_modified_chant();
+    var id_part = element.closest("section").id.slice(5);
+    console.log("move_down_part");
+    if(!element.closest("section").nextSibling.id.includes("part"))
+        return;
+    var part_after = element.closest("section").nextSibling.id.slice(5);
+    if(part_after != null) {
+        document.querySelector('#part_' + part_after).after(document.querySelector('#part_' + id_part));
+        document.querySelector('#link_' + part_after).after(document.querySelector('#link_' + id_part));
+    }
+}
+function add_new_chant(element) {
+    reset_modified_chant();
+    var id_part = element.closest("section").id.slice(5);
+    console.log("add_new_chant");
+    var chant = {'name': 'nouveau chant', "type" : "chant", "path": "null"};
+    //let parser = new DOMParser();
+    //let doc = parser.parseFromString(add_chant(chant), 'text/html');
+    if(document.getElementById("list_"+id_part)) {
+        document.getElementById("list_"+id_part).innerHTML += add_chant(chant, true);
+    }
+    else {
+        document.getElementById("doc_"+id_part).innerHTML = '<div class="nice-form-group" id="list_'+id_part+'">' + add_chant(chant,true) + '</div>';
+    }
+    console.log("attach: "+chant.name);
+    ac.attach({
+        target: document.getElementById("path_"+codage_path_javascript(chant.name)),
+        data: "../../components/autocomplete/autocomplete_path.php",
+        exec: select_chant
     });
+    markAsChanged();
+
+}
+function add_new_part(element) {
+    reset_modified_chant();
+    console.log("add_new_part");
+    var id_part = element.closest("section").id.slice(5);
+    var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(add_section(partie, ""), 'text/html');
+    let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
+    document.querySelector('#part_' + id_part).after(doc.body.firstChild);
+    document.querySelector('#link_' + id_part).after(nav.body.firstChild);
+    markAsChanged();
+}
+function modify_part(element) {
+    reset_modified_chant();
+    console.log("modify_part");
+    var id_part = element.closest("section").id.slice(5);
+    var name_part = prompt("Changer de nom :", decodage_path_javascript(id_part));
+    if(name_part == null || name_part == "" || name_part == decodage_path_javascript(id_part))return null;
+    document.getElementById("h1_"+id_part).innerHTML = name_part;
+    document.getElementById("link_"+id_part).innerHTML = link_section(name_part);
+    document.getElementById("h1_"+id_part).id = "h1_"+codage_path_javascript(name_part);
+    document.getElementById("doc_"+id_part).id = "doc_"+codage_path_javascript(name_part);
+    document.getElementById("link_"+id_part).id = "link_"+codage_path_javascript(name_part);
+    document.getElementById(id_part+"_link").id = codage_path_javascript(name_part);+"_link";
+    document.getElementById("part_"+id_part).id = "part_"+codage_path_javascript(name_part);
+    markAsChanged();
+
+}
+var testing = null;
+function modify_chant(element) {
+    console.log("modify_chant");
+    console.log(element);
+    testing = element;
 }
 
-async function renderFichierOptions() {
-  const select = chantPickerForm.elements.fichier_id;
-  const chantId = chantPickerForm.elements.chant_id.value;
-  select.innerHTML = '';
+function collectProgramChantsFromDom() {
+    var chants = [];
+    var sections = document.querySelectorAll("section[id^='part_']");
 
-  const noneOption = document.createElement('option');
-  noneOption.value = '';
-  noneOption.textContent = 'Aucun fichier';
-  select.appendChild(noneOption);
+    sections.forEach(function(section) {
+        var partTitle = section.querySelector("h1[id^='h1_']");
+        if (partTitle) {
+            chants.push({
+                type: "partie",
+                name: partTitle.textContent.trim()
+            });
+        }
 
-  if (!chantId) {
-    return;
-  }
+        var chantRows = section.querySelectorAll("div[id^='chant_']");
+        chantRows.forEach(function(row) {
+            var title = row.querySelector(".part-column h1");
+            if (!title) return;
 
-  try {
-    const payload = await dataApi('files', { chant_id: chantId });
-    (payload.files || []).forEach((file) => {
-      const element = document.createElement('option');
-      element.value = String(file.id);
-      element.textContent = file.nomFichier;
-      select.appendChild(element);
+            var path = "";
+            var label = row.querySelector(".text_path_chant");
+            if (label && label.textContent) {
+                path = label.textContent.trim();
+            } else {
+                var input = row.querySelector("input[type='url'][id^='path_']");
+                if (input) {
+                    path = input.value.trim();
+                }
+            }
+
+            chants.push({
+                type: "chant",
+                name: title.textContent.trim(),
+                path: path || "null"
+            });
+        });
     });
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+
+    return chants;
 }
 
-async function openChantPicker() {
-  chantPickerSearch.value = '';
-
-  try {
-    const payload = await dataApi('chant_options');
-    chantOptions = payload.chants || [];
-    renderChantOptions();
-    await renderFichierOptions();
-    chantPickerDialog.showModal();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+function getProgrammeIdFromQuery() {
+    return new URLSearchParams(window.location.search).get('programmeId') || '';
 }
 
-async function openPartiePicker() {
-  try {
-    const payload = await programmeApi('parties');
-    const select = partiePickerForm.elements.partie_id;
-    select.innerHTML = '';
+function getProgrammeApiUrl() {
+    var config = window.WEBAPP_CONFIG || {};
+    return config.PROGRAMME_API || ((config.BASE_URL || '') + 'webapp/api/programme.php');
+}
 
-    (payload.parties || []).forEach((partie) => {
-      const option = document.createElement('option');
-      option.value = String(partie.id);
-      option.textContent = partie.nom;
-      select.appendChild(option);
+async function postProgrammeAction(action, params) {
+    var body = new FormData();
+    body.append('action', action);
+    Object.keys(params).forEach(function(key) {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+            body.append(key, params[key]);
+        }
     });
 
-    partiePickerForm.elements.nouvelle_partie.value = '';
-    partiePickerDialog.showModal();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-}
+    var response = await fetch(getProgrammeApiUrl(), { method: 'POST', body: body, credentials: 'include' });
+    var payload = await response.json().catch(function() { return null; });
 
-programmeForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  try {
-    await programmeApi('programme_save', {
-      id: programmeId,
-      date: programmeForm.elements.date.value,
-      lieu: programmeForm.elements.lieu.value.trim(),
-      occasion: programmeForm.elements.occasion.value.trim(),
-      paroisse: programmeForm.elements.paroisse.value.trim(),
-    }, 'POST');
-    setStatus('Informations enregistrees.');
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-});
-
-chantPickerForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  try {
-    await programmeApi('item_add_chant', {
-      programme_id: programmeId,
-      chant_id: chantPickerForm.elements.chant_id.value,
-      fichier_id: chantPickerForm.elements.fichier_id.value,
-    }, 'POST');
-    chantPickerDialog.close();
-    await loadProgramme();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-});
-
-partiePickerForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const newName = partiePickerForm.elements.nouvelle_partie.value.trim();
-
-  try {
-    let partieId = partiePickerForm.elements.partie_id.value;
-
-    if (newName) {
-      const created = await programmeApi('partie_save', { nom: newName }, 'POST');
-      partieId = created.id;
+    if (!response.ok || !payload || !payload.success) {
+        throw new Error((payload && payload.message) || ('HTTP ' + response.status));
     }
 
-    if (!partieId) {
-      setStatus('Choisissez une partie ou saisissez un nom.', true);
-      return;
+    return payload;
+}
+
+async function enregistrer() {
+    updateProgrammeInformationFromForm();
+    programme.chants = collectProgramChantsFromDom();
+
+    var programmeId = getProgrammeIdFromQuery();
+    if (!programmeId) {
+        alert("Aucun programme selectionne.");
+        return;
     }
 
-    await programmeApi('item_add_partie', { programme_id: programmeId, partie_id: partieId }, 'POST');
-    partiePickerDialog.close();
-    await loadProgramme();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-});
+    try {
+        await postProgrammeAction('programme_save', {
+            id: programmeId,
+            date: programme.date,
+            lieu: programme.lieu,
+            occasion: programme.occasion,
+            paroisse: programme.paroisse,
+            description: programme.description
+        });
 
-chantPickerSearch.addEventListener('input', () => {
-  renderChantOptions();
-  renderFichierOptions();
-});
+        var payload = await postProgrammeAction('items_set', {
+            programme_id: programmeId,
+            items: JSON.stringify(programme.chants)
+        });
 
-chantPickerForm.elements.chant_id.addEventListener('change', () => {
-  renderFichierOptions();
-});
+        hasUnsavedChanges = false;
 
-document.querySelectorAll('[data-close-dialog]').forEach((button) => {
-  button.addEventListener('click', () => {
-    button.closest('dialog').close();
-  });
-});
+        if (payload.unmatched && payload.unmatched.length) {
+            alert("Programme enregistre, mais ces chants sont introuvables dans la base :\n" + payload.unmatched.join("\n"));
+            return;
+        }
 
-addChantButton.addEventListener('click', openChantPicker);
-addPartieButton.addEventListener('click', openPartiePicker);
+        alert("Programme enregistre, vous pouvez fermer la page");
+    } catch (error) {
+        alert("Probleme dans l'enregistrement du programme : " + error.message);
+    }
+}
 
-closePreviewButton.addEventListener('click', () => {
-  layout.classList.add('is-preview-hidden');
-  previewFrame.src = 'about:blank';
-});
+function visualiser() {
+    var programmeId = getProgrammeIdFromQuery();
+    if (!programmeId) {
+        return;
+    }
+    window.open("./visualisation.html?programmeId=" + encodeURIComponent(programmeId));
+}
 
-loadParoisseSuggestions();
-loadProgramme();
+/**
+ * Builds the legacy `programme` object expected by the form from the database.
+ */
+async function chargerProgramme() {
+    var programmeId = getProgrammeIdFromQuery();
+    if (!programmeId) {
+        alert("Aucun programme selectionne.");
+        return;
+    }
+
+    var query = new URLSearchParams({ action: 'detail', id: programmeId }).toString();
+    var response = await fetch(getProgrammeApiUrl() + '?' + query, { credentials: 'include' });
+    var payload = await response.json().catch(function() { return null; });
+
+    if (!response.ok || !payload || !payload.success) {
+        alert("Impossible de charger le programme : " + ((payload && payload.message) || response.status));
+        return;
+    }
+
+    var detail = payload.programme;
+    window.programme = {
+        date: detail.date,
+        lieu: detail.lieu,
+        occasion: detail.occasion,
+        paroisse: detail.paroisse,
+        description: detail.description || '',
+        chants: (payload.items || []).map(function(item) {
+            if (item.type === 'partie') {
+                return { type: 'partie', name: item.partieNom };
+            }
+            return {
+                type: 'chant',
+                name: item.chantNom,
+                path: item.nomFichier
+                    ? [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/')
+                    : 'null'
+            };
+        })
+    };
+
+    initFormulaire();
+}
+
+async function chargerParoisses() {
+    var select = document.getElementById('select_paroisse');
+    if (!select) {
+        return;
+    }
+
+    try {
+        var response = await fetch(getProgrammeApiUrl() + '?action=list', { credentials: 'include' });
+        var payload = await response.json().catch(function() { return null; });
+        var paroisses = (payload && payload.paroisses) || [];
+
+        select.innerHTML = '<option>choisissez votre paroisse</option>';
+        paroisses.forEach(function(paroisse) {
+            var option = document.createElement('option');
+            option.value = paroisse;
+            option.textContent = paroisse;
+            select.appendChild(option);
+        });
+
+        if (window.programme) {
+            initializeParoisseSelect();
+        }
+    } catch (error) {
+        console.warn('Impossible de charger la liste des paroisses.', error);
+    }
+}

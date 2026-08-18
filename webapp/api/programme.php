@@ -72,6 +72,10 @@ try {
             handleItemMove($pdo);
             break;
 
+        case 'items_set':
+            handleItemsSet($pdo);
+            break;
+
         case 'import_json':
             handleImportJson($pdo);
             break;
@@ -158,11 +162,18 @@ function ensureSchema(PDO $pdo): void
             `Lieu` VARCHAR(255) NOT NULL DEFAULT \'\',
             `Occasion` VARCHAR(255) NOT NULL DEFAULT \'\',
             `Paroisse` VARCHAR(255) NOT NULL DEFAULT \'\',
+            `Description` TEXT NULL,
             PRIMARY KEY (`ID`),
             KEY `idx_programme_date` (`Date`),
             KEY `idx_programme_paroisse` (`Paroisse`(191))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    // Added after the first release, so existing installs need the column.
+    $hasDescription = $pdo->query('SHOW COLUMNS FROM `Programme` LIKE \'Description\'')->fetch();
+    if ($hasDescription === false) {
+        $pdo->exec('ALTER TABLE `Programme` ADD COLUMN `Description` TEXT NULL');
+    }
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS `Partie` (
@@ -404,7 +415,7 @@ function handleDetail(PDO $pdo): void
 {
     $id = requiredInt('id', 'L\'identifiant du programme');
 
-    $statement = $pdo->prepare('SELECT ID, Date, Lieu, Occasion, Paroisse FROM `Programme` WHERE ID = :id');
+    $statement = $pdo->prepare('SELECT ID, `Date`, Lieu, Occasion, Paroisse, Description FROM `Programme` WHERE ID = :id');
     $statement->execute([':id' => $id]);
     $programme = $statement->fetch();
 
@@ -476,27 +487,34 @@ function handleProgrammeSave(PDO $pdo): void
     $lieu = textValue('lieu');
     $occasion = textValue('occasion');
     $paroisse = textValue('paroisse');
+    $description = requestValue('description');
+    $description = $description === '' ? null : mb_substr($description, 0, 5000);
 
     if ($id === null) {
         $statement = $pdo->prepare(
-            'INSERT INTO `Programme` (`Date`, Lieu, Occasion, Paroisse) VALUES (:date, :lieu, :occasion, :paroisse)'
+            'INSERT INTO `Programme` (`Date`, Lieu, Occasion, Paroisse, Description)
+             VALUES (:date, :lieu, :occasion, :paroisse, :description)'
         );
         $statement->execute([
             ':date' => $date,
             ':lieu' => $lieu,
             ':occasion' => $occasion,
             ':paroisse' => $paroisse,
+            ':description' => $description,
         ]);
         $id = (int) $pdo->lastInsertId();
     } else {
         $statement = $pdo->prepare(
-            'UPDATE `Programme` SET `Date` = :date, Lieu = :lieu, Occasion = :occasion, Paroisse = :paroisse WHERE ID = :id'
+            'UPDATE `Programme`
+             SET `Date` = :date, Lieu = :lieu, Occasion = :occasion, Paroisse = :paroisse, Description = :description
+             WHERE ID = :id'
         );
         $statement->execute([
             ':date' => $date,
             ':lieu' => $lieu,
             ':occasion' => $occasion,
             ':paroisse' => $paroisse,
+            ':description' => $description,
             ':id' => $id,
         ]);
     }
@@ -504,6 +522,68 @@ function handleProgrammeSave(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'id' => $id,
+    ]);
+}
+
+/**
+ * Replaces the whole content of a programme from a JSON list of entries,
+ * resolving chants by their "<Path>/<Nom>/<NomFichier>" location under /pdf.
+ */
+function handleItemsSet(PDO $pdo): void
+{
+    $programmeId = requiredInt('programme_id', 'L\'identifiant du programme');
+    $decoded = json_decode(requestValue('items'), true);
+
+    if (!is_array($decoded)) {
+        throw new RuntimeException('Contenu du programme invalide.');
+    }
+
+    $items = [];
+    $unmatched = [];
+
+    foreach ($decoded as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+
+        $name = trim((string) ($entry['name'] ?? ''));
+
+        if (($entry['type'] ?? '') === 'partie') {
+            if ($name === '') {
+                continue;
+            }
+            $items[] = [
+                'type' => 'partie',
+                'partieId' => resolvePartieId($pdo, trim($name, "[] \t")),
+            ];
+            continue;
+        }
+
+        $path = (string) ($entry['path'] ?? '');
+        if ($path === '' || $path === 'null') {
+            $unmatched[] = $name;
+            continue;
+        }
+
+        $reference = resolveChantReference($pdo, $path);
+        if ($reference === null) {
+            $unmatched[] = $name !== '' ? $name : $path;
+            continue;
+        }
+
+        $items[] = [
+            'type' => 'chant',
+            'chantId' => $reference['chantId'],
+            'fichierId' => $reference['fichierId'],
+        ];
+    }
+
+    rewriteItems($pdo, $programmeId, $items);
+
+    respondJson(200, [
+        'success' => true,
+        'saved' => count($items),
+        'unmatched' => $unmatched,
     ]);
 }
 
@@ -896,6 +976,7 @@ function mapProgrammeRow(array $row): array
         'lieu' => (string) $row['Lieu'],
         'occasion' => (string) $row['Occasion'],
         'paroisse' => (string) $row['Paroisse'],
+        'description' => isset($row['Description']) && $row['Description'] !== null ? (string) $row['Description'] : '',
         'chantCount' => (int) ($row['ChantCount'] ?? 0),
         'partieCount' => (int) ($row['PartieCount'] ?? 0),
     ];
