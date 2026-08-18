@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebApp - Base de donnees</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .explorer-toolbar {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .explorer-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+
+    .explorer-search {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .explorer-search-input {
+      min-width: 260px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .data-files-row > td {
+      background: rgba(0, 0, 0, 0.03);
+      padding: 0 12px 12px;
+    }
+
+    .data-files-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92em;
+    }
+
+    .data-files-table th,
+    .data-files-table td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .data-files-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+    }
+
+    .data-expand {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      padding: 0 6px 0 0;
+      color: inherit;
+    }
+
+    .data-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .data-dialog {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      min-width: min(460px, 92vw);
+    }
+
+    .data-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .data-form-grid label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .data-form-grid input[type="text"],
+    .data-form-grid input[type="number"],
+    .data-form-grid textarea {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .data-form-grid .data-checkbox {
+      grid-auto-flow: column;
+      justify-content: start;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .data-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+  </style>
+  <script>
+    (async () => {
+      try {
+        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+        const res = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+          window.location.replace(`./login.html?return=${returnUrl}`);
+        }
+      } catch {
+        const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+        window.location.replace(`./login.html?return=${returnUrl}`);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="explorer-toolbar">
+    <div class="explorer-actions">
+      <button id="go-up" class="btn btn-ghost icon-btn" type="button" title="Monter" aria-label="Monter">
+        <span class="icon-glyph" aria-hidden="true">&uarr;</span><span class="sr-only">Monter</span>
+      </button>
+      <button id="refresh-list" class="btn btn-ghost icon-btn" type="button" title="Rafraichir" aria-label="Rafraichir">
+        <span class="icon-glyph" aria-hidden="true">&#x21bb;</span><span class="sr-only">Rafraichir</span>
+      </button>
+      <button id="new-chant" class="btn" type="button" title="Nouveau chant">Nouveau chant</button>
+      <button id="edit-chant" class="btn btn-ghost" type="button" title="Modifier le chant" disabled>Modifier</button>
+      <button id="delete-chant" class="btn btn-danger" type="button" title="Supprimer le chant" disabled>Supprimer</button>
+    </div>
+    <div class="explorer-search">
+      <input id="data-search-input" class="explorer-search-input" type="search" placeholder="Rechercher un chant ou un fichier" aria-label="Rechercher un chant ou un fichier" />
+    </div>
+  </div>
+
+  <div class="breadcrumbs" id="breadcrumbs" aria-label="Chemin courant"></div>
+
+  <div class="explorer-list-wrap">
+    <table class="explorer-table" aria-describedby="data-status">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Type</th>
+          <th>Cote</th>
+          <th>Fichiers</th>
+          <th>Date d'ajout</th>
+          <th>Informations</th>
+        </tr>
+      </thead>
+      <tbody id="data-body"></tbody>
+    </table>
+  </div>
+
+  <p class="hint" id="data-status" role="status">Initialisation de la base...</p>
+
+  <dialog id="chant-dialog" class="data-dialog">
+    <form id="chant-form" method="dialog">
+      <h2 id="chant-dialog-title">Nouveau chant</h2>
+      <div class="data-form-grid">
+        <label>Nom
+          <input type="text" name="nom" maxlength="255" required />
+        </label>
+        <label>Dossier (Path)
+          <input type="text" name="path" maxlength="500" placeholder="ex: Entree/Avent" />
+        </label>
+        <label>Cote (0 a 5)
+          <input type="number" name="cote" min="0" max="5" step="1" />
+        </label>
+        <label>Informations
+          <textarea name="informations" rows="3" maxlength="5000"></textarea>
+        </label>
+      </div>
+      <div class="data-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="file-dialog" class="data-dialog">
+    <form id="file-form" method="dialog">
+      <h2 id="file-dialog-title">Nouveau fichier</h2>
+      <div class="data-form-grid">
+        <label>Nom du fichier
+          <input type="text" name="nom_fichier" maxlength="255" required />
+        </label>
+        <label>Tonalite
+          <input type="text" name="tonalite" maxlength="16" placeholder="ex: Do majeur" />
+        </label>
+        <label>Nombre de voix
+          <input type="number" name="nb_voix" min="0" max="32" step="1" />
+        </label>
+        <label class="data-checkbox">
+          <input type="checkbox" name="accords" />
+          Accords
+        </label>
+        <label>Informations
+          <textarea name="informations" rows="3" maxlength="5000"></textarea>
+        </label>
+      </div>
+      <div class="data-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="./data.js"></script>
+</body>
+</html>
