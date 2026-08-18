@@ -118,6 +118,18 @@ function getSelectedProgramme() {
   return programmes.find((programme) => programme.id === selectedProgrammeId) || null;
 }
 
+function openProgrammeInfo(programme) {
+  const url = `./informations.html?programmeId=${encodeURIComponent(programme.id)}`;
+  const title = [formatDate(programme.date), programme.lieu, programme.occasion].filter(Boolean).join(' - ');
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'openMesseInfoModal', item: { url, title } }, '*');
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function updateActionButtons() {
   const selected = getSelectedProgramme();
   editButton.disabled = !selected;
@@ -184,7 +196,12 @@ function renderProgrammes() {
 
     const row = document.createElement('tr');
     row.classList.toggle('is-selected', programme.id === selectedProgrammeId);
-    row.addEventListener('click', toggleProgramme);
+    row.addEventListener('click', () => {
+      selectedProgrammeId = programme.id;
+      renderProgrammes();
+      updateActionButtons();
+      openProgrammeInfo(programme);
+    });
 
     const dateCell = document.createElement('td');
     const toggle = document.createElement('button');

@@ -471,8 +471,53 @@
       }
     }
 
+    async function loadProgrammeFromDatabase(id) {
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PROGRAMME_API)
+        || `${baseUrl}webapp/api/programme.php`;
+
+      const query = new URLSearchParams({ action: 'detail', id }).toString();
+      const response = await fetch(`${apiUrl}?${query}`, { credentials: 'include' });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload || !payload.success) {
+        throw new Error((payload && payload.message) || `Impossible de charger le programme: ${response.status}`);
+      }
+
+      const programme = payload.programme;
+      const program = (payload.items || []).map((item) => (item.type === 'partie'
+        ? { type: 'partie', name: item.partieNom, path: '' }
+        : {
+          type: 'chant',
+          name: item.chantNom,
+          path: [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/'),
+        }));
+
+      renderPopup({
+        title: programme.occasion ? `${programme.date} - ${programme.occasion}` : 'Informations de la messe',
+        name: [programme.date, programme.lieu, programme.occasion].filter(Boolean).join(' - '),
+        path: '',
+        date: programme.date,
+        lieu: programme.lieu,
+        occasion: programme.occasion,
+        description: programme.paroisse ? `Paroisse : ${programme.paroisse}` : '',
+        program,
+      });
+    }
+
     async function loadProgramInfo() {
       if (!(await ensureAuthenticated())) {
+        return;
+      }
+
+      const programmeId = getQueryParam('programmeId');
+      if (programmeId) {
+        try {
+          await loadProgrammeFromDatabase(programmeId);
+        } catch (error) {
+          document.getElementById('messe-popup-content').innerHTML =
+            `<p class="messe-popup-empty">${escapeHtml(error.message)}</p>`;
+        }
         return;
       }
 
