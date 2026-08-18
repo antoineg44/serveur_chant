@@ -316,16 +316,14 @@
     function renderPopup(data) {
       const title = document.getElementById('messe-popup-title');
       const container = document.getElementById('messe-popup-content');
-      const configRoot = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PDF_ROOT) || '../pdf/';
       const programItems = (data.program || []).map((item) => {
         if (item.type === 'partie') {
           return `<div class="messe-popup-program-part">${escapeHtml(item.name)}</div>`;
         }
 
         const path = String(item.path || '').trim();
-        const encodedPath = path.split('/').filter(Boolean).map((part) => encodeURIComponent(part)).join('/');
         const pathMarkup = path
-          ? `<a href="${configRoot}${encodedPath}" target="_blank" rel="noopener">${escapeHtml(path)}</a>`
+          ? `<a href="#" data-chant-path="${escapeHtml(path)}">${escapeHtml(path)}</a>`
           : '<span>Aucun fichier associé</span>';
         return `<div class="messe-popup-program-song"><strong>${escapeHtml(item.name)}</strong>${pathMarkup}</div>`;
       }).join('');
@@ -458,6 +456,34 @@
           }
 
           openAction(button.dataset.action, actionUrl);
+        });
+      });
+      container.querySelectorAll('[data-chant-path]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+
+          const chantPath = link.dataset.chantPath;
+          const params = new URLSearchParams({ lien: `/${normalizePath(chantPath)}` });
+          if (programmeId) {
+            params.set('programmeId', programmeId);
+          }
+          const viewerUrl = `./visualisation.html?${params.toString()}`;
+
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'openPageTab',
+              item: {
+                key: `visualisation-${chantPath}`,
+                name: chantPath.split('/').pop() || 'Chant',
+                title: chantPath.split('/').pop() || 'Chant',
+                description: 'Visualisation',
+                url: viewerUrl,
+              },
+            }, '*');
+            return;
+          }
+
+          window.open(viewerUrl, '_blank', 'noopener,noreferrer');
         });
       });
     }
