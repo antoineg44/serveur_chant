@@ -529,6 +529,25 @@ function add_new_part(element) {
     markAsChanged();
 }
 var pendingPartSectionId = null;
+var availablePartOptions = [];
+
+function renderPartOptions() {
+    var select = document.getElementById("partie-picker-select");
+    var search = document.getElementById("partie-picker-search");
+    var filter = search ? search.value.trim().toLowerCase() : "";
+
+    select.innerHTML = "";
+    availablePartOptions
+        .filter(function(partie) {
+            return !filter || partie.nom.toLowerCase().indexOf(filter) !== -1;
+        })
+        .forEach(function(partie) {
+            var option = document.createElement("option");
+            option.value = partie.nom;
+            option.textContent = partie.nom;
+            select.appendChild(option);
+        });
+}
 
 function getUsedPartNames() {
     return Array.prototype.map.call(
@@ -552,9 +571,8 @@ async function modify_part(element) {
     reset_modified_chant();
 
     var sectionId = element.closest("section").id.slice(5);
-    var currentName = decodage_path_javascript(sectionId);
     var dialog = document.getElementById("partie-picker-dialog");
-    var select = document.getElementById("partie-picker-select");
+    var search = document.getElementById("partie-picker-search");
 
     try {
         var response = await fetch(getProgrammeApiUrl() + "?action=parties", { credentials: 'include' });
@@ -564,25 +582,21 @@ async function modify_part(element) {
             throw new Error((payload && payload.message) || ("HTTP " + response.status));
         }
 
-        // Parts already placed in the program cannot be selected twice.
-        var used = getUsedPartNames().filter(function(name) { return name !== currentName; });
-        var available = (payload.parties || []).filter(function(partie) {
+        // Parts already placed in the program cannot be selected again.
+        var used = getUsedPartNames();
+        availablePartOptions = (payload.parties || []).filter(function(partie) {
             return used.indexOf(partie.nom) === -1;
         });
 
-        if (!available.length) {
+        if (!availablePartOptions.length) {
             alert("Toutes les parties disponibles sont deja utilisees dans ce programme.");
             return;
         }
 
-        select.innerHTML = "";
-        available.forEach(function(partie) {
-            var option = document.createElement("option");
-            option.value = partie.nom;
-            option.textContent = partie.nom;
-            option.selected = partie.nom === currentName;
-            select.appendChild(option);
-        });
+        if (search) {
+            search.value = "";
+        }
+        renderPartOptions();
 
         pendingPartSectionId = sectionId;
         dialog.showModal();
@@ -616,6 +630,11 @@ document.addEventListener("DOMContentLoaded", function() {
             dialog.close();
         });
     });
+
+    var search = document.getElementById("partie-picker-search");
+    if (search) {
+        search.addEventListener("input", renderPartOptions);
+    }
 });
 
 var testing = null;

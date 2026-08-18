@@ -9,6 +9,52 @@
     <script src="./config.js"></script>
     <!-- CSS -->
     <link href="modifications.css" rel="stylesheet">
+    <style>
+      .app-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.45);
+      }
+
+      .app-dialog {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px;
+        min-width: min(420px, 92vw);
+        color: var(--ink);
+      }
+
+      .app-dialog h2 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+      }
+
+      .app-dialog select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 9px;
+        font: inherit;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .app-dialog input[type="search"] {
+        width: 100%;
+        margin-bottom: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 9px;
+        font: inherit;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .app-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+    </style>
         <script>
             (async () => {
                 try {
@@ -795,13 +841,14 @@
     </div>
     </div>
 
-    <dialog id="partie-picker-dialog" style="border:1px solid #cbd5e1;border-radius:12px;padding:18px;min-width:min(360px,92vw)">
+    <dialog id="partie-picker-dialog" class="app-dialog">
         <form id="partie-picker-form" method="dialog">
-            <h2 style="margin:0 0 12px;font-size:1.05rem">Choisir une partie</h2>
-            <select id="partie-picker-select" size="8" style="width:100%;padding:6px"></select>
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
-                <button type="button" data-close-dialog>Annuler</button>
-                <button type="submit">Valider</button>
+            <h2>Choisir une partie</h2>
+            <input id="partie-picker-search" type="search" placeholder="Rechercher une partie" autocomplete="off" aria-label="Rechercher une partie" />
+            <select id="partie-picker-select" size="8"></select>
+            <div class="app-dialog-actions">
+                <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+                <button type="submit" class="btn">Valider</button>
             </div>
         </form>
     </dialog>
