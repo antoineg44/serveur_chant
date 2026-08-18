@@ -486,10 +486,32 @@ async function openChantInfo(relativeFilePath, infoWindow) {
   try {
     const chantId = await resolveChantId(relativeFilePath);
     if (chantId) {
-      infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+      const url = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+      const fileName = stripFileExtension(splitParentAndName(relativeFilePath).name) || 'Chant';
+
+      if (window.parent && window.parent !== window) {
+        infoWindow?.close();
+        window.parent.postMessage({
+          type: 'openPageTab',
+          item: {
+            key: `chant-${chantId}`,
+            name: fileName,
+            title: `Informations - ${fileName}`,
+            description: 'Informations du chant',
+            url,
+          },
+        }, '*');
+        return;
+      }
+
+      if (infoWindow) {
+        infoWindow.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
     }
   } catch (error) {
-    infoWindow.close();
+    infoWindow?.close();
     showMessage(error.message || 'Informations du chant indisponibles.');
   }
 }
@@ -499,8 +521,10 @@ function openCurrentChantInfo() {
     return;
   }
 
-  const infoWindow = window.open('about:blank', '_blank');
-  if (!infoWindow) {
+  const infoWindow = window.parent && window.parent !== window
+    ? null
+    : window.open('about:blank', '_blank');
+  if (window.parent === window && !infoWindow) {
     showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
     return;
   }
@@ -614,6 +638,22 @@ function renderFileList(items, currentFileName, folderPath) {
         void loadVisualisation(filePath);
       });
 
+      const infoButton = document.createElement('button');
+      infoButton.type = 'button';
+      infoButton.className = 'file-info-button';
+      infoButton.title = 'Informations du chant';
+      infoButton.setAttribute('aria-label', `Informations de ${item.name}`);
+      infoButton.textContent = 'i';
+      infoButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const infoWindow = window.open('about:blank', '_blank');
+        if (!infoWindow) {
+          showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
+          return;
+        }
+        void openChantInfo(filePath, infoWindow);
+      });
+      card.appendChild(infoButton);
     }
 
     fileList.appendChild(card);
@@ -643,22 +683,6 @@ function renderProgramList(programEntries, currentPath, title) {
 
     const itemPath = cleanPath(entry.path);
     const isSelected = itemPath && itemPath === cleanPath(currentPath);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `file-card${isSelected ? ' is-selected' : ''}${itemPath ? ' is-clickable' : ' is-disabled'}`;
-    button.disabled = !itemPath;
-
-    const icon = document.createElement('span');
-    icon.className = 'file-icon';
-    icon.textContent = itemPath.toLowerCase().endsWith('.pdf') ? 'PDF' : 'DOC';
-
-    const content = document.createElement('span');
-    content.className = 'file-content';
-
-    const name = document.createElement('span');
-    name.className = 'file-name';
-    const fileBaseName = splitParentAndName(itemPath).name || entry.name || 'Chant';
-    name.textContent = stripFileExtension(fileBaseName) || 'Chant';
 
     const meta = document.createElement('span');
     meta.className = 'file-meta';

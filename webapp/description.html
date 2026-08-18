@@ -597,6 +597,11 @@
         const file = files.find((item) => String(item.id) === button.dataset.fileDelete);
         button.addEventListener('click', () => deleteFile(file));
       });
+
+      const firstPdf = files.find((file) => /\.pdf$/i.test(String(file.nomFichier || '')));
+      if (firstPdf) {
+        openFile(chant, firstPdf);
+      }
     }
 
     let reloadChant = async () => {};
