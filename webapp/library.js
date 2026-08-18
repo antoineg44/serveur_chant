@@ -7,7 +7,6 @@ const libraryBody = document.getElementById('library-body');
 const statusElement = document.getElementById('library-status');
 const countElement = document.getElementById('library-count');
 const createButton = document.getElementById('library-create-program');
-const editButton = document.getElementById('library-edit-program');
 const deleteButton = document.getElementById('library-delete');
 const partiesButton = document.getElementById('library-manage-parties');
 const refreshButton = document.getElementById('library-refresh');
@@ -32,7 +31,6 @@ let paroisses = [];
 let selectedProgrammeId = null;
 let searchTerm = '';
 let searchDebounceTimer = null;
-let editingProgrammeId = null;
 
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
@@ -118,7 +116,6 @@ function openProgrammeInfo(programme) {
 
 function updateActionButtons() {
   const selected = getSelectedProgramme();
-  editButton.disabled = !selected;
   deleteButton.disabled = !selected;
 }
 
@@ -216,13 +213,12 @@ async function loadProgrammes() {
   }
 }
 
-function openProgrammeDialog(programme) {
-  editingProgrammeId = programme ? programme.id : null;
-  programmeDialogTitle.textContent = programme ? 'Modifier le programme' : 'Nouveau programme';
-  programmeForm.elements.date.value = programme ? programme.date : new Date().toISOString().slice(0, 10);
-  programmeForm.elements.lieu.value = programme ? programme.lieu : '';
-  programmeForm.elements.occasion.value = programme ? programme.occasion : '';
-  programmeForm.elements.paroisse.value = programme ? programme.paroisse : '';
+function openProgrammeDialog() {
+  programmeDialogTitle.textContent = 'Nouveau programme';
+  programmeForm.elements.date.value = new Date().toISOString().slice(0, 10);
+  programmeForm.elements.lieu.value = '';
+  programmeForm.elements.occasion.value = '';
+  programmeForm.elements.paroisse.value = '';
   programmeDialog.showModal();
 }
 
@@ -270,9 +266,6 @@ programmeForm.addEventListener('submit', async (event) => {
     occasion: programmeForm.elements.occasion.value.trim(),
     paroisse: programmeForm.elements.paroisse.value.trim(),
   };
-  if (editingProgrammeId !== null) {
-    payload.id = editingProgrammeId;
-  }
 
   try {
     await programmeApi('programme_save', payload, 'POST');
@@ -301,14 +294,7 @@ document.querySelectorAll('[data-close-dialog]').forEach((button) => {
   });
 });
 
-createButton.addEventListener('click', () => openProgrammeDialog(null));
-
-editButton.addEventListener('click', () => {
-  const programme = getSelectedProgramme();
-  if (programme) {
-    openProgrammeDialog(programme);
-  }
-});
+createButton.addEventListener('click', () => openProgrammeDialog());
 
 deleteButton.addEventListener('click', async () => {
   const programme = getSelectedProgramme();
