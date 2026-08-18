@@ -206,6 +206,10 @@
             <button id="seed-database" class="btn btn-ghost" type="button" title="Remplir une premiere fois les tables depuis le dossier /pdf">Initialiser la base</button>
           </p>
           <p class="hint" id="seed-status" role="status"></p>
+          <p>
+            <button id="import-programmes" class="btn btn-ghost" type="button" title="Transferer les programmes .json de /pdf/programmes vers la base">Importer les programmes JSON</button>
+          </p>
+          <p class="hint" id="import-programmes-status" role="status"></p>
         </div>
       </article>
     </section>
@@ -263,6 +267,40 @@
         }
 
         status.textContent = `Base initialisee : ${payload.chants} chant(s) et ${payload.fichiers} fichier(s) importes.`;
+      } catch (error) {
+        status.classList.add('is-error');
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById('import-programmes').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const status = document.getElementById('import-programmes-status');
+
+      if (!window.confirm('Transferer tous les programmes .json de /pdf/programmes vers la base ?')) {
+        return;
+      }
+
+      const PROGRAMME_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PROGRAMME_API)
+        || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/programme.php`;
+
+      button.disabled = true;
+      status.classList.remove('is-error');
+      status.textContent = 'Import des programmes en cours...';
+
+      try {
+        const body = new FormData();
+        body.append('action', 'import_json');
+        const response = await fetch(PROGRAMME_API, { method: 'POST', body, credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload || !payload.success) {
+          throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+        }
+
+        status.textContent = `${payload.imported} programme(s) importe(s), ${payload.skipped} ignore(s), ${payload.unmatched} chant(s) non retrouve(s).`;
       } catch (error) {
         status.classList.add('is-error');
         status.textContent = error.message;

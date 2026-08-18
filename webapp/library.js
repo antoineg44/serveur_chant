@@ -1,654 +1,637 @@
 // Library Module
-// Loads all files under /pdf/programmes in a single API request with folder filtering
+// Database-backed program management: Programme -> ordered Partie / Chant entries
+
+const paroisseFilter = document.getElementById('library-paroisse-filter');
+const searchInput = document.getElementById('library-search-input');
+const libraryBody = document.getElementById('library-body');
+const statusElement = document.getElementById('library-status');
+const countElement = document.getElementById('library-count');
+const createButton = document.getElementById('library-create-program');
+const editButton = document.getElementById('library-edit-program');
+const deleteButton = document.getElementById('library-delete');
+const partiesButton = document.getElementById('library-manage-parties');
+const refreshButton = document.getElementById('library-refresh');
+
+const programmeDialog = document.getElementById('programme-dialog');
+const programmeForm = document.getElementById('programme-form');
+const programmeDialogTitle = document.getElementById('programme-dialog-title');
+const paroisseSuggestions = document.getElementById('paroisse-suggestions');
+
+const chantPickerDialog = document.getElementById('chant-picker-dialog');
+const chantPickerForm = document.getElementById('chant-picker-form');
+const chantPickerSearch = document.getElementById('chant-picker-search');
+
+const partiePickerDialog = document.getElementById('partie-picker-dialog');
+const partiePickerForm = document.getElementById('partie-picker-form');
+
+const partiesDialog = document.getElementById('parties-dialog');
+const partieCreateForm = document.getElementById('partie-create-form');
+const partiesList = document.getElementById('parties-list');
 
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
-const LIBRARY_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/api/explorer.php`;
-const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
-const LIBRARY_ROOT_PATH = 'programmes';
+const PROGRAMME_API = WEBAPP_CONFIG.PROGRAMME_API || `${BASE_URL}webapp/api/programme.php`;
+const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
+const LOCAL_PROGRAMME_API = './api/programme.php';
+const LOCAL_DATA_API = './api/data.php';
+const TABLE_COLUMN_COUNT = 5;
 
-let libraryLoaded = false;
-let libraryLoading = false;
-let libraryFilesAll = [];
-let selectedLibraryFilePath = '';
-let selectedLibraryFileName = '';
-let librarySearchTerm = '';
-const RECYCLE_BIN_ROOT = 'Recycle Bin';
+let programmes = [];
+let paroisses = [];
+let selectedProgrammeId = null;
+let expandedProgrammeId = null;
+let searchTerm = '';
+let searchDebounceTimer = null;
+let editingProgrammeId = null;
+let pickerProgrammeId = null;
+let chantOptions = [];
+let partieOptions = [];
 
-function createRecycleFolderName() {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const hh = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-  const ss = String(now.getSeconds()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}_${hh}-${min}-${ss}`;
+function setStatus(message, isError = false) {
+  statusElement.textContent = message;
+  statusElement.classList.toggle('is-error', isError);
 }
 
-async function apiPost(action, payload) {
-  const body = new URLSearchParams({ action, ...payload });
-  const response = await fetch(LIBRARY_API_URL, { method: 'POST', body, credentials: 'include' });
-
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP ${response.status}.`);
+function formatDate(value) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value || '-';
   }
-
-  const data = await response.json();
-  if (!data.success) {
-    throw new Error(data.message || `Action ${action} refusee.`);
-  }
-
-  return data;
+  return date.toLocaleDateString('fr-FR');
 }
 
-function updateLibraryActionButtonsState() {
-  const deleteBtn = document.getElementById('library-delete');
-  const downloadBtn = document.getElementById('library-download-program');
-  const isProgramSelected = Boolean(selectedLibraryFilePath && isProgramFile(selectedLibraryFileName));
-
-  if (deleteBtn) {
-    deleteBtn.disabled = !selectedLibraryFilePath || libraryLoading;
-  }
-
-  if (downloadBtn) {
-    downloadBtn.disabled = !isProgramSelected || libraryLoading;
-  }
-}
-
-function setLibraryStatus(message, isError = false) {
-  const status = document.getElementById('library-status');
-  if (!status) {
-    return;
-  }
-  status.textContent = message;
-  status.classList.toggle('is-error', isError);
-}
-
-function updateLibraryCountWithTotal(filteredCount, totalCount) {
-  const countEl = document.getElementById('library-count');
-  if (!countEl) {
-    return;
-  }
-
-  if (filteredCount === totalCount) {
-    countEl.textContent = `${totalCount} fichier${totalCount > 1 ? 's' : ''}`;
-    return;
-  }
-
-  countEl.textContent = `${filteredCount} / ${totalCount} fichiers`;
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function encodePathForUrl(path) {
-  return path
-    .split('/')
-    .filter(Boolean)
-    .map((part) => encodeURIComponent(part))
-    .join('/');
-}
-
-function cleanPath(value) {
-  return String(value || '')
-    .replace(/\\/g, '/')
-    .replace(/^\/+/, '')
-    .replace(/\/+/g, '/');
-}
-
-function formatLibraryDisplayName(fileName) {
-  const rawName = String(fileName || '');
-  const baseName = rawName.replace(/\.[^/.]+$/, '');
-  const parts = baseName.split('_');
-
-  if (parts.length < 3) {
-    return rawName;
-  }
-
-  const date = parts[0] || '';
-  const location = parts[1] || '';
-  const occasion = parts.slice(2).join('_') || '';
-
-  const normalize = (value) => value
-    .replaceAll('_', ' ')
-    .replaceAll('-', '/')
-    .trim();
-
-  const formatDateForDisplay = (value) => {
-    const match = value.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
-    if (!match) {
-      return value;
-    }
-    const [, year, month, day] = match;
-    return `${day}/${month}/${year}`;
-  };
-
-  const prettyDate = formatDateForDisplay(normalize(date));
-  const prettyLocation = normalize(location);
-  const prettyOccasion = normalize(occasion || location);
-
-  if (!prettyDate || !prettyLocation) {
-    return rawName;
-  }
-
-  return `Messe du ${prettyDate} à ${prettyLocation} pour ${prettyOccasion}`;
-}
-
-function getFolderPath(filePath) {
-  const normalized = String(filePath || '').replaceAll('\\', '/');
-  const index = normalized.lastIndexOf('/');
-  if (index < 0) {
-    return '';
-  }
-  return normalized.slice(0, index);
-}
-
-function getParoisseFromPath(pathValue) {
-  return String(pathValue || '').split('/')[1] || 'Inconnue';
-}
-
-function requestOpenPdf(file) {
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({
-      type: 'openPdf',
-      item: { name: file.name, path: file.path, type: 'file' },
-    }, '*');
-    return;
-  }
-
-  const query = new URLSearchParams({ lien: `/${file.path}` }).toString();
-  window.open(`../components/visualisation/index.html?${query}`, '_blank', 'noopener,noreferrer');
-}
-
-function isProgramFile(fileName) {
-  const normalized = String(fileName || '').toLowerCase();
-  return normalized.endsWith('.txt') || normalized.endsWith('.json');
-}
-
-function requestOpenProgram(file) {
-  const infoUrl = `./informations.html?${new URLSearchParams({ programme: file.path }).toString()}`;
-  const tabLabel = formatLibraryDisplayName(file.name);
-
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({
-      type: 'openMesseInfoModal',
-      item: {
-        title: tabLabel,
-        url: infoUrl,
-      },
-    }, '*');
-    return;
-  }
-
-  window.open(infoUrl, '_blank', 'noopener,noreferrer');
-}
-
-function requestModifyProgram(file) {
-  const programmePath = `/pdf/${cleanPath(file.path)}`;
-  const modifyUrl = `./modifications.html?${new URLSearchParams({ programme: programmePath }).toString()}`;
-  const tabLabel = `Modification - ${formatLibraryDisplayName(file.name)}`;
-
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({
-      type: 'openPageTab',
-      item: {
-        key: `modify-programme-${file.path}`,
-        name: tabLabel,
-        title: tabLabel,
-        description: 'Modification du programme',
-        url: modifyUrl,
-      },
-    }, '*');
-    return;
-  }
-
-  window.open(modifyUrl, '_blank', 'noopener,noreferrer');
-}
-
-function openCreateProgramPage() {
-  const item = {
-    key: 'create-program',
-    name: 'Créer un nouveau programme',
-    title: 'Créer un nouveau programme',
-    description: 'Création de programme',
-    url: './create.html',
-  };
-
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ type: 'openPageTab', item }, '*');
-    return;
-  }
-
-  window.open(item.url, '_blank', 'noopener,noreferrer');
-}
-
-async function collectLibraryData(rootPath) {
-  const query = new URLSearchParams({ action: 'list_tree', path: rootPath }).toString();
-  const response = await fetch(`${LIBRARY_API_URL}?${query}`, { credentials: 'include' });
-
-  if (!response.ok) {
-    throw new Error(`Erreur HTTP ${response.status} sur ${rootPath || '/'}.`);
-  }
-
-  const payload = await response.json();
-  if (!payload.success) {
-    throw new Error(payload.message || 'Erreur API lors du chargement de la bibliotheque.');
-  }
-
-  const files = Array.isArray(payload.files)
-    ? payload.files
-      .filter((item) => item && item.type === 'file' && item.path && item.name)
-      .map((item) => ({
-        name: item.name,
-        path: item.path,
-      }))
-    : [];
-
-  const folders = Array.isArray(payload.folders)
-    ? payload.folders
-      .filter((folder) => typeof folder === 'string' && folder.trim() !== '')
-    : [rootPath];
-
-  files.sort((a, b) => {
-    const aStartsWithNumber = /^\d/.test(a.name);
-    const bStartsWithNumber = /^\d/.test(b.name);
-
-    if (aStartsWithNumber !== bStartsWithNumber) {
-      return aStartsWithNumber ? -1 : 1;
-    }
-
-    const byNameDesc = b.name.localeCompare(a.name, 'fr', { sensitivity: 'base' });
-    if (byNameDesc !== 0) {
-      return byNameDesc;
-    }
-    return b.path.localeCompare(a.path, 'fr', { sensitivity: 'base' });
-  });
-
-  const sortedFolders = Array.from(new Set(folders)).sort((a, b) =>
-    a.localeCompare(b, 'fr', { sensitivity: 'base' })
-  );
-
-  return { files, folders: sortedFolders };
-}
-
-function renderLibraryFolderOptions(folders) {
-  const select = document.getElementById('library-folder-filter');
-  if (!select) {
-    return;
-  }
-
-  const previousValue = select.value;
-  select.innerHTML = '<option value="">Toutes les paroisses</option>';
-
-  for (const folder of folders) {
-    var paroisse = folder.split("programmes/")[1];
-
-    if(paroisse != undefined && paroisse != ""){
-      const option = document.createElement('option');
-      option.value = folder;
-      option.textContent = paroisse;
-      select.appendChild(option);
-    }
-  }
-
-  if (previousValue && folders.includes(previousValue)) {
-    select.value = previousValue;
-  }
-}
-
-function renderLibraryFiles(files) {
-  const tbody = document.getElementById('library-body');
-  if (!tbody) {
-    return;
-  }
-
-  tbody.innerHTML = '';
-
-  if (!files.length) {
-    selectedLibraryFilePath = '';
-    selectedLibraryFileName = '';
-    updateLibraryActionButtonsState();
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">Aucun fichier trouve dans programmes.</td></tr>';
-    updateLibraryCountWithTotal(0, libraryFilesAll.length);
-    return;
-  }
-
-  if (selectedLibraryFilePath && !files.some((file) => file.path === selectedLibraryFilePath)) {
-    selectedLibraryFilePath = '';
-    selectedLibraryFileName = '';
-  }
-
-  for (const file of files) {
-    const row = document.createElement('tr');
-    row.dataset.programPath = file.path;
-    row.dataset.programName = file.name;
-    row.dataset.programTitle = formatLibraryDisplayName(file.name);
-    const encodedPath = encodePathForUrl(file.path);
-    const remoteFileUrl = `${PDF_ROOT}${encodedPath}`;
-    const displayName = formatLibraryDisplayName(file.name);
-    const canOpenInViewer = file.name.toLowerCase().endsWith('.pdf') || isProgramFile(file.name);
-
-    const paroisse = getParoisseFromPath(file.path);
-    row.innerHTML = `
-      <td class="name-cell"></td>
-      <td>${escapeHtml(paroisse)}</td>
-      <td class="actions-cell"></td>
-    `;
-
-    const nameCell = row.querySelector('.name-cell');
-    const actionsCell = row.querySelector('.actions-cell');
-
-    const nameLink = document.createElement('a');
-    nameLink.href = remoteFileUrl;
-    nameLink.textContent = displayName;
-    nameLink.style.color = 'var(--accent)';
-    nameLink.style.textDecoration = 'underline';
-    nameLink.addEventListener('click', (event) => {
-      event.stopPropagation();
-
-      if (!canOpenInViewer) {
-        nameLink.target = '_blank';
-        nameLink.rel = 'noopener noreferrer';
-        return;
-      }
-
-      event.preventDefault();
-      if (isProgramFile(file.name)) {
-        requestOpenProgram(file);
-      } else {
-        requestOpenPdf(file);
-      }
-    });
-
-    if (nameCell) {
-      nameCell.appendChild(nameLink);
-    }
-
-    if (selectedLibraryFilePath && selectedLibraryFilePath === file.path) {
-      row.classList.add('is-selected');
-    }
-
-    row.addEventListener('click', () => {
-      Array.from(tbody.querySelectorAll('tr')).forEach((candidate) => candidate.classList.remove('is-selected'));
-      row.classList.add('is-selected');
-      selectedLibraryFilePath = file.path;
-      selectedLibraryFileName = file.name;
-      updateLibraryActionButtonsState();
-
-      if (isProgramFile(file.name)) {
-        requestOpenProgram(file);
-      }
-
-      setLibraryStatus('Fichier selectionne.');
-    });
-
-    const extLink = document.createElement('a');
-    extLink.href = remoteFileUrl;
-    extLink.target = '_blank';
-    extLink.rel = 'noopener noreferrer';
-    extLink.className = 'btn btn-ghost';
-    extLink.style.fontSize = '0.85rem';
-    extLink.style.marginLeft = '8px';
-    extLink.textContent = 'Modifier';
-    extLink.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (isProgramFile(file.name)) {
-        event.preventDefault();
-        requestModifyProgram(file);
-      }
-    });
-    actionsCell.appendChild(extLink);
-
-    tbody.appendChild(row);
-  }
-
-  updateLibraryActionButtonsState();
-  updateLibraryCountWithTotal(files.length, libraryFilesAll.length);
-}
-
-async function deleteSelectedLibraryFile() {
-  if (!selectedLibraryFilePath) {
-    setLibraryStatus('Selectionnez un fichier a supprimer.', true);
-    return;
-  }
-
-  const confirmation = window.confirm(`Deplacer ${selectedLibraryFileName || selectedLibraryFilePath} vers Recycle Bin ?`);
-  if (!confirmation) {
-    return;
-  }
-
-  try {
-    libraryLoading = true;
-    updateLibraryActionButtonsState();
-    setLibraryStatus('Deplacement vers Recycle Bin en cours...');
-
-    const recycleFolderName = createRecycleFolderName();
+async function callApi(endpoints, action, params = {}, method = 'GET') {
+  const errors = [];
+
+  for (let index = 0; index < endpoints.length; index += 1) {
+    const baseUrl = endpoints[index];
+    const isLast = index === endpoints.length - 1;
 
     try {
-      await apiPost('mkdir', {
-        path: RECYCLE_BIN_ROOT,
-        name: recycleFolderName,
-      });
-    } catch (error) {
-      // If the folder exists already (same second), continue and reuse it.
-      if (!String(error.message || '').toLowerCase().includes('already exists')) {
-        throw error;
+      let response;
+
+      if (method === 'POST') {
+        const body = new FormData();
+        body.append('action', action);
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            body.append(key, value);
+          }
+        });
+        response = await fetch(baseUrl, { method: 'POST', body, credentials: 'include' });
+      } else {
+        const query = new URLSearchParams({ action, ...params }).toString();
+        response = await fetch(`${baseUrl}?${query}`, { credentials: 'include' });
       }
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        if (!isLast && (response.status === 404 || response.status >= 500)) {
+          errors.push(`HTTP ${response.status} on ${baseUrl}`);
+          continue;
+        }
+        throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+      }
+
+      if (!payload || !payload.success) {
+        throw new Error((payload && payload.message) || 'Erreur API');
+      }
+
+      return payload;
+    } catch (error) {
+      if (!isLast) {
+        errors.push(`${baseUrl}: ${error.message}`);
+        continue;
+      }
+      throw error;
     }
-
-    await apiPost('move', {
-      path: selectedLibraryFilePath,
-      targetPath: `${RECYCLE_BIN_ROOT}/${recycleFolderName}/${selectedLibraryFileName}`,
-    });
-
-    selectedLibraryFilePath = '';
-    selectedLibraryFileName = '';
-    setLibraryStatus(`Fichier deplace vers /pdf/${RECYCLE_BIN_ROOT}/${recycleFolderName}.`);
-    libraryLoaded = false;
-    await loadLibraryFiles(true);
-  } catch (error) {
-    setLibraryStatus(error.message || 'Erreur pendant le deplacement.', true);
-  } finally {
-    libraryLoading = false;
-    updateLibraryActionButtonsState();
   }
+
+  throw new Error(errors.join(' | ') || 'API inaccessible');
 }
 
-async function downloadSelectedLibraryProgram() {
-  if (!selectedLibraryFilePath) {
-    setLibraryStatus('Selectionnez un programme a telecharger.', true);
-    return;
-  }
+const programmeApi = (action, params, method) => callApi([LOCAL_PROGRAMME_API, PROGRAMME_API], action, params, method);
+const dataApi = (action, params, method) => callApi([LOCAL_DATA_API, DATA_API], action, params, method);
 
-  if (!isProgramFile(selectedLibraryFileName)) {
-    setLibraryStatus('Le telechargement n est disponible que pour un programme.', true);
-    return;
-  }
-
-  const downloadUrl = `${LIBRARY_API_URL}?action=download_program&path=${encodeURIComponent(selectedLibraryFilePath)}`;
-  const anchor = document.createElement('a');
-  anchor.href = downloadUrl;
-  anchor.target = '_blank';
-  anchor.rel = 'noopener noreferrer';
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  setLibraryStatus('Preparation du telechargement...');
+function getSelectedProgramme() {
+  return programmes.find((programme) => programme.id === selectedProgrammeId) || null;
 }
 
-async function createLibraryFolder() {
-  const folderName = window.prompt('Nom du nouveau dossier dans /pdf/programmes :');
-  if (!folderName) {
-    return;
-  }
-
-  try {
-    libraryLoading = true;
-    updateLibraryActionButtonsState();
-    setLibraryStatus('Creation du dossier en cours...');
-
-    await apiPost('mkdir', {
-      path: LIBRARY_ROOT_PATH,
-      name: folderName.trim(),
-    });
-
-    setLibraryStatus(`Dossier cree dans /pdf/${LIBRARY_ROOT_PATH}.`);
-    libraryLoaded = false;
-    await loadLibraryFiles(true);
-  } catch (error) {
-    setLibraryStatus(error.message || 'Erreur pendant la creation du dossier.', true);
-  } finally {
-    libraryLoading = false;
-    updateLibraryActionButtonsState();
-  }
+function updateActionButtons() {
+  const selected = getSelectedProgramme();
+  editButton.disabled = !selected;
+  deleteButton.disabled = !selected;
 }
 
-function getFilteredLibraryFiles() {
-  const filterSelect = document.getElementById('library-folder-filter');
-  const selectedFolder = String(filterSelect ? filterSelect.value : '').trim();
-  const normalizedSearch = librarySearchTerm.toLocaleLowerCase('fr').trim();
+function createCell(text) {
+  const cell = document.createElement('td');
+  cell.textContent = text;
+  return cell;
+}
 
-  return libraryFilesAll.filter((file) => {
-    const folder = getFolderPath(file.path);
-    const matchesFolder = !selectedFolder || folder === selectedFolder || folder.startsWith(`${selectedFolder}/`);
-    if (!matchesFolder) {
-      return false;
-    }
+function renderParoisseOptions() {
+  const previous = paroisseFilter.value;
+  paroisseFilter.innerHTML = '';
 
-    if (!normalizedSearch) {
-      return true;
-    }
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = 'Toutes les paroisses';
+  paroisseFilter.appendChild(allOption);
 
-    const displayName = formatLibraryDisplayName(file.name).toLocaleLowerCase('fr');
-    const rawName = String(file.name || '').toLocaleLowerCase('fr');
-    const rawPath = String(file.path || '').toLocaleLowerCase('fr');
-    const paroisse = getParoisseFromPath(file.path).toLocaleLowerCase('fr');
-    const haystack = `${displayName} ${rawName} ${rawPath} ${paroisse}`;
-    return haystack.includes(normalizedSearch);
+  paroisses.forEach((paroisse) => {
+    const option = document.createElement('option');
+    option.value = paroisse;
+    option.textContent = paroisse;
+    paroisseFilter.appendChild(option);
+  });
+
+  paroisseFilter.value = paroisses.includes(previous) ? previous : '';
+
+  paroisseSuggestions.innerHTML = '';
+  paroisses.forEach((paroisse) => {
+    const option = document.createElement('option');
+    option.value = paroisse;
+    paroisseSuggestions.appendChild(option);
   });
 }
 
-function applyLibraryFilters() {
-  const filterSelect = document.getElementById('library-folder-filter');
-  const selectedFolder = String(filterSelect ? filterSelect.value : '').trim();
-  const filtered = getFilteredLibraryFiles();
-  renderLibraryFiles(filtered);
+function renderProgrammes() {
+  libraryBody.innerHTML = '';
 
-  if (!libraryLoaded) {
+  if (!programmes.length) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = TABLE_COLUMN_COUNT;
+    cell.className = 'empty-cell';
+    cell.textContent = 'Aucun programme.';
+    row.appendChild(cell);
+    libraryBody.appendChild(row);
+    countElement.textContent = '0 programme';
     return;
   }
 
-  const hasFolderFilter = selectedFolder !== '';
-  const hasSearchFilter = librarySearchTerm.trim() !== '';
+  programmes.forEach((programme) => {
+    const toggleProgramme = () => {
+      selectedProgrammeId = programme.id;
+      expandedProgrammeId = expandedProgrammeId === programme.id ? null : programme.id;
+      renderProgrammes();
+      updateActionButtons();
+      if (expandedProgrammeId === programme.id) {
+        loadProgrammeDetail(programme.id);
+      }
+    };
 
-  if (!hasFolderFilter && !hasSearchFilter) {
-    setLibraryStatus(`${libraryFilesAll.length} fichier(s) charges depuis /pdf/programmes.`);
-    return;
-  }
+    const row = document.createElement('tr');
+    row.classList.toggle('is-selected', programme.id === selectedProgrammeId);
+    row.addEventListener('click', toggleProgramme);
 
-  if (hasFolderFilter && hasSearchFilter) {
-    setLibraryStatus(`${filtered.length} fichier(s) correspondent au dossier ${selectedFolder} et a la recherche "${librarySearchTerm}".`);
-    return;
-  }
+    const dateCell = document.createElement('td');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'library-expand';
+    toggle.textContent = expandedProgrammeId === programme.id ? '\u25BE' : '\u25B8';
+    toggle.setAttribute('aria-expanded', String(expandedProgrammeId === programme.id));
+    toggle.title = 'Afficher le contenu';
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleProgramme();
+    });
+    dateCell.appendChild(toggle);
+    dateCell.appendChild(document.createTextNode(formatDate(programme.date)));
+    row.appendChild(dateCell);
 
-  if (hasFolderFilter) {
-    setLibraryStatus(`${filtered.length} fichier(s) correspondent au dossier: ${selectedFolder}`);
-    return;
-  }
+    row.appendChild(createCell(programme.lieu || '-'));
+    row.appendChild(createCell(programme.occasion || '-'));
+    row.appendChild(createCell(programme.paroisse || '-'));
+    row.appendChild(createCell(`${programme.partieCount} partie(s), ${programme.chantCount} chant(s)`));
 
-  setLibraryStatus(`${filtered.length} fichier(s) correspondent a la recherche: ${librarySearchTerm}`);
+    libraryBody.appendChild(row);
+
+    if (expandedProgrammeId === programme.id) {
+      libraryBody.appendChild(createDetailRow(programme));
+    }
+  });
+
+  countElement.textContent = `${programmes.length} programme${programmes.length > 1 ? 's' : ''}`;
 }
 
-async function loadLibraryFiles(forceReload) {
-  if (libraryLoading) {
-    return;
-  }
-  if (libraryLoaded && !forceReload) {
+function createDetailRow(programme) {
+  const row = document.createElement('tr');
+  row.className = 'library-detail-row';
+
+  const cell = document.createElement('td');
+  cell.colSpan = TABLE_COLUMN_COUNT;
+  cell.addEventListener('click', (event) => event.stopPropagation());
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'library-detail-toolbar';
+
+  const addPartie = document.createElement('button');
+  addPartie.type = 'button';
+  addPartie.className = 'btn btn-ghost';
+  addPartie.textContent = 'Ajouter une partie';
+  addPartie.addEventListener('click', () => openPartiePicker(programme.id));
+
+  const addChant = document.createElement('button');
+  addChant.type = 'button';
+  addChant.className = 'btn';
+  addChant.textContent = 'Ajouter un chant';
+  addChant.addEventListener('click', () => openChantPicker(programme.id));
+
+  toolbar.appendChild(addPartie);
+  toolbar.appendChild(addChant);
+  cell.appendChild(toolbar);
+
+  const container = document.createElement('div');
+  container.dataset.itemsContainer = String(programme.id);
+  container.textContent = 'Chargement du programme...';
+  cell.appendChild(container);
+
+  row.appendChild(cell);
+  return row;
+}
+
+function renderItems(programmeId, items) {
+  const container = libraryBody.querySelector(`[data-items-container="${programmeId}"]`);
+  if (!container) {
     return;
   }
 
-  libraryLoading = true;
-  setLibraryStatus('Chargement des fichiers de programmes...');
+  container.innerHTML = '';
+
+  if (!items.length) {
+    container.textContent = 'Ce programme est vide.';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'library-items-table';
+
+  const head = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  ['#', 'Type', 'Contenu', 'Fichier', 'Actions'].forEach((label) => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headRow.appendChild(th);
+  });
+  head.appendChild(headRow);
+  table.appendChild(head);
+
+  const body = document.createElement('tbody');
+
+  items.forEach((item) => {
+    const row = document.createElement('tr');
+    row.classList.toggle('is-partie', item.type === 'partie');
+
+    row.appendChild(createCell(String(item.position)));
+    row.appendChild(createCell(item.type === 'partie' ? 'Partie' : 'Chant'));
+
+    if (item.type === 'partie') {
+      row.appendChild(createCell(item.partieNom));
+      row.appendChild(createCell('-'));
+    } else {
+      row.appendChild(createCell(item.chantPath ? `${item.chantPath} / ${item.chantNom}` : item.chantNom));
+      row.appendChild(createCell(item.nomFichier || '-'));
+    }
+
+    const actions = document.createElement('td');
+    actions.appendChild(createItemButton('\u2191', 'Monter', () => moveItem(programmeId, item.position, 'up')));
+    actions.appendChild(createItemButton('\u2193', 'Descendre', () => moveItem(programmeId, item.position, 'down')));
+    actions.appendChild(createItemButton('\u2715', 'Retirer', () => removeItem(programmeId, item.position), 'btn-danger'));
+    row.appendChild(actions);
+
+    body.appendChild(row);
+  });
+
+  table.appendChild(body);
+  container.appendChild(table);
+}
+
+function createItemButton(label, title, handler, extraClass = 'btn-ghost') {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `btn ${extraClass}`;
+  button.textContent = label;
+  button.title = title;
+  button.addEventListener('click', handler);
+  return button;
+}
+
+async function loadProgrammeDetail(programmeId) {
+  try {
+    const payload = await programmeApi('detail', { id: programmeId });
+    renderItems(programmeId, payload.items || []);
+  } catch (error) {
+    const container = libraryBody.querySelector(`[data-items-container="${programmeId}"]`);
+    if (container) {
+      container.textContent = error.message;
+    }
+    setStatus(error.message, true);
+  }
+}
+
+async function loadProgrammes() {
+  setStatus('Chargement de la bibliotheque...');
 
   try {
-    const result = await collectLibraryData(LIBRARY_ROOT_PATH);
-    libraryFilesAll = result.files;
-    renderLibraryFolderOptions(result.folders);
-    applyLibraryFilters();
-    setLibraryStatus(`${libraryFilesAll.length} fichier(s) charges depuis /pdf/programmes.`);
-    libraryLoaded = true;
+    const payload = await programmeApi('list', {
+      paroisse: paroisseFilter.value,
+      q: searchTerm,
+    });
+
+    programmes = payload.programmes || [];
+    paroisses = payload.paroisses || [];
+
+    if (!programmes.some((programme) => programme.id === selectedProgrammeId)) {
+      selectedProgrammeId = null;
+    }
+    if (!programmes.some((programme) => programme.id === expandedProgrammeId)) {
+      expandedProgrammeId = null;
+    }
+
+    renderParoisseOptions();
+    renderProgrammes();
+    updateActionButtons();
+    setStatus(`${programmes.length} programme(s) charge(s).`);
+
+    if (expandedProgrammeId !== null) {
+      loadProgrammeDetail(expandedProgrammeId);
+    }
   } catch (error) {
-    setLibraryStatus(error.message || 'Erreur de chargement.', true);
-  } finally {
-    libraryLoading = false;
+    setStatus(error.message, true);
   }
 }
 
-function initLibrary() {
-  const libraryCreateProgramBtn = document.getElementById('library-create-program');
-  if (libraryCreateProgramBtn) {
-    libraryCreateProgramBtn.addEventListener('click', () => {
-      openCreateProgramPage();
-    });
+async function moveItem(programmeId, position, direction) {
+  try {
+    await programmeApi('item_move', { programme_id: programmeId, position, direction }, 'POST');
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
   }
-
-  const libraryRefreshBtn = document.getElementById('library-refresh');
-  if (libraryRefreshBtn) {
-    libraryRefreshBtn.addEventListener('click', () => {
-      void loadLibraryFiles(true);
-    });
-  }
-
-  const libraryFilterSelect = document.getElementById('library-folder-filter');
-  if (libraryFilterSelect) {
-    libraryFilterSelect.addEventListener('change', () => {
-      applyLibraryFilters();
-    });
-  }
-
-  const librarySearchInput = document.getElementById('library-search-input');
-  if (librarySearchInput) {
-    librarySearchInput.addEventListener('input', () => {
-      librarySearchTerm = librarySearchInput.value.trim();
-      applyLibraryFilters();
-    });
-  }
-
-  const libraryDeleteBtn = document.getElementById('library-delete');
-  if (libraryDeleteBtn) {
-    libraryDeleteBtn.addEventListener('click', () => {
-      void deleteSelectedLibraryFile();
-    });
-  }
-
-  const libraryDownloadBtn = document.getElementById('library-download-program');
-  if (libraryDownloadBtn) {
-    libraryDownloadBtn.addEventListener('click', () => {
-      void downloadSelectedLibraryProgram();
-    });
-  }
-
-  const libraryNewFolderBtn = document.getElementById('library-new-folder');
-  if (libraryNewFolderBtn) {
-    libraryNewFolderBtn.addEventListener('click', () => {
-      void createLibraryFolder();
-    });
-  }
-
-  updateLibraryActionButtonsState();
-
-  void loadLibraryFiles(false);
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLibrary);
-} else {
-  initLibrary();
+async function removeItem(programmeId, position) {
+  try {
+    await programmeApi('item_remove', { programme_id: programmeId, position }, 'POST');
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
 }
+
+function openProgrammeDialog(programme) {
+  editingProgrammeId = programme ? programme.id : null;
+  programmeDialogTitle.textContent = programme ? 'Modifier le programme' : 'Nouveau programme';
+  programmeForm.elements.date.value = programme ? programme.date : new Date().toISOString().slice(0, 10);
+  programmeForm.elements.lieu.value = programme ? programme.lieu : '';
+  programmeForm.elements.occasion.value = programme ? programme.occasion : '';
+  programmeForm.elements.paroisse.value = programme ? programme.paroisse : '';
+  programmeDialog.showModal();
+}
+
+async function openChantPicker(programmeId) {
+  pickerProgrammeId = programmeId;
+  chantPickerSearch.value = '';
+
+  try {
+    const payload = await dataApi('chant_options');
+    chantOptions = payload.chants || [];
+    renderChantOptions();
+    await renderFichierOptions();
+    chantPickerDialog.showModal();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+function renderChantOptions() {
+  const select = chantPickerForm.elements.chant_id;
+  const filter = chantPickerSearch.value.trim().toLowerCase();
+  select.innerHTML = '';
+
+  chantOptions
+    .filter((option) => !filter || `${option.path} ${option.nom}`.toLowerCase().includes(filter))
+    .forEach((option) => {
+      const element = document.createElement('option');
+      element.value = String(option.id);
+      element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
+      select.appendChild(element);
+    });
+}
+
+async function renderFichierOptions() {
+  const select = chantPickerForm.elements.fichier_id;
+  const chantId = chantPickerForm.elements.chant_id.value;
+  select.innerHTML = '';
+
+  const noneOption = document.createElement('option');
+  noneOption.value = '';
+  noneOption.textContent = 'Aucun fichier';
+  select.appendChild(noneOption);
+
+  if (!chantId) {
+    return;
+  }
+
+  try {
+    const payload = await dataApi('files', { chant_id: chantId });
+    (payload.files || []).forEach((file) => {
+      const element = document.createElement('option');
+      element.value = String(file.id);
+      element.textContent = file.nomFichier;
+      select.appendChild(element);
+    });
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function openPartiePicker(programmeId) {
+  pickerProgrammeId = programmeId;
+
+  try {
+    const payload = await programmeApi('parties');
+    partieOptions = payload.parties || [];
+
+    const select = partiePickerForm.elements.partie_id;
+    select.innerHTML = '';
+    partieOptions.forEach((partie) => {
+      const element = document.createElement('option');
+      element.value = String(partie.id);
+      element.textContent = partie.nom;
+      select.appendChild(element);
+    });
+
+    partiePickerDialog.showModal();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function refreshPartiesList() {
+  try {
+    const payload = await programmeApi('parties');
+    partieOptions = payload.parties || [];
+    partiesList.innerHTML = '';
+
+    partieOptions.forEach((partie) => {
+      const item = document.createElement('li');
+      item.textContent = partie.nom;
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn-danger';
+      remove.textContent = 'Supprimer';
+      remove.addEventListener('click', async () => {
+        if (!window.confirm(`Supprimer la partie "${partie.nom}" ?`)) {
+          return;
+        }
+        try {
+          await programmeApi('partie_delete', { id: partie.id }, 'POST');
+          await refreshPartiesList();
+          await loadProgrammes();
+        } catch (error) {
+          setStatus(error.message, true);
+        }
+      });
+
+      item.appendChild(remove);
+      partiesList.appendChild(item);
+    });
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+programmeForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const payload = {
+    date: programmeForm.elements.date.value,
+    lieu: programmeForm.elements.lieu.value.trim(),
+    occasion: programmeForm.elements.occasion.value.trim(),
+    paroisse: programmeForm.elements.paroisse.value.trim(),
+  };
+  if (editingProgrammeId !== null) {
+    payload.id = editingProgrammeId;
+  }
+
+  try {
+    await programmeApi('programme_save', payload, 'POST');
+    programmeDialog.close();
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+chantPickerForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    await programmeApi('item_add_chant', {
+      programme_id: pickerProgrammeId,
+      chant_id: chantPickerForm.elements.chant_id.value,
+      fichier_id: chantPickerForm.elements.fichier_id.value,
+    }, 'POST');
+    chantPickerDialog.close();
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+partiePickerForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    await programmeApi('item_add_partie', {
+      programme_id: pickerProgrammeId,
+      partie_id: partiePickerForm.elements.partie_id.value,
+    }, 'POST');
+    partiePickerDialog.close();
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+partieCreateForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    await programmeApi('partie_save', { nom: partieCreateForm.elements.nom.value.trim() }, 'POST');
+    partieCreateForm.reset();
+    await refreshPartiesList();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+chantPickerSearch.addEventListener('input', () => {
+  renderChantOptions();
+  renderFichierOptions();
+});
+
+chantPickerForm.elements.chant_id.addEventListener('change', () => {
+  renderFichierOptions();
+});
+
+document.querySelectorAll('[data-close-dialog]').forEach((button) => {
+  button.addEventListener('click', () => {
+    button.closest('dialog').close();
+  });
+});
+
+createButton.addEventListener('click', () => openProgrammeDialog(null));
+
+editButton.addEventListener('click', () => {
+  const programme = getSelectedProgramme();
+  if (programme) {
+    openProgrammeDialog(programme);
+  }
+});
+
+deleteButton.addEventListener('click', async () => {
+  const programme = getSelectedProgramme();
+  if (!programme) {
+    return;
+  }
+
+  if (!window.confirm(`Supprimer le programme du ${formatDate(programme.date)} ?`)) {
+    return;
+  }
+
+  try {
+    await programmeApi('programme_delete', { id: programme.id }, 'POST');
+    selectedProgrammeId = null;
+    expandedProgrammeId = null;
+    await loadProgrammes();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+partiesButton.addEventListener('click', async () => {
+  await refreshPartiesList();
+  partiesDialog.showModal();
+});
+
+refreshButton.addEventListener('click', () => loadProgrammes());
+
+paroisseFilter.addEventListener('change', () => loadProgrammes());
+
+searchInput.addEventListener('input', () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+
+  searchDebounceTimer = setTimeout(() => {
+    searchTerm = searchInput.value.trim();
+    loadProgrammes();
+  }, 250);
+});
+
+loadProgrammes();

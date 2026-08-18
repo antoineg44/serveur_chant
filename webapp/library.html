@@ -37,7 +37,7 @@
     }
 
     .library-filter-select {
-      min-width: 320px;
+      min-width: 220px;
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 8px 10px;
@@ -47,13 +47,113 @@
     }
 
     .library-search-input {
-      min-width: 280px;
+      min-width: 240px;
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 8px 10px;
       font: inherit;
       background: #fff;
       color: var(--ink);
+    }
+
+    .library-detail-row > td {
+      background: rgba(0, 0, 0, 0.03);
+      padding: 0 12px 12px;
+    }
+
+    .library-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92em;
+    }
+
+    .library-items-table th,
+    .library-items-table td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .library-items-table tr.is-partie td {
+      font-weight: 600;
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .library-detail-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 0;
+    }
+
+    .library-expand {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      padding: 0 6px 0 0;
+      color: inherit;
+    }
+
+    .library-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .library-dialog {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      min-width: min(460px, 92vw);
+    }
+
+    .library-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .library-form-grid label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .library-form-grid input[type="text"],
+    .library-form-grid input[type="date"],
+    .library-form-grid input[type="search"],
+    .library-form-grid select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .library-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .parties-list {
+      list-style: none;
+      margin: 0 0 16px;
+      padding: 0;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .parties-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--line);
     }
   </style>
   <script>
@@ -77,48 +177,122 @@
 <body>
   <div class="library-toolbar">
     <div class="library-filter">
-      <select id="library-folder-filter" class="library-filter-select" aria-label="Filtrer par dossier">
-        <option value="">Tous les dossiers</option>
+      <select id="library-paroisse-filter" class="library-filter-select" aria-label="Filtrer par paroisse">
+        <option value="">Toutes les paroisses</option>
       </select>
-      <input id="library-search-input" class="library-search-input" type="search" placeholder="Rechercher un fichier" aria-label="Rechercher un fichier" />
+      <input id="library-search-input" class="library-search-input" type="search" placeholder="Rechercher un programme" aria-label="Rechercher un programme" />
       <div class="library-actions">
-        <button id="library-create-program" class="btn btn-ghost" type="button">Créer un nouveau programme</button>
+        <button id="library-create-program" class="btn" type="button">Nouveau programme</button>
+        <button id="library-edit-program" class="btn btn-ghost" type="button" disabled>Modifier</button>
+        <button id="library-delete" class="btn btn-danger" type="button" disabled>Supprimer</button>
+        <button id="library-manage-parties" class="btn btn-ghost" type="button">Parties</button>
         <button id="library-refresh" class="btn btn-ghost icon-btn" type="button" title="Rafraichir la liste" aria-label="Rafraichir la liste">
           <span class="icon-glyph" aria-hidden="true">&#x21bb;</span><span class="sr-only">Rafraichir la liste</span>
         </button>
-        <button id="library-new-folder" class="btn icon-btn" type="button" title="Nouveau dossier" aria-label="Nouveau dossier">
-          <span class="icon-glyph" aria-hidden="true">&#x1f4c1;+</span><span class="sr-only">Nouveau dossier</span>
-        </button>
-        <button id="library-download-program" class="btn btn-ghost icon-btn" type="button" title="Télécharger le programme" aria-label="Télécharger le programme" disabled>
-          <span class="icon-glyph" aria-hidden="true">&#x1f4e5;</span><span class="sr-only">Télécharger le programme</span>
-        </button>
-        <button id="library-delete" class="btn btn-danger icon-btn" type="button" title="Supprimer le fichier selectionne" aria-label="Supprimer le fichier selectionne" disabled>
-          <span class="icon-glyph" aria-hidden="true">&#x1f5d1;</span><span class="sr-only">Supprimer le fichier selectionne</span>
-        </button>
-        <span id="library-count" class="library-count">0 fichier</span>
+        <span id="library-count" class="library-count">0 programme</span>
       </div>
     </div>
-    
   </div>
 
   <div class="explorer-list-wrap">
     <table class="explorer-table" aria-describedby="library-status">
       <thead>
         <tr>
-          <th>Nom</th>
+          <th>Date</th>
+          <th>Lieu</th>
+          <th>Occasion</th>
           <th>Paroisse</th>
-          <th>Actions</th>
+          <th>Contenu</th>
         </tr>
       </thead>
       <tbody id="library-body">
         <tr>
-          <td colspan="3" class="empty-cell">Chargement de la bibliotheque...</td>
+          <td colspan="5" class="empty-cell">Chargement de la bibliotheque...</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <p id="library-status" class="hint" role="status">En attente de chargement.</p>
+
+  <dialog id="programme-dialog" class="library-dialog">
+    <form id="programme-form" method="dialog">
+      <h2 id="programme-dialog-title">Nouveau programme</h2>
+      <div class="library-form-grid">
+        <label>Date
+          <input type="date" name="date" required />
+        </label>
+        <label>Lieu
+          <input type="text" name="lieu" maxlength="255" />
+        </label>
+        <label>Occasion
+          <input type="text" name="occasion" maxlength="255" />
+        </label>
+        <label>Paroisse
+          <input type="text" name="paroisse" maxlength="255" list="paroisse-suggestions" />
+          <datalist id="paroisse-suggestions"></datalist>
+        </label>
+      </div>
+      <div class="library-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="chant-picker-dialog" class="library-dialog">
+    <form id="chant-picker-form" method="dialog">
+      <h2>Ajouter un chant</h2>
+      <div class="library-form-grid">
+        <label>Rechercher un chant
+          <input id="chant-picker-search" type="search" placeholder="Nom du chant ou dossier" autocomplete="off" />
+        </label>
+        <label>Chant
+          <select name="chant_id" size="8" required></select>
+        </label>
+        <label>Fichier associe
+          <select name="fichier_id"></select>
+        </label>
+      </div>
+      <div class="library-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Ajouter</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="partie-picker-dialog" class="library-dialog">
+    <form id="partie-picker-form" method="dialog">
+      <h2>Ajouter une partie</h2>
+      <div class="library-form-grid">
+        <label>Partie
+          <select name="partie_id" size="8" required></select>
+        </label>
+      </div>
+      <div class="library-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Ajouter</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="parties-dialog" class="library-dialog">
+    <h2>Gestion des parties</h2>
+    <form id="partie-create-form" method="dialog">
+      <div class="library-form-grid">
+        <label>Nouvelle partie
+          <input type="text" name="nom" maxlength="255" required />
+        </label>
+      </div>
+      <div class="library-dialog-actions">
+        <button type="submit" class="btn">Ajouter</button>
+      </div>
+    </form>
+    <ul id="parties-list" class="parties-list"></ul>
+    <div class="library-dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close-dialog>Fermer</button>
+    </div>
+  </dialog>
 
   <script src="./library.js"></script>
 </body>
