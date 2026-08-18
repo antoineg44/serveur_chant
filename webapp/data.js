@@ -220,13 +220,17 @@ function renderList() {
     folders.forEach((folder) => {
       const row = document.createElement('tr');
       row.className = 'is-folder';
+      row.addEventListener('click', () => loadPath(folder.path));
 
       const nameCell = document.createElement('td');
       const link = document.createElement('button');
       link.type = 'button';
       link.className = 'crumb';
       link.textContent = `\u{1F4C1} ${folder.name}`;
-      link.addEventListener('click', () => loadPath(folder.path));
+      link.addEventListener('click', (event) => {
+        event.stopPropagation();
+        loadPath(folder.path);
+      });
       nameCell.appendChild(link);
 
       row.appendChild(nameCell);
