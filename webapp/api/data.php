@@ -237,6 +237,36 @@ function normalizePath(string $value): string
     return $value;
 }
 
+function normalizeMultiLevelPath(string $value): string
+{
+    $value = trim(str_replace('\\', '/', $value), '/');
+
+    if ($value === '') {
+        return '';
+    }
+
+    $parts = [];
+    foreach (explode('/', $value) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+
+        if ($part === '..') {
+            throw new RuntimeException('Chemin invalide.');
+        }
+
+        $parts[] = $part;
+    }
+
+    $normalized = implode('/', $parts);
+
+    if (mb_strlen($normalized) > DATA_MAX_PATH_LENGTH) {
+        throw new RuntimeException('Chemin trop long.');
+    }
+
+    return $normalized;
+}
+
 function normalizeName(string $value, string $label): string
 {
     if ($value === '') {
@@ -553,7 +583,7 @@ function handleChantDetail(PDO $pdo): void
 
 function handleChantByFile(PDO $pdo): void
 {
-    $filePath = normalizePath(requestValue('path'));
+    $filePath = normalizeMultiLevelPath(requestValue('path'));
     if ($filePath === '') {
         throw new RuntimeException('Chemin de fichier manquant.');
     }

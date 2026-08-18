@@ -637,23 +637,6 @@ function renderFileList(items, currentFileName, folderPath) {
         }
         void loadVisualisation(filePath);
       });
-
-      const infoButton = document.createElement('button');
-      infoButton.type = 'button';
-      infoButton.className = 'file-info-button';
-      infoButton.title = 'Informations du chant';
-      infoButton.setAttribute('aria-label', `Informations de ${item.name}`);
-      infoButton.textContent = 'i';
-      infoButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const infoWindow = window.open('about:blank', '_blank');
-        if (!infoWindow) {
-          showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
-          return;
-        }
-        void openChantInfo(filePath, infoWindow);
-      });
-      card.appendChild(infoButton);
     }
 
     fileList.appendChild(card);
