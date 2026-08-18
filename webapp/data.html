@@ -188,7 +188,7 @@
           <input type="text" name="nom" maxlength="255" required />
         </label>
         <label>Dossier (Path)
-          <input type="text" name="path" maxlength="500" placeholder="ex: Entree/Avent" />
+          <input type="text" name="path" maxlength="500" pattern="[^/\\]*" title="Un seul nom de dossier, sans /" placeholder="ex: Entree" />
         </label>
         <label>Cote (0 a 5)
           <input type="number" name="cote" min="0" max="5" step="1" />

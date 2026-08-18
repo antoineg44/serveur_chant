@@ -189,18 +189,18 @@ function requestValue(string $key): string
 
 function normalizePath(string $value): string
 {
-    $value = str_replace('\\', '/', $value);
-    $value = preg_replace('#/+#', '/', $value) ?? '';
-    $value = trim($value, '/');
+    $value = trim(str_replace('\\', '/', $value), '/');
 
     if ($value === '') {
         return '';
     }
 
-    foreach (explode('/', $value) as $segment) {
-        if ($segment === '.' || $segment === '..') {
-            throw new RuntimeException('Chemin invalide.');
-        }
+    if (strpos($value, '/') !== false) {
+        throw new RuntimeException('Le dossier ne peut contenir qu\'un seul niveau (pas de "/").');
+    }
+
+    if ($value === '.' || $value === '..') {
+        throw new RuntimeException('Chemin invalide.');
     }
 
     if (mb_strlen($value) > DATA_MAX_PATH_LENGTH) {
@@ -270,13 +270,14 @@ function likeEscape(string $value): string
 }
 
 /**
- * Level 1 + 2: sub-folders of the current path, then chants stored exactly at this path.
+ * Level 1 + 2: folders (only at the root, Path is a single folder name),
+ * then chants stored in the selected folder.
  */
 function handleList(PDO $pdo): void
 {
     $path = normalizePath(requestValue('path'));
 
-    $folders = listChildFolders($pdo, $path);
+    $folders = $path === '' ? listRootFolders($pdo) : [];
 
     $statement = $pdo->prepare(
         'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
@@ -290,51 +291,23 @@ function handleList(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'path' => $path,
-        'parent' => $path === '' ? null : (string) preg_replace('#/?[^/]+$#', '', $path),
+        'parent' => $path === '' ? null : '',
         'canEdit' => isAdminUser(),
         'folders' => $folders,
         'chants' => array_map('mapChantRow', $statement->fetchAll()),
     ]);
 }
 
-function listChildFolders(PDO $pdo, string $path): array
+function listRootFolders(PDO $pdo): array
 {
-    if ($path === '') {
-        $statement = $pdo->query('SELECT DISTINCT `Path` FROM `Chant` WHERE `Path` <> \'\'');
-        $rows = $statement->fetchAll();
-        $prefix = '';
-    } else {
-        $statement = $pdo->prepare(
-            'SELECT DISTINCT `Path` FROM `Chant` WHERE `Path` LIKE :prefix ESCAPE \'\\\\\''
-        );
-        $statement->execute([':prefix' => likeEscape($path) . '/%']);
-        $rows = $statement->fetchAll();
-        $prefix = $path . '/';
-    }
-
-    $names = [];
-    foreach ($rows as $row) {
-        $candidate = (string) $row['Path'];
-        if ($prefix !== '' && strpos($candidate, $prefix) !== 0) {
-            continue;
-        }
-
-        $remainder = substr($candidate, strlen($prefix));
-        if ($remainder === '' || $remainder === false) {
-            continue;
-        }
-
-        $segment = explode('/', $remainder)[0];
-        if ($segment !== '') {
-            $names[$segment] = true;
-        }
-    }
+    $rows = $pdo->query('SELECT DISTINCT `Path` FROM `Chant` WHERE `Path` <> \'\' ORDER BY `Path` ASC')->fetchAll();
 
     $folders = [];
-    foreach (array_keys($names) as $name) {
+    foreach ($rows as $row) {
+        $name = (string) $row['Path'];
         $folders[] = [
             'name' => $name,
-            'path' => $prefix . $name,
+            'path' => $name,
         ];
     }
 
@@ -550,8 +523,8 @@ function handleFileDelete(PDO $pdo): void
 }
 
 /**
- * First-time population: walks the /pdf tree and creates the folder paths,
- * one Chant per file base name and one Fichier per physical file.
+ * First-time population: walks the /pdf tree and creates one Chant per folder
+ * containing files, plus one Fichier per file found in that folder.
  */
 function handleSeed(PDO $pdo): void
 {
@@ -572,7 +545,6 @@ function handleSeed(PDO $pdo): void
     }
 
     $grouped = collectSeedEntries($pdfRoot);
-    $timestamp = currentTimestamp();
 
     $insertChant = $pdo->prepare(
         'INSERT INTO `Chant` (Nom, Path, DateAjout, Cote, Informations) VALUES (:nom, :path, :date, NULL, NULL)'
@@ -592,15 +564,15 @@ function handleSeed(PDO $pdo): void
             $insertChant->execute([
                 ':nom' => $entry['nom'],
                 ':path' => $entry['path'],
-                ':date' => $timestamp,
+                ':date' => $entry['date'],
             ]);
             $chantId = (int) $pdo->lastInsertId();
             $chantCount += 1;
 
-            foreach ($entry['files'] as $fileName) {
+            foreach ($entry['files'] as $file) {
                 $insertFile->execute([
-                    ':nom' => $fileName,
-                    ':date' => $timestamp,
+                    ':nom' => $file['nom'],
+                    ':date' => $file['date'],
                     ':chant' => $chantId,
                 ]);
                 $fileCount += 1;
@@ -640,37 +612,55 @@ function collectSeedEntries(string $pdfRoot): array
         }
 
         $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($pdfRoot) + 1));
-        $rootSegment = explode('/', $relative)[0];
-        if (in_array($rootSegment, DATA_SEED_EXCLUDED_ROOTS, true)) {
+        $segments = explode('/', $relative);
+        if (in_array($segments[0], DATA_SEED_EXCLUDED_ROOTS, true)) {
             continue;
         }
 
-        $fileName = $file->getBasename();
-        $directory = trim((string) str_replace('\\', '/', dirname($relative)), '/');
-        if ($directory === '.') {
-            $directory = '';
+        // A Chant is a folder, so files sitting directly in /pdf are ignored.
+        array_pop($segments);
+        if (!$segments) {
+            continue;
         }
 
-        $chantName = mb_substr($file->getBasename('.' . $file->getExtension()), 0, DATA_MAX_NAME_LENGTH);
+        $chantName = mb_substr((string) array_pop($segments), 0, DATA_MAX_NAME_LENGTH);
         if ($chantName === '') {
             continue;
         }
 
-        $key = mb_strtolower($directory . '/' . $chantName);
+        // Path holds a single folder name: keep only the direct parent folder.
+        $chantPath = mb_substr((string) (array_pop($segments) ?? ''), 0, DATA_MAX_PATH_LENGTH);
+        $key = mb_strtolower($chantPath . '/' . $chantName);
+
         if (!isset($grouped[$key])) {
             $grouped[$key] = [
                 'nom' => $chantName,
-                'path' => mb_substr($directory, 0, DATA_MAX_PATH_LENGTH),
+                'path' => $chantPath,
+                'date' => formatTimestamp(@filemtime($file->getPath())),
                 'files' => [],
             ];
         }
 
-        $grouped[$key]['files'][] = mb_substr($fileName, 0, DATA_MAX_NAME_LENGTH);
+        $grouped[$key]['files'][] = [
+            'nom' => mb_substr($file->getBasename(), 0, DATA_MAX_NAME_LENGTH),
+            'date' => formatTimestamp($file->getMTime()),
+        ];
     }
 
     ksort($grouped);
 
     return $grouped;
+}
+
+function formatTimestamp($timestamp): string
+{
+    date_default_timezone_set('Europe/Paris');
+
+    if (!is_int($timestamp) || $timestamp <= 0) {
+        return date('Y-m-d H:i:s');
+    }
+
+    return date('Y-m-d H:i:s', $timestamp);
 }
 
 function mapChantRow(array $row): array

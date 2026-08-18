@@ -38,11 +38,14 @@ let searchRequestId = 0;
 let editingChantId = null;
 let editingFileContext = null;
 
+// Path holds a single folder name, so any nesting is collapsed away.
 function normalizePath(value) {
-  return String(value || '')
+  const segments = String(value || '')
     .replaceAll('\\', '/')
-    .replace(/^\/+|\/+$/g, '')
-    .replace(/\/+/g, '/');
+    .split('/')
+    .filter(Boolean);
+
+  return segments.length ? segments[segments.length - 1] : '';
 }
 
 function setStatus(message, isError = false) {
