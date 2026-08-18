@@ -494,6 +494,20 @@ async function openChantInfo(relativeFilePath, infoWindow) {
   }
 }
 
+function openCurrentChantInfo() {
+  if (!currentRelativePdfPath) {
+    return;
+  }
+
+  const infoWindow = window.open('about:blank', '_blank');
+  if (!infoWindow) {
+    showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
+    return;
+  }
+
+  void openChantInfo(currentRelativePdfPath, infoWindow);
+}
+
 function isAudioPath(path) {
   const lower = String(path || '').toLowerCase();
   return lower.endsWith('.mp3') || lower.endsWith('.m4a');
@@ -600,22 +614,6 @@ function renderFileList(items, currentFileName, folderPath) {
         void loadVisualisation(filePath);
       });
 
-      const infoButton = document.createElement('button');
-      infoButton.type = 'button';
-      infoButton.className = 'file-info-button';
-      infoButton.title = 'Informations du chant';
-      infoButton.setAttribute('aria-label', `Informations de ${item.name}`);
-      infoButton.textContent = 'i';
-      infoButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const infoWindow = window.open('about:blank', '_blank');
-        if (!infoWindow) {
-          showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
-          return;
-        }
-        void openChantInfo(filePath, infoWindow);
-      });
-      card.appendChild(infoButton);
     }
 
     fileList.appendChild(card);
@@ -737,6 +735,10 @@ async function loadVisualisation(relativePdfPath) {
     ? `${REMOTE_MUSICXML_VIEWER_URL}?${new URLSearchParams({ source: protectedFileUrl }).toString()}`
     : `${REMOTE_VIEWER_URL}?${new URLSearchParams({ file: protectedFileUrl }).toString()}#pagemode=none`;
   currentRelativePdfPath = cleanRelativePath;
+  const folderInfoButton = document.getElementById('folder-info');
+  if (folderInfoButton) {
+    folderInfoButton.disabled = false;
+  }
 
   if (currentProgram) {
     renderProgramList(currentProgram.entries, cleanRelativePath, currentProgram.title);
@@ -757,6 +759,7 @@ async function initViewer() {
   }
 
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+  document.getElementById('folder-info').addEventListener('click', openCurrentChantInfo);
   document.getElementById('sidebar-toggle-floating').addEventListener('click', showFolderSidebarFromFloating);
   document.getElementById('program-toggle')?.addEventListener('click', toggleProgramSidebar);
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);

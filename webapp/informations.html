@@ -271,6 +271,7 @@
           output.description = json.description || '';
           output.program = Array.isArray(json.chants) ? json.chants.map((item) => ({
             type: item.type === 'partie' ? 'partie' : 'chant',
+            chantId: item.chantId || '',
             name: item.name || '',
             path: item.path || '',
           })) : [];
@@ -355,8 +356,11 @@
         const pathMarkup = path
           ? `<a href="#" data-chant-path="${escapeHtml(path)}">${escapeHtml(path)}</a>`
           : '<span>Aucun fichier associé</span>';
+        const chantId = Number.isInteger(Number(item.chantId)) && Number(item.chantId) > 0
+          ? String(Number(item.chantId))
+          : '';
         const infoButton = path
-          ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}">i</button>`
+          ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}"${chantId ? ` data-chant-info-id="${chantId}"` : ''}>i</button>`
           : '<button type="button" class="chant-info-button" title="Aucun fichier associe" aria-label="Informations indisponibles" disabled>i</button>';
         return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong>${infoButton}</div>${pathMarkup}</div>`;
       }).join('');
@@ -529,12 +533,17 @@
             return;
           }
 
-          void openChantInfo(button.dataset.chantInfoPath, infoWindow);
+          void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow);
         });
       });
     }
 
-    async function openChantInfo(filePath, infoWindow) {
+    async function openChantInfo(filePath, chantId, infoWindow) {
+      if (chantId) {
+        infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+        return;
+      }
+
       const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.DATA_API)
         || `${baseUrl}webapp/api/data.php`;
@@ -607,6 +616,7 @@
         : {
           type: 'chant',
           name: item.chantNom,
+          chantId: item.chantId,
           path: [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/'),
         }));
 

@@ -210,25 +210,6 @@
 			text-align: left;
 		}
 
-		.file-info-button {
-			flex: 0 0 28px;
-			width: 28px;
-			height: 28px;
-			padding: 0;
-			border: 1px solid rgba(148, 163, 184, 0.28);
-			border-radius: 50%;
-			background: rgba(30, 41, 59, 0.9);
-			color: #bfdbfe;
-			font: inherit;
-			font-weight: 700;
-			cursor: pointer;
-		}
-
-		.file-info-button:hover {
-			border-color: rgba(96, 165, 250, 0.65);
-			background: rgba(51, 65, 85, 0.98);
-		}
-
 		.file-card.is-clickable {
 			cursor: pointer;
 			transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
@@ -390,7 +371,10 @@
 					<h2>Fichiers du dossier</h2>
 					<p id="folder-path">Chargement...</p>
 				</div>
-				<button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-controls="file-list" aria-expanded="true">Masquer</button>
+				<div style="display: flex; gap: 8px;">
+					<button id="folder-info" class="sidebar-toggle" type="button" title="Informations du chant" disabled>Infos</button>
+					<button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-controls="file-list" aria-expanded="true">Masquer</button>
+				</div>
 			</div>
 			<div class="sidebar-body">
 				<div id="file-list" class="file-list"></div>
