@@ -279,6 +279,18 @@ function renderList() {
     nameCell.appendChild(icon);
 
     nameCell.appendChild(document.createTextNode(chant.nom));
+
+    const infoButton = document.createElement('button');
+    infoButton.type = 'button';
+    infoButton.className = 'btn btn-ghost';
+    infoButton.textContent = "Plus d'informations";
+    infoButton.style.marginLeft = '10px';
+    infoButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openChantDescription(chant);
+    });
+    nameCell.appendChild(infoButton);
+
     row.appendChild(nameCell);
 
     row.appendChild(createCell(formatCote(chant.cote)));
@@ -367,6 +379,26 @@ function openFileInNewTab(chant, file) {
 
   const query = new URLSearchParams({ lien: `/${path}`, folderPanel: 'visible' }).toString();
   window.open(`./visualisation.html?${query}`, '_blank', 'noopener,noreferrer');
+}
+
+function openChantDescription(chant) {
+  const url = `./description.html?chantId=${encodeURIComponent(chant.id)}`;
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'openPageTab',
+      item: {
+        key: `chant-${chant.id}`,
+        name: chant.nom,
+        title: chant.nom,
+        description: 'Informations du chant',
+        url,
+      },
+    }, '*');
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function fileIconSource(fileName) {

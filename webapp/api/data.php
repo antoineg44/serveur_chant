@@ -47,6 +47,10 @@ try {
             handleAuteurs($pdo);
             break;
 
+        case 'chant_detail':
+            handleChantDetail($pdo);
+            break;
+
         case 'chant_delete':
             handleChantDelete($pdo);
             break;
@@ -499,6 +503,47 @@ function saveChantAuteurs(PDO $pdo, int $chantId, string $rawAuteurs): void
         $pdo->rollBack();
         throw $error;
     }
+}
+
+/**
+ * Everything known about one chant: metadata, authors and linked files.
+ */
+function handleChantDetail(PDO $pdo): void
+{
+    $id = nullableInt('id', 1, PHP_INT_MAX);
+    if ($id === null) {
+        throw new RuntimeException('Identifiant de chant manquant.');
+    }
+
+    $statement = $pdo->prepare(
+        'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
+                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID) AS FileCount,
+                (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
+                 FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
+                 WHERE ca.ChantID = c.ID) AS Auteurs
+         FROM `Chant` c
+         WHERE c.ID = :id'
+    );
+    $statement->execute([':id' => $id]);
+    $chant = $statement->fetch();
+
+    if ($chant === false) {
+        throw new RuntimeException('Chant introuvable.');
+    }
+
+    $files = $pdo->prepare(
+        'SELECT ID, NomFichier, DateAjout, ChantID, Tonalite, Accords, NbVoix, Informations
+         FROM `Fichier`
+         WHERE ChantID = :chant
+         ORDER BY NomFichier ASC'
+    );
+    $files->execute([':chant' => $id]);
+
+    respondJson(200, [
+        'success' => true,
+        'chant' => mapChantRow($chant),
+        'files' => array_map('mapFileRow', $files->fetchAll()),
+    ]);
 }
 
 function handleAuteurs(PDO $pdo): void

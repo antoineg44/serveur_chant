@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Informations du chant</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .chant-page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .chant-title {
+      margin: 0 0 4px;
+      font-size: clamp(1.4rem, 2vw, 1.9rem);
+    }
+
+    .chant-subtitle {
+      margin: 0 0 20px;
+      color: var(--ink-soft);
+    }
+
+    .chant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .chant-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+
+    .chant-card strong {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+
+    .chant-section {
+      margin-top: 24px;
+    }
+
+    .chant-section h2 {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 12px;
+    }
+
+    .chant-description {
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    .chant-files {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .chant-files th,
+    .chant-files td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .chant-file-link {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: #0f766e;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chant-file-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <main class="chant-page">
+    <h1 id="chant-title" class="chant-title">Informations du chant</h1>
+    <p id="chant-subtitle" class="chant-subtitle"></p>
+    <div id="chant-content">
+      <p class="hint" role="status">Chargement des informations...</p>
+    </div>
+  </main>
+
+  <script>
+    const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
+    const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+    const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
+    const LOCAL_DATA_API = './api/data.php';
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>'"]/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      }[character]));
+    }
+
+    function formatValue(value) {
+      return escapeHtml(String(value === null || value === undefined ? '' : value).trim() || '—');
+    }
+
+    function formatDate(value) {
+      if (!value) {
+        return '—';
+      }
+      const date = new Date(String(value).replace(' ', 'T'));
+      return Number.isNaN(date.getTime()) ? escapeHtml(value) : date.toLocaleString('fr-FR');
+    }
+
+    function redirectToLogin() {
+      const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      window.location.replace(`./login.html?return=${returnUrl}`);
+    }
+
+    async function fetchChant(chantId) {
+      const endpoints = [LOCAL_DATA_API, DATA_API];
+      const errors = [];
+
+      for (let index = 0; index < endpoints.length; index += 1) {
+        const baseUrl = endpoints[index];
+        const isLast = index === endpoints.length - 1;
+        const query = new URLSearchParams({ action: 'chant_detail', id: chantId }).toString();
+
+        try {
+          const response = await fetch(`${baseUrl}?${query}`, { credentials: 'include' });
+
+          if (response.status === 401) {
+            redirectToLogin();
+            return null;
+          }
+
+          const payload = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            if (!isLast && (response.status === 404 || response.status >= 500)) {
+              errors.push(`HTTP ${response.status} on ${baseUrl}`);
+              continue;
+            }
+            throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+          }
+
+          if (!payload || !payload.success) {
+            throw new Error((payload && payload.message) || 'Erreur API');
+          }
+
+          return payload;
+        } catch (error) {
+          if (!isLast) {
+            errors.push(`${baseUrl}: ${error.message}`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new Error(errors.join(' | ') || 'API inaccessible');
+    }
+
+    function openFile(chant, file) {
+      const path = [chant.path, chant.nom, file.nomFichier].filter(Boolean).join('/');
+      const url = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'openPageTab',
+          item: {
+            key: `visualisation-${path}`,
+            name: file.nomFichier,
+            title: file.nomFichier,
+            description: 'Visualisation',
+            url,
+          },
+        }, '*');
+        return;
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function render(chant, files) {
+      document.getElementById('chant-title').textContent = chant.nom;
+      document.getElementById('chant-subtitle').textContent = chant.path ? `Dossier : ${chant.path}` : 'A la racine';
+
+      const filesRows = files.map((file) => `
+        <tr>
+          <td><button type="button" class="chant-file-link" data-file-id="${file.id}">${escapeHtml(file.nomFichier)}</button></td>
+          <td>${formatValue(file.tonalite)}</td>
+          <td>${file.accords ? 'Oui' : 'Non'}</td>
+          <td>${file.nbVoix === null ? '—' : escapeHtml(String(file.nbVoix))}</td>
+          <td>${formatDate(file.dateAjout)}</td>
+          <td>${formatValue(file.informations)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('chant-content').innerHTML = `
+        <div class="chant-grid">
+          <div class="chant-card"><strong>Nom</strong><span>${formatValue(chant.nom)}</span></div>
+          <div class="chant-card"><strong>Dossier</strong><span>${formatValue(chant.path)}</span></div>
+          <div class="chant-card"><strong>Auteurs</strong><span>${formatValue(chant.auteurs)}</span></div>
+          <div class="chant-card"><strong>Cote</strong><span>${chant.cote === null ? '—' : `${chant.cote}/5`}</span></div>
+          <div class="chant-card"><strong>Date d'ajout</strong><span>${formatDate(chant.dateAjout)}</span></div>
+          <div class="chant-card"><strong>Fichiers</strong><span>${chant.fileCount}</span></div>
+        </div>
+
+        <section class="chant-section">
+          <h2>Informations</h2>
+          <p class="chant-description">${formatValue(chant.informations)}</p>
+        </section>
+
+        <section class="chant-section">
+          <h2>Fichiers</h2>
+          ${files.length ? `
+            <table class="chant-files">
+              <thead>
+                <tr>
+                  <th>Nom du fichier</th>
+                  <th>Tonalite</th>
+                  <th>Accords</th>
+                  <th>Nb voix</th>
+                  <th>Date d'ajout</th>
+                  <th>Informations</th>
+                </tr>
+              </thead>
+              <tbody>${filesRows}</tbody>
+            </table>
+          ` : '<p class="hint">Aucun fichier lie a ce chant.</p>'}
+        </section>
+      `;
+
+      document.querySelectorAll('[data-file-id]').forEach((button) => {
+        const file = files.find((item) => String(item.id) === button.dataset.fileId);
+        button.addEventListener('click', () => openFile(chant, file));
+      });
+    }
+
+    (async () => {
+      const chantId = new URLSearchParams(window.location.search).get('chantId') || '';
+
+      if (!chantId) {
+        document.getElementById('chant-content').innerHTML = '<p class="hint is-error">Aucun chant selectionne.</p>';
+        return;
+      }
+
+      try {
+        const payload = await fetchChant(chantId);
+        if (payload) {
+          render(payload.chant, payload.files || []);
+        }
+      } catch (error) {
+        document.getElementById('chant-content').innerHTML = `<p class="hint is-error">${escapeHtml(error.message)}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>
