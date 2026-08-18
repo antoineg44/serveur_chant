@@ -528,22 +528,96 @@ function add_new_part(element) {
     document.querySelector('#link_' + id_part).after(nav.body.firstChild);
     markAsChanged();
 }
-function modify_part(element) {
-    reset_modified_chant();
-    console.log("modify_part");
-    var id_part = element.closest("section").id.slice(5);
-    var name_part = prompt("Changer de nom :", decodage_path_javascript(id_part));
-    if(name_part == null || name_part == "" || name_part == decodage_path_javascript(id_part))return null;
+var pendingPartSectionId = null;
+
+function getUsedPartNames() {
+    return Array.prototype.map.call(
+        document.querySelectorAll("section[id^='part_'] h1[id^='h1_']"),
+        function(element) { return element.textContent.trim(); }
+    );
+}
+
+function applyPartRename(id_part, name_part) {
     document.getElementById("h1_"+id_part).innerHTML = name_part;
     document.getElementById("link_"+id_part).innerHTML = link_section(name_part);
     document.getElementById("h1_"+id_part).id = "h1_"+codage_path_javascript(name_part);
     document.getElementById("doc_"+id_part).id = "doc_"+codage_path_javascript(name_part);
     document.getElementById("link_"+id_part).id = "link_"+codage_path_javascript(name_part);
-    document.getElementById(id_part+"_link").id = codage_path_javascript(name_part);+"_link";
+    document.getElementById(id_part+"_link").id = codage_path_javascript(name_part)+"_link";
     document.getElementById("part_"+id_part).id = "part_"+codage_path_javascript(name_part);
     markAsChanged();
-
 }
+
+async function modify_part(element) {
+    reset_modified_chant();
+
+    var sectionId = element.closest("section").id.slice(5);
+    var currentName = decodage_path_javascript(sectionId);
+    var dialog = document.getElementById("partie-picker-dialog");
+    var select = document.getElementById("partie-picker-select");
+
+    try {
+        var response = await fetch(getProgrammeApiUrl() + "?action=parties", { credentials: 'include' });
+        var payload = await response.json().catch(function() { return null; });
+
+        if (!response.ok || !payload || !payload.success) {
+            throw new Error((payload && payload.message) || ("HTTP " + response.status));
+        }
+
+        // Parts already placed in the program cannot be selected twice.
+        var used = getUsedPartNames().filter(function(name) { return name !== currentName; });
+        var available = (payload.parties || []).filter(function(partie) {
+            return used.indexOf(partie.nom) === -1;
+        });
+
+        if (!available.length) {
+            alert("Toutes les parties disponibles sont deja utilisees dans ce programme.");
+            return;
+        }
+
+        select.innerHTML = "";
+        available.forEach(function(partie) {
+            var option = document.createElement("option");
+            option.value = partie.nom;
+            option.textContent = partie.nom;
+            option.selected = partie.nom === currentName;
+            select.appendChild(option);
+        });
+
+        pendingPartSectionId = sectionId;
+        dialog.showModal();
+    } catch (error) {
+        alert("Impossible de charger la liste des parties : " + error.message);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    var dialog = document.getElementById("partie-picker-dialog");
+    var form = document.getElementById("partie-picker-form");
+    if (!dialog || !form) {
+        return;
+    }
+
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        var name = document.getElementById("partie-picker-select").value;
+        if (pendingPartSectionId && name && name !== decodage_path_javascript(pendingPartSectionId)) {
+            applyPartRename(pendingPartSectionId, name);
+        }
+
+        pendingPartSectionId = null;
+        dialog.close();
+    });
+
+    dialog.querySelectorAll("[data-close-dialog]").forEach(function(button) {
+        button.addEventListener("click", function() {
+            pendingPartSectionId = null;
+            dialog.close();
+        });
+    });
+});
+
 var testing = null;
 function modify_chant(element) {
     console.log("modify_chant");

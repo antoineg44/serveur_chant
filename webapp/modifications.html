@@ -795,6 +795,17 @@
     </div>
     </div>
 
+    <dialog id="partie-picker-dialog" style="border:1px solid #cbd5e1;border-radius:12px;padding:18px;min-width:min(360px,92vw)">
+        <form id="partie-picker-form" method="dialog">
+            <h2 style="margin:0 0 12px;font-size:1.05rem">Choisir une partie</h2>
+            <select id="partie-picker-select" size="8" style="width:100%;padding:6px"></select>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+                <button type="button" data-close-dialog>Annuler</button>
+                <button type="submit">Valider</button>
+            </div>
+        </form>
+    </dialog>
+
     <script>
         let currentStep = 0;
         const steps = document.querySelectorAll(".step");
