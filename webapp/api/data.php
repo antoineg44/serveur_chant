@@ -114,21 +114,6 @@ function requireAuthenticatedUser(): void
     }
 }
 
-function isAdminUser(): bool
-{
-    return ($_SESSION['user']['role'] ?? '') === 'admin';
-}
-
-function requireWriteAccess(): void
-{
-    if (!isAdminUser()) {
-        respondJson(403, [
-            'success' => false,
-            'message' => 'Droits insuffisants pour modifier la base.',
-        ]);
-    }
-}
-
 function resolveDatabase(): PDO
 {
     $legacyConnectionFile = dirname(__DIR__, 2) . '/php/connexion.php';
@@ -300,7 +285,7 @@ function handleList(PDO $pdo): void
         'success' => true,
         'path' => $path,
         'parent' => $path === '' ? null : '',
-        'canEdit' => isAdminUser(),
+        'canEdit' => true,
         'folders' => $folders,
         'chants' => array_map('mapChantRow', $statement->fetchAll()),
     ]);
@@ -331,7 +316,7 @@ function handleSearch(PDO $pdo): void
     if (mb_strlen($term) < 2) {
         respondJson(200, [
             'success' => true,
-            'canEdit' => isAdminUser(),
+            'canEdit' => true,
             'chants' => [],
         ]);
     }
@@ -358,7 +343,7 @@ function handleSearch(PDO $pdo): void
 
     respondJson(200, [
         'success' => true,
-        'canEdit' => isAdminUser(),
+        'canEdit' => true,
         'chants' => array_map('mapChantRow', $statement->fetchAll()),
     ]);
 }
@@ -384,15 +369,13 @@ function handleFiles(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'chantId' => $chantId,
-        'canEdit' => isAdminUser(),
+        'canEdit' => true,
         'files' => array_map('mapFileRow', $statement->fetchAll()),
     ]);
 }
 
 function handleChantSave(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $id = nullableInt('id', 1, PHP_INT_MAX);
     $nom = normalizeName(requestValue('nom'), 'Le nom du chant');
     $path = normalizePath(requestValue('path'));
@@ -447,8 +430,6 @@ function handleChantSave(PDO $pdo): void
 
 function handleChantDelete(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $id = nullableInt('id', 1, PHP_INT_MAX);
     if ($id === null) {
         throw new RuntimeException('Identifiant de chant manquant.');
@@ -465,8 +446,6 @@ function handleChantDelete(PDO $pdo): void
 
 function handleFileSave(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $id = nullableInt('id', 1, PHP_INT_MAX);
     $chantId = nullableInt('chant_id', 1, PHP_INT_MAX);
     $upload = pendingUpload();
@@ -727,8 +706,6 @@ function validateFolderName(string $name): string
 
 function handleFileDelete(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $id = nullableInt('id', 1, PHP_INT_MAX);
     if ($id === null) {
         throw new RuntimeException('Identifiant de fichier manquant.');
@@ -748,8 +725,6 @@ function handleFileDelete(PDO $pdo): void
  */
 function handleFileMove(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $id = nullableInt('id', 1, PHP_INT_MAX);
     $targetChantId = nullableInt('chant_id', 1, PHP_INT_MAX);
 
@@ -830,8 +805,6 @@ function handleChantOptions(PDO $pdo): void
  */
 function handleSeed(PDO $pdo): void
 {
-    requireWriteAccess();
-
     $reset = booleanValue('reset');
 
     if ($reset) {

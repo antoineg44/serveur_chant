@@ -6,7 +6,6 @@ const refreshButton = document.getElementById('refresh-list');
 const newChantButton = document.getElementById('new-chant');
 const editChantButton = document.getElementById('edit-chant');
 const deleteChantButton = document.getElementById('delete-chant');
-const seedButton = document.getElementById('seed-database');
 const searchInput = document.getElementById('data-search-input');
 const dataBody = document.getElementById('data-body');
 const breadcrumbs = document.getElementById('breadcrumbs');
@@ -25,6 +24,7 @@ const moveSearchInput = document.getElementById('move-search');
 
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 const LOCAL_API_URL = './api/data.php';
 const REMOTE_API_URL = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
 const TABLE_COLUMN_COUNT = 4;
@@ -190,7 +190,6 @@ function updateActionButtons() {
   const selected = getSelectedChant();
   editChantButton.disabled = !canEdit || !selected;
   deleteChantButton.disabled = !canEdit || !selected;
-  seedButton.disabled = !canEdit;
   goUpButton.disabled = Boolean(searchTerm) || parentPath === null;
 }
 
@@ -241,13 +240,19 @@ function renderList() {
   }
 
   chants.forEach((chant) => {
-    const row = document.createElement('tr');
-    row.classList.toggle('is-selected', chant.id === selectedChantId);
-    row.addEventListener('click', () => {
+    const toggleChant = () => {
       selectedChantId = chant.id;
+      expandedChantId = expandedChantId === chant.id ? null : chant.id;
       renderList();
       updateActionButtons();
-    });
+      if (expandedChantId === chant.id) {
+        loadFiles(chant.id);
+      }
+    };
+
+    const row = document.createElement('tr');
+    row.classList.toggle('is-selected', chant.id === selectedChantId);
+    row.addEventListener('click', toggleChant);
 
     const nameCell = document.createElement('td');
     const toggle = document.createElement('button');
@@ -258,13 +263,7 @@ function renderList() {
     toggle.title = 'Afficher les fichiers';
     toggle.addEventListener('click', (event) => {
       event.stopPropagation();
-      selectedChantId = chant.id;
-      expandedChantId = expandedChantId === chant.id ? null : chant.id;
-      renderList();
-      updateActionButtons();
-      if (expandedChantId === chant.id) {
-        loadFiles(chant.id);
-      }
+      toggleChant();
     });
     nameCell.appendChild(toggle);
 
@@ -336,6 +335,35 @@ function createFilesRow(chant) {
   return row;
 }
 
+// Physical location under /pdf: <Path>/<Nom du chant>/<NomFichier>.
+function buildFilePath(chant, file) {
+  return [chant.path, chant.nom, file.nomFichier].filter(Boolean).join('/');
+}
+
+function openFileInNewTab(chant, file) {
+  const path = buildFilePath(chant, file);
+
+  if (!file.nomFichier.toLowerCase().endsWith('.pdf')) {
+    window.open(`${PDF_ROOT.replace(/\/$/, '')}/${path}`, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  const item = { path, name: file.nomFichier, type: 'file', showFolderPanel: true };
+
+  if (typeof window.openPdfInNewTab === 'function') {
+    window.openPdfInNewTab(item);
+    return;
+  }
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'openPdf', item }, '*');
+    return;
+  }
+
+  const query = new URLSearchParams({ lien: `/${path}`, folderPanel: 'visible' }).toString();
+  window.open(`./visualisation.html?${query}`, '_blank', 'noopener,noreferrer');
+}
+
 function fileIconSource(fileName) {
   const lower = String(fileName || '').toLowerCase();
 
@@ -393,7 +421,17 @@ function renderFiles(chant, files) {
       icon.alt = '';
       nameCell.appendChild(icon);
     }
-    nameCell.appendChild(document.createTextNode(file.nomFichier));
+
+    const openLink = document.createElement('button');
+    openLink.type = 'button';
+    openLink.className = 'crumb';
+    openLink.textContent = file.nomFichier;
+    openLink.title = 'Ouvrir dans un nouvel onglet';
+    openLink.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openFileInNewTab(chant, file);
+    });
+    nameCell.appendChild(openLink);
     row.appendChild(nameCell);
 
     row.appendChild(createCell(file.tonalite || '-'));
@@ -738,28 +776,6 @@ deleteChantButton.addEventListener('click', async () => {
     await refreshCurrentView();
   } catch (error) {
     setStatus(error.message, true);
-  }
-});
-
-seedButton.addEventListener('click', async () => {
-  if (!window.confirm('Remplir les tables a partir du contenu du dossier /pdf ?')) {
-    return;
-  }
-
-  seedButton.disabled = true;
-  setStatus('Initialisation de la base en cours...');
-
-  try {
-    const payload = await apiPost('seed', {});
-    clearSearchFilter();
-    selectedChantId = null;
-    expandedChantId = null;
-    await loadPath('');
-    setStatus(`Base initialisee : ${payload.chants} chant(s) et ${payload.fichiers} fichier(s) importes.`);
-  } catch (error) {
-    setStatus(error.message, true);
-  } finally {
-    updateActionButtons();
   }
 });
 

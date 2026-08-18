@@ -202,6 +202,10 @@
           <p><a href="./admin/admin-users.html">Aller a l'administration des utilisateurs</a></p>
           <p><a href="./admin/historic.html">Aller a la page historique</a></p>
           <p><a href="./admin/logins.html">Aller a la page connexions</a></p>
+          <p>
+            <button id="seed-database" class="btn btn-ghost" type="button" title="Remplir une premiere fois les tables depuis le dossier /pdf">Initialiser la base</button>
+          </p>
+          <p class="hint" id="seed-status" role="status"></p>
         </div>
       </article>
     </section>
@@ -231,6 +235,40 @@
         || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
       await fetch(`${AUTH_API}?action=logout`, { credentials: 'include' });
       window.location.replace('./login.html');
+    });
+
+    document.getElementById('seed-database').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const status = document.getElementById('seed-status');
+
+      if (!window.confirm('Remplir les tables a partir du contenu du dossier /pdf ?')) {
+        return;
+      }
+
+      const DATA_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.DATA_API)
+        || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/data.php`;
+
+      button.disabled = true;
+      status.classList.remove('is-error');
+      status.textContent = 'Initialisation de la base en cours...';
+
+      try {
+        const body = new FormData();
+        body.append('action', 'seed');
+        const response = await fetch(DATA_API, { method: 'POST', body, credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload || !payload.success) {
+          throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+        }
+
+        status.textContent = `Base initialisee : ${payload.chants} chant(s) et ${payload.fichiers} fichier(s) importes.`;
+      } catch (error) {
+        status.classList.add('is-error');
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
     });
   </script>
 </body>
