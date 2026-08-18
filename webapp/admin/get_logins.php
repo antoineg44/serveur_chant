@@ -3,8 +3,7 @@
 
 	$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim((string) $_SERVER['HTTP_ORIGIN']) : '';
 	$allowedOrigins = array_filter([
-		$addr_server_test ?? '',
-		'https://partitions.ovh',
+		WEBAPP_ALLOWED_ORIGIN,
 		'http://localhost',
 		'http://127.0.0.1',
 		'null'

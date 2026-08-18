@@ -152,7 +152,7 @@
     <h1>Connexions utilisateurs</h1>
     <div class="actions">
       <a href="../index.html" class="btn btn-ghost">← Retour</a>
-      <a href="https://partitions.ovh" class="btn btn-ghost">Accueil</a>
+      <a id="home-link" href="#" class="btn btn-ghost">Accueil</a>
     </div>
   </div>
 
@@ -435,7 +435,7 @@
     }
 
     function initHistoricTables() {
-      var apiBase = 'https://partitions.ovh/webapp/admin/';
+      var apiBase = (window.WEBAPP_CONFIG?.BASE_URL || 'https://partitions.ovh/') + 'webapp/admin/';
 
       if (typeof window.DataTable !== 'function') {
         initFallbackTables(apiBase);
@@ -454,6 +454,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+      // Set home link to BASE_URL
+      var homeLink = document.getElementById('home-link');
+      if (homeLink && window.WEBAPP_CONFIG?.BASE_URL) {
+        homeLink.href = window.WEBAPP_CONFIG.BASE_URL;
+      }
+
       loadScriptWithFallback([
         'https://cdn.datatables.net/2.0.8/js/dataTables.js',
         'https://cdnjs.cloudflare.com/ajax/libs/datatables/2.0.8/dataTables.min.js',
