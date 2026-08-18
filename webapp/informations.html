@@ -89,6 +89,10 @@
       line-height: 1.7;
     }
 
+    .messe-popup-description {
+      white-space: pre-wrap;
+    }
+
     .messe-popup-list {
       padding-left: 18px;
     }
@@ -349,7 +353,7 @@
 
         <div class="messe-popup-section">
           <h3>Description</h3>
-          <p class="messe-popup-description">${formatDisplayValue(data.description)}</p>
+          <p class="messe-popup-description">${escapeHtml(formatDisplayValue(data.description))}</p>
         </div>
 
         <div class="messe-popup-section">
