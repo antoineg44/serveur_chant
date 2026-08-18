@@ -280,17 +280,6 @@ function renderList() {
 
     nameCell.appendChild(document.createTextNode(chant.nom));
 
-    const infoButton = document.createElement('button');
-    infoButton.type = 'button';
-    infoButton.className = 'btn btn-ghost';
-    infoButton.textContent = "Plus d'informations";
-    infoButton.style.marginLeft = '10px';
-    infoButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      openChantDescription(chant);
-    });
-    nameCell.appendChild(infoButton);
-
     row.appendChild(nameCell);
 
     row.appendChild(createCell(formatCote(chant.cote)));
@@ -328,6 +317,16 @@ function createFilesRow(chant) {
   const title = document.createElement('strong');
   title.textContent = `Fichiers de "${chant.nom}"`;
   toolbar.appendChild(title);
+
+  const infoButton = document.createElement('button');
+  infoButton.type = 'button';
+  infoButton.className = 'btn btn-ghost';
+  infoButton.textContent = "Plus d'informations";
+  infoButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openChantDescription(chant);
+  });
+  toolbar.appendChild(infoButton);
 
   if (canEdit) {
     const addButton = document.createElement('button');

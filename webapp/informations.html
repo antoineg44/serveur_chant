@@ -360,7 +360,7 @@
           ? String(Number(item.chantId))
           : '';
         const infoButton = path
-          ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}"${chantId ? ` data-chant-info-id="${chantId}"` : ''}>i</button>`
+          ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}" data-chant-info-name="${escapeHtml(item.name)}"${chantId ? ` data-chant-info-id="${chantId}"` : ''}>i</button>`
           : '<button type="button" class="chant-info-button" title="Aucun fichier associe" aria-label="Informations indisponibles" disabled>i</button>';
         return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong>${infoButton}</div>${pathMarkup}</div>`;
       }).join('');
@@ -528,19 +528,46 @@
         button.addEventListener('click', (event) => {
           event.stopPropagation();
 
-          const infoWindow = window.open('about:blank', '_blank');
-          if (!infoWindow) {
+          const isEmbedded = Boolean(window.parent && window.parent !== window);
+          const infoWindow = isEmbedded ? null : window.open('about:blank', '_blank');
+          if (!isEmbedded && !infoWindow) {
             return;
           }
 
-          void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow);
+          void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow, button.dataset.chantInfoName);
         });
       });
     }
 
-    async function openChantInfo(filePath, chantId, infoWindow) {
+    function goToChantDescription(chantId, infoWindow, fileName) {
+      const url = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+      const name = fileName || 'Chant';
+
+      if (window.parent && window.parent !== window) {
+        infoWindow?.close();
+        window.parent.postMessage({
+          type: 'openPageTab',
+          item: {
+            key: `chant-${chantId}`,
+            name,
+            title: `Informations - ${name}`,
+            description: 'Informations du chant',
+            url,
+          },
+        }, '*');
+        return;
+      }
+
+      if (infoWindow) {
+        infoWindow.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    }
+
+    async function openChantInfo(filePath, chantId, infoWindow, fileName) {
       if (chantId) {
-        infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+        goToChantDescription(chantId, infoWindow, fileName);
         return;
       }
 
@@ -556,7 +583,7 @@
         const response = await fetch(`${apiUrl}?${query}`, { credentials: 'include' });
         const payload = await response.json().catch(() => null);
         if (response.status === 401) {
-          infoWindow.close();
+          infoWindow?.close();
           redirectToLogin();
           return;
         }
@@ -564,9 +591,9 @@
           throw new Error((payload && payload.message) || 'Informations du chant indisponibles.');
         }
 
-        infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(payload.chantId)}`;
+        goToChantDescription(payload.chantId, infoWindow, fileName);
       } catch (error) {
-        infoWindow.close();
+        infoWindow?.close();
         console.error(error);
       }
     }
