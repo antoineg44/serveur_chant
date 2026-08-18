@@ -45,6 +45,11 @@ if ($action === 'download_program') {
     exit;
 }
 
+if ($action === 'download_program_complete') {
+    handleDownloadProgramComplete($pdfRoot);
+    exit;
+}
+
 try {
     switch ($action) {
         case 'list':
@@ -830,6 +835,283 @@ function handleDownloadProgram(string $root): void
     readfile($tempFile);
     @unlink($tempFile);
     exit;
+}
+
+function handleDownloadProgramComplete(string $root): void
+{
+    if (!class_exists('ZipArchive')) {
+        respondJson(500, [
+            'success' => false,
+            'message' => 'ZipArchive n est pas disponible sur le serveur.',
+        ]);
+    }
+
+    $relative = requestValue('path');
+    $normalized = normalizeRelativePath($relative);
+
+    if ($normalized === '') {
+        respondJson(400, [
+            'success' => false,
+            'message' => 'Aucun programme selectionne pour le telechargement.',
+        ]);
+    }
+
+    $programFile = absolutePath($root, $normalized);
+    if (!is_file($programFile)) {
+        respondJson(404, [
+            'success' => false,
+            'message' => 'Fichier de programme introuvable.',
+        ]);
+    }
+
+    $lower = strtolower($programFile);
+    if (!str_ends_with($lower, '.json') && !str_ends_with($lower, '.txt')) {
+        respondJson(400, [
+            'success' => false,
+            'message' => 'Le telechargement de programme est disponible uniquement pour les fichiers .json et .txt.',
+        ]);
+    }
+
+    $programDirectory = dirname($normalized);
+    $content = file_get_contents($programFile);
+    if ($content === false) {
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible de lire le fichier de programme.',
+        ]);
+    }
+
+    // Parse program to extract parts and chants
+    $programData = parseProgramData($programFile, $content);
+    
+    // Collect files organized by part
+    $filesByPart = collectFilesByPart($root, $programDirectory, $programData);
+
+    $zipBaseName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', pathinfo($programFile, PATHINFO_FILENAME));
+    if ($zipBaseName === '') {
+        $zipBaseName = 'programme_complet';
+    }
+    $zipName = $zipBaseName . '_complet.zip';
+
+    $tempFile = tempnam(sys_get_temp_dir(), 'programme_complete_zip_');
+    if ($tempFile === false) {
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible de creer un fichier temporaire.',
+        ]);
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($tempFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        @unlink($tempFile);
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible d initialiser l archive ZIP.',
+        ]);
+    }
+
+    // Add files organized by part
+    foreach ($filesByPart as $partName => $files) {
+        $usedNames = [];
+        foreach ($files as $absolutePath) {
+            if (!is_file($absolutePath) || !is_readable($absolutePath)) {
+                continue;
+            }
+
+            $fileName = basename($absolutePath);
+            $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+            $zipPath = $partName . '/' . $fileName;
+            $counter = 1;
+
+            while ($zip->locateName($zipPath) !== false) {
+                $suffix = ' (' . $counter . ')';
+                $zipPath = $partName . '/' . $baseName . $suffix . ($extension !== '' ? '.' . $extension : '');
+                $counter++;
+            }
+
+            $zip->addFile($absolutePath, $zipPath);
+        }
+    }
+
+    $zip->close();
+
+    if (!is_file($tempFile) || filesize($tempFile) === 0) {
+        @unlink($tempFile);
+        respondJson(500, [
+            'success' => false,
+            'message' => 'Impossible de generer le fichier ZIP.',
+        ]);
+    }
+
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . addslashes($zipName) . '"');
+    header('Content-Length: ' . (string) filesize($tempFile));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Pragma: public');
+
+    readfile($tempFile);
+    @unlink($tempFile);
+    exit;
+}
+
+function parseProgramData(string $programFile, string $content): array
+{
+    $extension = strtolower(pathinfo($programFile, PATHINFO_EXTENSION));
+    
+    if ($extension === 'json') {
+        $data = json_decode($content, true);
+        if (!is_array($data)) {
+            return [];
+        }
+
+        $parts = [];
+        $currentPart = 'Divers';
+        
+        if (isset($data['chants']) && is_array($data['chants'])) {
+            foreach ($data['chants'] as $chant) {
+                if (!is_array($chant)) {
+                    continue;
+                }
+
+                if ($chant['type'] === 'partie') {
+                    $currentPart = $chant['name'] ?? 'Divers';
+                    if (!isset($parts[$currentPart])) {
+                        $parts[$currentPart] = [];
+                    }
+                } elseif ($chant['type'] === 'chant') {
+                    if (!isset($parts[$currentPart])) {
+                        $parts[$currentPart] = [];
+                    }
+                    $path = isset($chant['path']) && is_string($chant['path']) ? trim($chant['path']) : '';
+                    if ($path !== '') {
+                        $parts[$currentPart][] = [
+                            'name' => $chant['name'] ?? 'Chant',
+                            'path' => $path,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $parts;
+    } else {
+        // Parse TXT format
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        if (!is_array($lines)) {
+            return [];
+        }
+
+        $parts = [];
+        $currentPart = 'Divers';
+        $count = count($lines);
+
+        for ($i = 0; $i < $count; $i++) {
+            $line = trim((string) $lines[$i]);
+            
+            if ($line === '') {
+                continue;
+            }
+
+            // Check for part
+            $partMatch = preg_match('/^\[(.+)\]$/', $line, $matches);
+            if ($partMatch) {
+                $currentPart = $matches[1];
+                if (!isset($parts[$currentPart])) {
+                    $parts[$currentPart] = [];
+                }
+                continue;
+            }
+
+            // Check for chant
+            if ($line[0] === '#') {
+                $chantName = trim(substr($line, 1));
+                $path = '';
+                
+                if ($i + 1 < $count) {
+                    $next = trim((string) $lines[$i + 1]);
+                    if (str_starts_with($next, 'path =')) {
+                        $path = trim(substr($next, 6));
+                        $i++;
+                    }
+                }
+
+                if ($path !== '') {
+                    if (!isset($parts[$currentPart])) {
+                        $parts[$currentPart] = [];
+                    }
+                    $parts[$currentPart][] = [
+                        'name' => $chantName,
+                        'path' => $path,
+                    ];
+                }
+            }
+        }
+
+        return $parts;
+    }
+}
+
+function collectFilesByPart(string $root, string $programDirectory, array $programData): array
+{
+    $filesByPart = [];
+    $processedDirs = [];
+
+    foreach ($programData as $partName => $chants) {
+        $sanitizedPartName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $partName);
+        if ($sanitizedPartName === '') {
+            $sanitizedPartName = 'Divers';
+        }
+
+        $filesByPart[$sanitizedPartName] = [];
+
+        foreach ($chants as $chant) {
+            $reference = $chant['path'] ?? '';
+            if ($reference === '') {
+                continue;
+            }
+
+            $resolved = resolveProgramReferencePath($root, $programDirectory, $reference);
+            if ($resolved === null) {
+                continue;
+            }
+
+            // Get directory of the file
+            $sourceDir = dirname($resolved);
+            $dirKey = realpath($sourceDir);
+            
+            // If we haven't processed this directory yet for this part, add all files
+            if (!isset($processedDirs[$sanitizedPartName]) || !in_array($dirKey, $processedDirs[$sanitizedPartName], true)) {
+                if (!isset($processedDirs[$sanitizedPartName])) {
+                    $processedDirs[$sanitizedPartName] = [];
+                }
+                $processedDirs[$sanitizedPartName][] = $dirKey;
+
+                // Add all files from this directory
+                if (is_dir($sourceDir)) {
+                    $files = scandir($sourceDir);
+                    if (is_array($files)) {
+                        foreach ($files as $file) {
+                            if ($file === '.' || $file === '..') {
+                                continue;
+                            }
+
+                            $fullPath = $sourceDir . DIRECTORY_SEPARATOR . $file;
+                            if (is_file($fullPath)) {
+                                $filesByPart[$sanitizedPartName][] = $fullPath;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove duplicates
+        $filesByPart[$sanitizedPartName] = array_unique($filesByPart[$sanitizedPartName]);
+    }
+
+    return $filesByPart;
 }
 
 function collectProgramFileReferences(string $root, string $programFile, string $programRelative): array
