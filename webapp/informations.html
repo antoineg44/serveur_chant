@@ -341,7 +341,7 @@
         </div>
         
         <div class="messe-popup-grid">
-          <div class="messe-popup-card"><strong>Nom</strong><span>${formatDisplayValue(data.name)}</span></div>
+          <div class="messe-popup-card"><strong>Paroisse</strong><span>${formatDisplayValue(data.paroisse)}</span></div>
           <div class="messe-popup-card"><strong>Date</strong><span>${formatDisplayValue(data.date)}</span></div>
           <div class="messe-popup-card"><strong>Lieu</strong><span>${formatDisplayValue(data.lieu)}</span></div>
           <div class="messe-popup-card"><strong>Occasion</strong><span>${formatDisplayValue(data.occasion)}</span></div>
@@ -514,7 +514,8 @@
         date: programme.date,
         lieu: programme.lieu,
         occasion: programme.occasion,
-        description: programme.paroisse ? `Paroisse : ${programme.paroisse}` : '',
+        paroisse: programme.paroisse,
+        description: programme.description || '',
         program,
       });
     }
