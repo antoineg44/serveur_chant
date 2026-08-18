@@ -6,6 +6,7 @@ const refreshButton = document.getElementById('refresh-list');
 const newChantButton = document.getElementById('new-chant');
 const editChantButton = document.getElementById('edit-chant');
 const deleteChantButton = document.getElementById('delete-chant');
+const seedButton = document.getElementById('seed-database');
 const searchInput = document.getElementById('data-search-input');
 const dataBody = document.getElementById('data-body');
 const breadcrumbs = document.getElementById('breadcrumbs');
@@ -179,6 +180,7 @@ function updateActionButtons() {
   const selected = getSelectedChant();
   editChantButton.disabled = !canEdit || !selected;
   deleteChantButton.disabled = !canEdit || !selected;
+  seedButton.disabled = !canEdit;
   goUpButton.disabled = Boolean(searchTerm) || parentPath === null;
 }
 
@@ -604,6 +606,28 @@ deleteChantButton.addEventListener('click', async () => {
     await refreshCurrentView();
   } catch (error) {
     setStatus(error.message, true);
+  }
+});
+
+seedButton.addEventListener('click', async () => {
+  if (!window.confirm('Remplir les tables a partir du contenu du dossier /pdf ?')) {
+    return;
+  }
+
+  seedButton.disabled = true;
+  setStatus('Initialisation de la base en cours...');
+
+  try {
+    const payload = await apiPost('seed', {});
+    clearSearchFilter();
+    selectedChantId = null;
+    expandedChantId = null;
+    await loadPath('');
+    setStatus(`Base initialisee : ${payload.chants} chant(s) et ${payload.fichiers} fichier(s) importes.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    updateActionButtons();
   }
 });
 

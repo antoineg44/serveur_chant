@@ -17,6 +17,8 @@ requireAuthenticatedUser();
 
 const DATA_MAX_PATH_LENGTH = 500;
 const DATA_MAX_NAME_LENGTH = 255;
+const DATA_SEED_EXTENSIONS = ['pdf', 'mp3', 'm4a', 'musicxml', 'mxl', 'xml'];
+const DATA_SEED_EXCLUDED_ROOTS = ['Recycle Bin', 'programmes'];
 
 $action = (string) ($_REQUEST['action'] ?? 'list');
 
@@ -51,6 +53,10 @@ try {
 
         case 'file_delete':
             handleFileDelete($pdo);
+            break;
+
+        case 'seed':
+            handleSeed($pdo);
             break;
 
         default:
@@ -541,6 +547,130 @@ function handleFileDelete(PDO $pdo): void
         'success' => true,
         'deleted' => $statement->rowCount(),
     ]);
+}
+
+/**
+ * First-time population: walks the /pdf tree and creates the folder paths,
+ * one Chant per file base name and one Fichier per physical file.
+ */
+function handleSeed(PDO $pdo): void
+{
+    requireWriteAccess();
+
+    $reset = booleanValue('reset');
+
+    if ($reset) {
+        $pdo->exec('DELETE FROM `Fichier`');
+        $pdo->exec('DELETE FROM `Chant`');
+    } elseif ((int) $pdo->query('SELECT COUNT(*) FROM `Chant`')->fetchColumn() > 0) {
+        throw new RuntimeException('La base contient deja des chants. Utilisez la reinitialisation pour repartir de zero.');
+    }
+
+    $pdfRoot = realpath(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'pdf');
+    if ($pdfRoot === false || !is_dir($pdfRoot)) {
+        throw new RuntimeException('Dossier /pdf introuvable.');
+    }
+
+    $grouped = collectSeedEntries($pdfRoot);
+    $timestamp = currentTimestamp();
+
+    $insertChant = $pdo->prepare(
+        'INSERT INTO `Chant` (Nom, Path, DateAjout, Cote, Informations) VALUES (:nom, :path, :date, NULL, NULL)'
+    );
+    $insertFile = $pdo->prepare(
+        'INSERT INTO `Fichier` (NomFichier, DateAjout, ChantID, Tonalite, Accords, NbVoix, Informations)
+         VALUES (:nom, :date, :chant, NULL, 0, NULL, NULL)'
+    );
+
+    $chantCount = 0;
+    $fileCount = 0;
+
+    $pdo->beginTransaction();
+
+    try {
+        foreach ($grouped as $entry) {
+            $insertChant->execute([
+                ':nom' => $entry['nom'],
+                ':path' => $entry['path'],
+                ':date' => $timestamp,
+            ]);
+            $chantId = (int) $pdo->lastInsertId();
+            $chantCount += 1;
+
+            foreach ($entry['files'] as $fileName) {
+                $insertFile->execute([
+                    ':nom' => $fileName,
+                    ':date' => $timestamp,
+                    ':chant' => $chantId,
+                ]);
+                $fileCount += 1;
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        $pdo->rollBack();
+        throw $error;
+    }
+
+    respondJson(200, [
+        'success' => true,
+        'chants' => $chantCount,
+        'fichiers' => $fileCount,
+    ]);
+}
+
+function collectSeedEntries(string $pdfRoot): array
+{
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($pdfRoot, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    $grouped = [];
+
+    foreach ($iterator as $file) {
+        if (!$file->isFile()) {
+            continue;
+        }
+
+        $extension = strtolower($file->getExtension());
+        if (!in_array($extension, DATA_SEED_EXTENSIONS, true)) {
+            continue;
+        }
+
+        $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($pdfRoot) + 1));
+        $rootSegment = explode('/', $relative)[0];
+        if (in_array($rootSegment, DATA_SEED_EXCLUDED_ROOTS, true)) {
+            continue;
+        }
+
+        $fileName = $file->getBasename();
+        $directory = trim((string) str_replace('\\', '/', dirname($relative)), '/');
+        if ($directory === '.') {
+            $directory = '';
+        }
+
+        $chantName = mb_substr($file->getBasename('.' . $file->getExtension()), 0, DATA_MAX_NAME_LENGTH);
+        if ($chantName === '') {
+            continue;
+        }
+
+        $key = mb_strtolower($directory . '/' . $chantName);
+        if (!isset($grouped[$key])) {
+            $grouped[$key] = [
+                'nom' => $chantName,
+                'path' => mb_substr($directory, 0, DATA_MAX_PATH_LENGTH),
+                'files' => [],
+            ];
+        }
+
+        $grouped[$key]['files'][] = mb_substr($fileName, 0, DATA_MAX_NAME_LENGTH);
+    }
+
+    ksort($grouped);
+
+    return $grouped;
 }
 
 function mapChantRow(array $row): array
