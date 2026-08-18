@@ -130,7 +130,8 @@
 		.program-sidebar-toggle-floating {
 			position: fixed;
 			top: 16px;
-			z-index: 4;
+			/* Stays under the sidebars so an open panel is never covered. */
+			z-index: 2;
 			display: none;
 			padding: 10px 14px;
 			border: 1px solid rgba(148, 163, 184, 0.22);
