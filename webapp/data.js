@@ -11,12 +11,16 @@ const searchInput = document.getElementById('data-search-input');
 const dataBody = document.getElementById('data-body');
 const breadcrumbs = document.getElementById('breadcrumbs');
 const statusElement = document.getElementById('data-status');
+const chantColumnHeaders = document.querySelectorAll('[data-chant-column]');
 const chantDialog = document.getElementById('chant-dialog');
 const chantForm = document.getElementById('chant-form');
 const chantDialogTitle = document.getElementById('chant-dialog-title');
 const fileDialog = document.getElementById('file-dialog');
 const fileForm = document.getElementById('file-form');
 const fileDialogTitle = document.getElementById('file-dialog-title');
+const fileUploadField = document.getElementById('file-upload-field');
+const moveDialog = document.getElementById('move-dialog');
+const moveForm = document.getElementById('move-form');
 
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
@@ -37,6 +41,7 @@ let searchDebounceTimer = null;
 let searchRequestId = 0;
 let editingChantId = null;
 let editingFileContext = null;
+let movingFileId = null;
 
 // Path holds a single folder name, so any nesting is collapsed away.
 function normalizePath(value) {
@@ -203,6 +208,13 @@ function createCell(text, className) {
 function renderList() {
   dataBody.innerHTML = '';
 
+  // Cote / Fichiers / Informations only make sense when at least one chant is listed.
+  const showChantColumns = chants.length > 0;
+  const columnCount = showChantColumns ? TABLE_COLUMN_COUNT : 1;
+  chantColumnHeaders.forEach((header) => {
+    header.hidden = !showChantColumns;
+  });
+
   if (!searchTerm) {
     folders.forEach((folder) => {
       const row = document.createElement('tr');
@@ -217,9 +229,11 @@ function renderList() {
       nameCell.appendChild(link);
 
       row.appendChild(nameCell);
-      row.appendChild(createCell('-'));
-      row.appendChild(createCell('-'));
-      row.appendChild(createCell('-'));
+      if (showChantColumns) {
+        row.appendChild(createCell('-'));
+        row.appendChild(createCell('-'));
+        row.appendChild(createCell('-'));
+      }
       dataBody.appendChild(row);
     });
   }
@@ -268,7 +282,7 @@ function renderList() {
   if (!dataBody.children.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = TABLE_COLUMN_COUNT;
+    cell.colSpan = columnCount;
     cell.textContent = searchTerm ? 'Aucun resultat.' : 'Aucun element dans ce dossier.';
     row.appendChild(cell);
     dataBody.appendChild(row);
@@ -365,6 +379,15 @@ function renderFiles(chant, files) {
         openFileDialog(chant, file);
       });
 
+      const moveButton = document.createElement('button');
+      moveButton.type = 'button';
+      moveButton.className = 'btn btn-ghost';
+      moveButton.textContent = 'Deplacer';
+      moveButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openMoveDialog(chant, file);
+      });
+
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'btn btn-danger';
@@ -383,6 +406,7 @@ function renderFiles(chant, files) {
       });
 
       actions.appendChild(editButton);
+      actions.appendChild(moveButton);
       actions.appendChild(removeButton);
       row.appendChild(actions);
     }
@@ -503,6 +527,9 @@ function openChantDialog(chant) {
 function openFileDialog(chant, file) {
   editingFileContext = { chantId: chant.id, fileId: file ? file.id : null };
   fileDialogTitle.textContent = file ? 'Modifier le fichier' : 'Nouveau fichier';
+  fileForm.elements.file.value = '';
+  // Uploading only applies when creating a new entry.
+  fileUploadField.hidden = Boolean(file);
   fileForm.elements.nom_fichier.value = file ? file.nomFichier : '';
   fileForm.elements.tonalite.value = file ? file.tonalite : '';
   fileForm.elements.nb_voix.value = file && file.nbVoix !== null ? String(file.nbVoix) : '';
@@ -510,6 +537,53 @@ function openFileDialog(chant, file) {
   fileForm.elements.informations.value = file ? file.informations : '';
   fileDialog.showModal();
 }
+
+fileForm.elements.file.addEventListener('change', () => {
+  const [selected] = fileForm.elements.file.files;
+  if (selected && !fileForm.elements.nom_fichier.value.trim()) {
+    fileForm.elements.nom_fichier.value = selected.name;
+  }
+});
+
+async function openMoveDialog(chant, file) {
+  movingFileId = file.id;
+  const select = moveForm.elements.chant_id;
+  select.innerHTML = '';
+
+  try {
+    const payload = await apiGet('chant_options');
+    (payload.chants || []).forEach((option) => {
+      const element = document.createElement('option');
+      element.value = String(option.id);
+      element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
+      element.selected = option.id === chant.id;
+      select.appendChild(element);
+    });
+    moveDialog.showModal();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+moveForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  if (movingFileId === null) {
+    return;
+  }
+
+  try {
+    await apiPost('file_move', {
+      id: movingFileId,
+      chant_id: moveForm.elements.chant_id.value,
+    });
+    moveDialog.close();
+    movingFileId = null;
+    await refreshCurrentView();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
 
 chantForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -550,6 +624,11 @@ fileForm.addEventListener('submit', async (event) => {
   };
   if (editingFileContext.fileId !== null) {
     payload.id = editingFileContext.fileId;
+  }
+
+  const [selectedFile] = fileForm.elements.file.files;
+  if (selectedFile && editingFileContext.fileId === null) {
+    payload.file = selectedFile;
   }
 
   try {

@@ -55,6 +55,14 @@ try {
             handleFileDelete($pdo);
             break;
 
+        case 'file_move':
+            handleFileMove($pdo);
+            break;
+
+        case 'chant_options':
+            handleChantOptions($pdo);
+            break;
+
         case 'seed':
             handleSeed($pdo);
             break;
@@ -449,7 +457,11 @@ function handleFileSave(PDO $pdo): void
 
     $id = nullableInt('id', 1, PHP_INT_MAX);
     $chantId = nullableInt('chant_id', 1, PHP_INT_MAX);
-    $nomFichier = normalizeName(requestValue('nom_fichier'), 'Le nom du fichier');
+    $upload = pendingUpload();
+    $nomFichier = normalizeName(
+        requestValue('nom_fichier') !== '' ? requestValue('nom_fichier') : (string) ($upload['name'] ?? ''),
+        'Le nom du fichier'
+    );
     $tonalite = nullableText('tonalite', 16);
     $accords = booleanValue('accords');
     $nbVoix = nullableInt('nb_voix', 0, 32);
@@ -459,10 +471,15 @@ function handleFileSave(PDO $pdo): void
         throw new RuntimeException('Chaque fichier doit etre lie a un chant.');
     }
 
-    $exists = $pdo->prepare('SELECT 1 FROM `Chant` WHERE ID = :id');
-    $exists->execute([':id' => $chantId]);
-    if ($exists->fetchColumn() === false) {
+    $chant = $pdo->prepare('SELECT Nom, Path FROM `Chant` WHERE ID = :id');
+    $chant->execute([':id' => $chantId]);
+    $chantRow = $chant->fetch();
+    if ($chantRow === false) {
         throw new RuntimeException('Le chant lie est introuvable.');
+    }
+
+    if ($upload !== null) {
+        $nomFichier = storeUploadedFile($upload, (string) $chantRow['Path'], (string) $chantRow['Nom'], $nomFichier);
     }
 
     if ($id === null) {
@@ -504,6 +521,104 @@ function handleFileSave(PDO $pdo): void
     ]);
 }
 
+function pendingUpload(): ?array
+{
+    if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+        return null;
+    }
+
+    $file = $_FILES['file'];
+    $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+
+    if ($error === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ($error !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Echec du televersement (code ' . $error . ').');
+    }
+
+    return [
+        'name' => basename((string) ($file['name'] ?? '')),
+        'tmp_name' => (string) ($file['tmp_name'] ?? ''),
+    ];
+}
+
+/**
+ * Saves the uploaded file inside /pdf/<Path>/<Nom du chant>/ and returns the stored name.
+ */
+function storeUploadedFile(array $upload, string $chantPath, string $chantName, string $requestedName): string
+{
+    $fileName = validateFileName($requestedName !== '' ? $requestedName : $upload['name']);
+
+    $extension = strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION));
+    if (!in_array($extension, DATA_SEED_EXTENSIONS, true)) {
+        throw new RuntimeException('Extension de fichier non autorisee.');
+    }
+
+    $targetDir = chantDirectory($chantPath, $chantName);
+
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+        throw new RuntimeException('Impossible de creer le dossier du chant.');
+    }
+
+    $destination = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+    if (file_exists($destination)) {
+        throw new RuntimeException('Un fichier portant ce nom existe deja dans ce chant.');
+    }
+
+    if (!move_uploaded_file($upload['tmp_name'], $destination)) {
+        throw new RuntimeException('Impossible d\'enregistrer le fichier sur le serveur.');
+    }
+
+    return $fileName;
+}
+
+function chantDirectory(string $chantPath, string $chantName): string
+{
+    $pdfRoot = realpath(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'pdf');
+    if ($pdfRoot === false || !is_dir($pdfRoot)) {
+        throw new RuntimeException('Dossier /pdf introuvable.');
+    }
+
+    $segments = array_filter(
+        [validateFolderName($chantPath), validateFolderName($chantName)],
+        static fn (string $segment): bool => $segment !== ''
+    );
+
+    return $pdfRoot . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $segments);
+}
+
+function validateFileName(string $name): string
+{
+    $name = trim($name);
+
+    if ($name === '' || $name === '.' || $name === '..') {
+        throw new RuntimeException('Nom de fichier invalide.');
+    }
+
+    if (strpbrk($name, "/\\\0") !== false) {
+        throw new RuntimeException('Le nom de fichier ne peut pas contenir de separateur.');
+    }
+
+    return mb_substr($name, 0, DATA_MAX_NAME_LENGTH);
+}
+
+function validateFolderName(string $name): string
+{
+    $name = trim($name);
+
+    if ($name === '') {
+        return '';
+    }
+
+    if ($name === '.' || $name === '..' || strpbrk($name, "/\\\0") !== false) {
+        throw new RuntimeException('Nom de dossier invalide.');
+    }
+
+    return $name;
+}
+
 function handleFileDelete(PDO $pdo): void
 {
     requireWriteAccess();
@@ -519,6 +634,87 @@ function handleFileDelete(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'deleted' => $statement->rowCount(),
+    ]);
+}
+
+/**
+ * Moves the physical file into the target chant folder, then relinks the row.
+ */
+function handleFileMove(PDO $pdo): void
+{
+    requireWriteAccess();
+
+    $id = nullableInt('id', 1, PHP_INT_MAX);
+    $targetChantId = nullableInt('chant_id', 1, PHP_INT_MAX);
+
+    if ($id === null || $targetChantId === null) {
+        throw new RuntimeException('Fichier ou chant de destination manquant.');
+    }
+
+    $statement = $pdo->prepare(
+        'SELECT f.NomFichier, f.ChantID, c.Nom AS ChantNom, c.Path AS ChantPath
+         FROM `Fichier` f
+         INNER JOIN `Chant` c ON c.ID = f.ChantID
+         WHERE f.ID = :id'
+    );
+    $statement->execute([':id' => $id]);
+    $file = $statement->fetch();
+
+    if ($file === false) {
+        throw new RuntimeException('Fichier introuvable.');
+    }
+
+    if ((int) $file['ChantID'] === $targetChantId) {
+        respondJson(200, ['success' => true, 'moved' => false]);
+    }
+
+    $statement = $pdo->prepare('SELECT Nom, Path FROM `Chant` WHERE ID = :id');
+    $statement->execute([':id' => $targetChantId]);
+    $target = $statement->fetch();
+
+    if ($target === false) {
+        throw new RuntimeException('Chant de destination introuvable.');
+    }
+
+    $fileName = validateFileName((string) $file['NomFichier']);
+    $source = chantDirectory((string) $file['ChantPath'], (string) $file['ChantNom']) . DIRECTORY_SEPARATOR . $fileName;
+    $targetDir = chantDirectory((string) $target['Path'], (string) $target['Nom']);
+    $destination = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+
+    if (is_file($source)) {
+        if (file_exists($destination)) {
+            throw new RuntimeException('Un fichier portant ce nom existe deja dans le chant de destination.');
+        }
+
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+            throw new RuntimeException('Impossible de creer le dossier du chant de destination.');
+        }
+
+        if (!rename($source, $destination)) {
+            throw new RuntimeException('Impossible de deplacer le fichier sur le serveur.');
+        }
+    }
+
+    $statement = $pdo->prepare('UPDATE `Fichier` SET ChantID = :chant WHERE ID = :id');
+    $statement->execute([':chant' => $targetChantId, ':id' => $id]);
+
+    respondJson(200, [
+        'success' => true,
+        'moved' => true,
+    ]);
+}
+
+function handleChantOptions(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT ID, Nom, Path FROM `Chant` ORDER BY Path ASC, Nom ASC')->fetchAll();
+
+    respondJson(200, [
+        'success' => true,
+        'chants' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+            'path' => (string) $row['Path'],
+        ], $rows),
     ]);
 }
 

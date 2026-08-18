@@ -101,6 +101,7 @@
 
     .data-form-grid input[type="text"],
     .data-form-grid input[type="number"],
+    .data-form-grid select,
     .data-form-grid textarea {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -167,9 +168,9 @@
       <thead>
         <tr>
           <th>Nom</th>
-          <th>Cote</th>
-          <th>Fichiers</th>
-          <th>Informations</th>
+          <th data-chant-column>Cote</th>
+          <th data-chant-column>Fichiers</th>
+          <th data-chant-column>Informations</th>
         </tr>
       </thead>
       <tbody id="data-body"></tbody>
@@ -206,6 +207,9 @@
     <form id="file-form" method="dialog">
       <h2 id="file-dialog-title">Nouveau fichier</h2>
       <div class="data-form-grid">
+        <label id="file-upload-field">Fichier a televerser
+          <input type="file" name="file" accept=".pdf,.mp3,.m4a,.musicxml,.mxl,.xml" />
+        </label>
         <label>Nom du fichier
           <input type="text" name="nom_fichier" maxlength="255" required />
         </label>
@@ -226,6 +230,21 @@
       <div class="data-dialog-actions">
         <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
         <button type="submit" class="btn">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="move-dialog" class="data-dialog">
+    <form id="move-form" method="dialog">
+      <h2>Deplacer le fichier</h2>
+      <div class="data-form-grid">
+        <label>Chant de destination
+          <select name="chant_id" required></select>
+        </label>
+      </div>
+      <div class="data-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn">Deplacer</button>
       </div>
     </form>
   </dialog>
