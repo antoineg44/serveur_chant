@@ -288,14 +288,21 @@
     }
 
     async function fetchProgramText(filePath) {
-      const configRoot = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PDF_ROOT) || '../pdf/';
+      // Extract relative path from /pdf/... format
       const normalized = normalizePath(filePath);
-      const encodedPath = normalized
-        .split('/')
-        .filter(Boolean)
-        .map((segment) => encodeURIComponent(segment))
-        .join('/');
-      const response = await fetch(`${configRoot}${encodedPath}`, { credentials: 'include' });
+      const relativePath = normalized.replace(/^pdf\//i, '');
+      
+      // Use the API endpoint like visualisation.js does
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.EXPLORER_API)
+        || `${baseUrl}webapp/api/explorer.php`;
+      
+      const query = new URLSearchParams({
+        action: 'download',
+        path: relativePath,
+      }).toString();
+      
+      const response = await fetch(`${apiUrl}?${query}`, { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`Impossible d'ouvrir le programme: ${response.status}`);
       }
