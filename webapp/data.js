@@ -21,6 +21,7 @@ const fileDialogTitle = document.getElementById('file-dialog-title');
 const fileUploadField = document.getElementById('file-upload-field');
 const moveDialog = document.getElementById('move-dialog');
 const moveForm = document.getElementById('move-form');
+const moveSearchInput = document.getElementById('move-search');
 
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
@@ -42,6 +43,7 @@ let searchRequestId = 0;
 let editingChantId = null;
 let editingFileContext = null;
 let movingFileId = null;
+let moveOptions = [];
 
 // Path holds a single folder name, so any nesting is collapsed away.
 function normalizePath(value) {
@@ -265,6 +267,13 @@ function renderList() {
       }
     });
     nameCell.appendChild(toggle);
+
+    const icon = document.createElement('img');
+    icon.className = 'data-chant-icon';
+    icon.src = '../components/icons/note.png';
+    icon.alt = '';
+    nameCell.appendChild(icon);
+
     nameCell.appendChild(document.createTextNode(chant.nom));
     row.appendChild(nameCell);
 
@@ -327,6 +336,20 @@ function createFilesRow(chant) {
   return row;
 }
 
+function fileIconSource(fileName) {
+  const lower = String(fileName || '').toLowerCase();
+
+  if (lower.endsWith('.pdf')) {
+    return '../components/icons/pdf.png';
+  }
+
+  if (lower.endsWith('.m4a') || lower.endsWith('.mp3') || lower.endsWith('.wav')) {
+    return '../components/icons/speak.png';
+  }
+
+  return null;
+}
+
 function renderFiles(chant, files) {
   const container = dataBody.querySelector(`[data-files-container="${chant.id}"]`);
   if (!container) {
@@ -360,7 +383,19 @@ function renderFiles(chant, files) {
   const body = document.createElement('tbody');
   files.forEach((file) => {
     const row = document.createElement('tr');
-    row.appendChild(createCell(file.nomFichier));
+
+    const nameCell = document.createElement('td');
+    const iconSource = fileIconSource(file.nomFichier);
+    if (iconSource) {
+      const icon = document.createElement('img');
+      icon.className = 'data-chant-icon';
+      icon.src = iconSource;
+      icon.alt = '';
+      nameCell.appendChild(icon);
+    }
+    nameCell.appendChild(document.createTextNode(file.nomFichier));
+    row.appendChild(nameCell);
+
     row.appendChild(createCell(file.tonalite || '-'));
     row.appendChild(createCell(file.accords ? 'Oui' : 'Non'));
     row.appendChild(createCell(file.nbVoix === null ? '-' : String(file.nbVoix)));
@@ -547,23 +582,42 @@ fileForm.elements.file.addEventListener('change', () => {
 
 async function openMoveDialog(chant, file) {
   movingFileId = file.id;
-  const select = moveForm.elements.chant_id;
-  select.innerHTML = '';
+  moveSearchInput.value = '';
 
   try {
     const payload = await apiGet('chant_options');
-    (payload.chants || []).forEach((option) => {
-      const element = document.createElement('option');
-      element.value = String(option.id);
-      element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
-      element.selected = option.id === chant.id;
-      select.appendChild(element);
-    });
+    moveOptions = payload.chants || [];
+    renderMoveOptions(chant.id);
     moveDialog.showModal();
   } catch (error) {
     setStatus(error.message, true);
   }
 }
+
+function renderMoveOptions(selectedId) {
+  const select = moveForm.elements.chant_id;
+  const filter = moveSearchInput.value.trim().toLowerCase();
+  select.innerHTML = '';
+
+  moveOptions
+    .filter((option) => {
+      if (!filter) {
+        return true;
+      }
+      return `${option.path} ${option.nom}`.toLowerCase().includes(filter);
+    })
+    .forEach((option) => {
+      const element = document.createElement('option');
+      element.value = String(option.id);
+      element.textContent = option.path ? `${option.path} / ${option.nom}` : option.nom;
+      element.selected = option.id === selectedId;
+      select.appendChild(element);
+    });
+}
+
+moveSearchInput.addEventListener('input', () => {
+  renderMoveOptions(Number(moveForm.elements.chant_id.value));
+});
 
 moveForm.addEventListener('submit', async (event) => {
   event.preventDefault();

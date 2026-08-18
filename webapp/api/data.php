@@ -413,6 +413,18 @@ function handleChantSave(PDO $pdo): void
         ]);
         $id = (int) $pdo->lastInsertId();
     } else {
+        $current = $pdo->prepare('SELECT Nom, Path FROM `Chant` WHERE ID = :id');
+        $current->execute([':id' => $id]);
+        $currentRow = $current->fetch();
+
+        if ($currentRow === false) {
+            throw new RuntimeException('Chant introuvable.');
+        }
+
+        if ((string) $currentRow['Nom'] !== $nom || (string) $currentRow['Path'] !== $path) {
+            renameChantFolder((string) $currentRow['Path'], (string) $currentRow['Nom'], $path, $nom);
+        }
+
         $statement = $pdo->prepare(
             'UPDATE `Chant`
              SET Nom = :nom, Path = :path, Cote = :cote, Informations = :informations
@@ -498,6 +510,30 @@ function handleFileSave(PDO $pdo): void
         ]);
         $id = (int) $pdo->lastInsertId();
     } else {
+        $current = $pdo->prepare(
+            'SELECT f.NomFichier, c.Nom AS ChantNom, c.Path AS ChantPath
+             FROM `Fichier` f
+             INNER JOIN `Chant` c ON c.ID = f.ChantID
+             WHERE f.ID = :id'
+        );
+        $current->execute([':id' => $id]);
+        $currentRow = $current->fetch();
+
+        if ($currentRow === false) {
+            throw new RuntimeException('Fichier introuvable.');
+        }
+
+        if ((string) $currentRow['NomFichier'] !== $nomFichier) {
+            renameStoredFile(
+                (string) $currentRow['ChantPath'],
+                (string) $currentRow['ChantNom'],
+                (string) $currentRow['NomFichier'],
+                (string) $chantRow['Path'],
+                (string) $chantRow['Nom'],
+                $nomFichier
+            );
+        }
+
         $statement = $pdo->prepare(
             'UPDATE `Fichier`
              SET NomFichier = :nom, ChantID = :chant, Tonalite = :tonalite,
@@ -572,6 +608,76 @@ function storeUploadedFile(array $upload, string $chantPath, string $chantName, 
     }
 
     return $fileName;
+}
+
+/**
+ * Keeps the chant folder on disk in sync when its name or parent folder changes.
+ */
+function renameChantFolder(string $sourcePath, string $sourceName, string $targetPath, string $targetName): void
+{
+    $source = chantDirectory($sourcePath, $sourceName);
+
+    if (!is_dir($source)) {
+        return;
+    }
+
+    $destination = chantDirectory($targetPath, $targetName);
+
+    if ($source === $destination) {
+        return;
+    }
+
+    if (file_exists($destination)) {
+        throw new RuntimeException('Un dossier portant ce nom existe deja.');
+    }
+
+    $parent = dirname($destination);
+    if (!is_dir($parent) && !mkdir($parent, 0775, true) && !is_dir($parent)) {
+        throw new RuntimeException('Impossible de creer le dossier parent.');
+    }
+
+    if (!rename($source, $destination)) {
+        throw new RuntimeException('Impossible de renommer le dossier sur le serveur.');
+    }
+}
+
+/**
+ * Keeps the file on disk in sync when its name (or owning chant) changes.
+ */
+function renameStoredFile(
+    string $sourcePath,
+    string $sourceChant,
+    string $sourceName,
+    string $targetPath,
+    string $targetChant,
+    string $targetName
+): void {
+    $source = chantDirectory($sourcePath, $sourceChant) . DIRECTORY_SEPARATOR . validateFileName($sourceName);
+
+    if (!is_file($source)) {
+        return;
+    }
+
+    $fileName = validateFileName($targetName);
+    $extension = strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION));
+    if (!in_array($extension, DATA_SEED_EXTENSIONS, true)) {
+        throw new RuntimeException('Extension de fichier non autorisee.');
+    }
+
+    $targetDir = chantDirectory($targetPath, $targetChant);
+    $destination = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+
+    if (file_exists($destination)) {
+        throw new RuntimeException('Un fichier portant ce nom existe deja dans ce chant.');
+    }
+
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+        throw new RuntimeException('Impossible de creer le dossier du chant.');
+    }
+
+    if (!rename($source, $destination)) {
+        throw new RuntimeException('Impossible de renommer le fichier sur le serveur.');
+    }
 }
 
 function chantDirectory(string $chantPath, string $chantName): string
