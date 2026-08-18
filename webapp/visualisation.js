@@ -667,7 +667,8 @@ async function initViewer() {
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);
   document.getElementById('program-info')?.addEventListener('click', () => {
     if (currentProgram?.sourceUrl) {
-      const programPath = encodeURIComponent(currentProgram.sourceUrl);
+      const relativePath = getRelativePathFromPdfUrl(currentProgram.sourceUrl);
+      const programPath = encodeURIComponent(`/pdf/${relativePath}`);
       window.open(`./informations.html?programme=${programPath}`, '_blank');
     } else {
       window.open('./informations.html', '_blank');
