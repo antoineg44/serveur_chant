@@ -1,99 +1,130 @@
-function slugForFilename(value) {
-    return value.trim()
-        .replace(/[_]+/g, '-')
-        .replace(/[^a-zA-Z0-9-]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .replace(/-{2,}/g, '-')
-        .toLowerCase();
-}
+// Creates a Programme row, then hands over to the editor.
+
+const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
+const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+const PROGRAMME_API = WEBAPP_CONFIG.PROGRAMME_API || `${BASE_URL}webapp/api/programme.php`;
+const LOCAL_PROGRAMME_API = './api/programme.php';
+
+const form = document.getElementById('create-program-form');
+const messageElement = document.getElementById('form_message');
+const paroisseSelect = document.getElementById('paroisse');
 
 function showFormMessage(message, isError) {
-    var messageEl = document.getElementById('form_message');
-    if(!messageEl) return;
-    messageEl.textContent = message;
-    messageEl.className = 'text-sm mb-4 ' + (isError ? 'text-red-400' : 'text-green-400');
+  messageElement.textContent = message;
+  messageElement.className = `form-message ${message ? (isError ? 'is-error' : 'is-success') : ''}`;
 }
 
-$(document).ready(function() {
-    // Load parishes
-    $.ajax({
-        url: window.location.origin + '/php/programme/interface.php?action=get_list_paroisses',
-        type: 'GET',
-        success: function(data) {
-            var option_html = "<option value=''>Choisissez votre paroisse</option>";
-            var paroisses = data.split("Â£");
-            for(var i = 0; i < paroisses.length - 1; i++) {
-                option_html += "<option value='" + paroisses[i] + "'>" + paroisses[i] + "</option>";
-            }
-            document.getElementById("paroisse").innerHTML = option_html;
-        },
-        error: function() {
-            console.error("Erreur lors du chargement des paroisses");
-        }
-    });
+async function callApi(action, params = {}, method = 'GET') {
+  const endpoints = [LOCAL_PROGRAMME_API, PROGRAMME_API];
+  const errors = [];
 
-    // Load templates
-    $.ajax({
-        url: window.location.origin + '/php/programme/interface.php?action=get_list_templates',
-        type: 'GET',
-        success: function(data) {
-            var option_html = "<option value=''>Choisissez un template</option>";
-            var templates = data.split("Â£");
-            for(var i = 0; i < templates.length - 1; i++) {
-                var templateName = templates[i];
-                var templateValue = 'programmes/Templates/' + templateName;
-                option_html += "<option value='" + templateValue + "'>" + templateName.replace('.json', '') + "</option>";
-            }
-            document.getElementById("template").innerHTML = option_html;
-        },
-        error: function() {
-            console.error("Erreur lors du chargement des templates");
-        }
-    });
+  for (let index = 0; index < endpoints.length; index += 1) {
+    const baseUrl = endpoints[index];
+    const isLast = index === endpoints.length - 1;
 
-    $('#create-program-form').on('submit', function(event) {
-        event.preventDefault();
-        showFormMessage('', false);
+    try {
+      let response;
 
-        var paroisse = $('#paroisse').val().trim();
-        var template = $('#template').val().trim();
-        var occasion = $('#occasion').val().trim();
-        var lieu = $('#lieu').val().trim();
-        var date = $('#date').val().trim();
-
-        if(!paroisse || !template || !occasion || !lieu || !date) {
-            showFormMessage('Merci de remplir tous les champs obligatoires.', true);
-            return;
-        }
-
-        var nom = date + '_' + slugForFilename(lieu) + '_' + slugForFilename(occasion) + '.json';
-        var oldLink = template;
-
-        $.ajax({
-            url: window.location.origin + '/php/programme/interface.php?action=nouveau',
-            type: 'GET',
-            data: {
-                old_link: oldLink,
-                paroisse: paroisse,
-                nom: nom,
-                description: $('#description').val().trim(),
-                auteur: 'web'
-            },
-            success: function(data) {
-                var response = data ? data.trim() : '';
-                if(response === 'success') {
-                    showFormMessage('Programme créé avec succès.', false);
-                    // Redirect to creation page
-                    var programmePath = 'pdf/programmes/' + paroisse + '/' + nom;
-                    window.location.href = '/pages/creation/index.php?programme=' + encodeURIComponent(programmePath);
-                } else {
-                    showFormMessage('Erreur : ' + response, true);
-                    console.error('nouveau response:', response);
-                }
-            },
-            error: function() {
-                showFormMessage('Erreur réseau lors de la création du programme.', true);
-            }
+      if (method === 'POST') {
+        const body = new FormData();
+        body.append('action', action);
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            body.append(key, value);
+          }
         });
+        response = await fetch(baseUrl, { method: 'POST', body, credentials: 'include' });
+      } else {
+        const query = new URLSearchParams({ action, ...params }).toString();
+        response = await fetch(`${baseUrl}?${query}`, { credentials: 'include' });
+      }
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        if (!isLast && (response.status === 404 || response.status >= 500)) {
+          errors.push(`HTTP ${response.status} on ${baseUrl}`);
+          continue;
+        }
+        throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+      }
+
+      if (!payload || !payload.success) {
+        throw new Error((payload && payload.message) || 'Erreur API');
+      }
+
+      return payload;
+    } catch (error) {
+      if (!isLast) {
+        errors.push(`${baseUrl}: ${error.message}`);
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(errors.join(' | ') || 'API inaccessible');
+}
+
+async function loadParoisses() {
+  try {
+    const payload = await callApi('list');
+    (payload.paroisses || []).forEach((paroisse) => {
+      const option = document.createElement('option');
+      option.value = paroisse;
+      option.textContent = paroisse;
+      paroisseSelect.appendChild(option);
     });
+  } catch (error) {
+    showFormMessage(error.message, true);
+  }
+}
+
+function openEditor(programmeId) {
+  const url = `./modifications.html?programmeId=${encodeURIComponent(programmeId)}`;
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'openPageTab',
+      item: {
+        key: `modify-programme-${programmeId}`,
+        name: 'Modifier - Programme',
+        title: 'Modifier - Programme',
+        description: 'Modifier',
+        url,
+      },
+    }, '*');
+    return;
+  }
+
+  window.location.href = url;
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  showFormMessage('', false);
+
+  const payload = {
+    date: document.getElementById('date').value,
+    lieu: document.getElementById('lieu').value.trim(),
+    occasion: document.getElementById('occasion').value.trim(),
+    paroisse: paroisseSelect.value.trim() || document.getElementById('paroisse-libre').value.trim(),
+    description: document.getElementById('description').value.trim(),
+  };
+
+  if (!payload.date || !payload.lieu || !payload.occasion || !payload.paroisse) {
+    showFormMessage('Merci de remplir tous les champs obligatoires.', true);
+    return;
+  }
+
+  try {
+    const created = await callApi('programme_save', payload, 'POST');
+    showFormMessage('Programme cree.', false);
+    form.reset();
+    openEditor(created.id);
+  } catch (error) {
+    showFormMessage(error.message, true);
+  }
 });
+
+loadParoisses();

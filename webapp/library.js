@@ -11,11 +11,6 @@ const deleteButton = document.getElementById('library-delete');
 const partiesButton = document.getElementById('library-manage-parties');
 const refreshButton = document.getElementById('library-refresh');
 
-const programmeDialog = document.getElementById('programme-dialog');
-const programmeForm = document.getElementById('programme-form');
-const programmeDialogTitle = document.getElementById('programme-dialog-title');
-const paroisseSuggestions = document.getElementById('paroisse-suggestions');
-
 const partiesDialog = document.getElementById('parties-dialog');
 const partieCreateForm = document.getElementById('partie-create-form');
 const partiesList = document.getElementById('parties-list');
@@ -142,13 +137,6 @@ function renderParoisseOptions() {
   });
 
   paroisseFilter.value = paroisses.includes(previous) ? previous : '';
-
-  paroisseSuggestions.innerHTML = '';
-  paroisses.forEach((paroisse) => {
-    const option = document.createElement('option');
-    option.value = paroisse;
-    paroisseSuggestions.appendChild(option);
-  });
 }
 
 function renderProgrammes() {
@@ -213,15 +201,6 @@ async function loadProgrammes() {
   }
 }
 
-function openProgrammeDialog() {
-  programmeDialogTitle.textContent = 'Nouveau programme';
-  programmeForm.elements.date.value = new Date().toISOString().slice(0, 10);
-  programmeForm.elements.lieu.value = '';
-  programmeForm.elements.occasion.value = '';
-  programmeForm.elements.paroisse.value = '';
-  programmeDialog.showModal();
-}
-
 async function refreshPartiesList() {
   try {
     const payload = await programmeApi('parties');
@@ -257,25 +236,6 @@ async function refreshPartiesList() {
   }
 }
 
-programmeForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const payload = {
-    date: programmeForm.elements.date.value,
-    lieu: programmeForm.elements.lieu.value.trim(),
-    occasion: programmeForm.elements.occasion.value.trim(),
-    paroisse: programmeForm.elements.paroisse.value.trim(),
-  };
-
-  try {
-    await programmeApi('programme_save', payload, 'POST');
-    programmeDialog.close();
-    await loadProgrammes();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-});
-
 partieCreateForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -294,7 +254,16 @@ document.querySelectorAll('[data-close-dialog]').forEach((button) => {
   });
 });
 
-createButton.addEventListener('click', () => openProgrammeDialog());
+createButton.addEventListener('click', () => {
+  const url = './create.html';
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'openMesseInfoModal', item: { url, title: 'Nouveau programme' } }, '*');
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+});
 
 deleteButton.addEventListener('click', async () => {
   const programme = getSelectedProgramme();

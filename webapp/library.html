@@ -173,31 +173,6 @@
 
   <p id="library-status" class="hint" role="status">En attente de chargement.</p>
 
-  <dialog id="programme-dialog" class="library-dialog">
-    <form id="programme-form" method="dialog">
-      <h2 id="programme-dialog-title">Nouveau programme</h2>
-      <div class="library-form-grid">
-        <label>Date
-          <input type="date" name="date" required />
-        </label>
-        <label>Lieu
-          <input type="text" name="lieu" maxlength="255" />
-        </label>
-        <label>Occasion
-          <input type="text" name="occasion" maxlength="255" />
-        </label>
-        <label>Paroisse
-          <input type="text" name="paroisse" maxlength="255" list="paroisse-suggestions" />
-          <datalist id="paroisse-suggestions"></datalist>
-        </label>
-      </div>
-      <div class="library-dialog-actions">
-        <button type="button" class="btn btn-ghost" data-close-dialog>Annuler</button>
-        <button type="submit" class="btn">Enregistrer</button>
-      </div>
-    </form>
-  </dialog>
-
   <dialog id="parties-dialog" class="library-dialog">
     <h2>Gestion des parties</h2>
     <form id="partie-create-form" method="dialog">

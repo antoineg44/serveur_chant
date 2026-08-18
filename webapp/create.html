@@ -6,7 +6,6 @@
   <title>WebApp - Nouveau programme</title>
   <link rel="stylesheet" href="./styles.css" />
   <script src="./config.js"></script>
-  <script src="../js/jquery-latest.js"></script>
   <style>
     .create-form {
       max-width: 540px;
@@ -97,16 +96,10 @@
 
     <div class="nice-form-group">
       <label for="paroisse">Paroisse</label>
-      <select id="paroisse" name="paroisse" required>
+      <select id="paroisse" name="paroisse">
         <option value="">Sélectionnez une paroisse</option>
       </select>
-    </div>
-
-    <div class="nice-form-group">
-      <label for="template">Template</label>
-      <select id="template" name="template" required>
-        <option value="">Sélectionnez un template</option>
-      </select>
+      <input type="text" id="paroisse-libre" name="paroisse-libre" placeholder="Ou saisissez une nouvelle paroisse" />
     </div>
 
     <div class="nice-form-group">

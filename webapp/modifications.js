@@ -519,13 +519,22 @@ function add_new_chant(element) {
 function add_new_part(element) {
     reset_modified_chant();
     console.log("add_new_part");
-    var id_part = element.closest("section").id.slice(5);
+    var section = element.closest("section");
     var partie = {'name': 'nouvelle partie', "partie" : "chant", "path": null};
     let parser = new DOMParser();
     let doc = parser.parseFromString(add_section(partie, ""), 'text/html');
     let nav = parser.parseFromString(add_link_section('nouvelle partie'), 'text/html');
-    document.querySelector('#part_' + id_part).after(doc.body.firstChild);
-    document.querySelector('#link_' + id_part).after(nav.body.firstChild);
+
+    // The description block is the anchor used for the very first part.
+    if (section.id === "description") {
+        document.querySelector('#description').after(doc.body.firstChild);
+        document.querySelector('#description_list').after(nav.body.firstChild);
+    } else {
+        var id_part = section.id.slice(5);
+        document.querySelector('#part_' + id_part).after(doc.body.firstChild);
+        document.querySelector('#link_' + id_part).after(nav.body.firstChild);
+    }
+
     markAsChanged();
 }
 var pendingPartSectionId = null;
