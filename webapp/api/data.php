@@ -554,11 +554,17 @@ function loadChantProgrammes(PDO $pdo, int $chantId): array
 {
     try {
         $statement = $pdo->prepare(
-            'SELECT DISTINCT p.ID, p.Date, p.Lieu, p.Occasion, p.Paroisse
+            'SELECT p.ID, p.Date, p.Lieu, p.Occasion, p.Paroisse,
+                    (SELECT pa.Nom
+                     FROM `ProgrammePartie` pp
+                     INNER JOIN `Partie` pa ON pa.ID = pp.PartieID
+                     WHERE pp.ProgrammeID = p.ID AND pp.Position < pc.Position
+                     ORDER BY pp.Position DESC
+                     LIMIT 1) AS PartieNom
              FROM `ProgrammeChant` pc
              INNER JOIN `Programme` p ON p.ID = pc.ProgrammeID
              WHERE pc.ChantID = :chant
-             ORDER BY p.Date DESC'
+             ORDER BY p.Date DESC, pc.Position ASC'
         );
         $statement->execute([':chant' => $chantId]);
     } catch (Throwable $error) {
@@ -571,6 +577,7 @@ function loadChantProgrammes(PDO $pdo, int $chantId): array
         'lieu' => (string) $row['Lieu'],
         'occasion' => (string) $row['Occasion'],
         'paroisse' => (string) $row['Paroisse'],
+        'partie' => $row['PartieNom'] === null ? '' : (string) $row['PartieNom'],
     ], $statement->fetchAll());
 }
 

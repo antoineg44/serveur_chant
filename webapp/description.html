@@ -514,6 +514,7 @@
       const programmesRows = programmes.map((programme) => `
         <tr>
           <td><button type="button" class="chant-file-link" data-programme-id="${programme.id}">${formatDay(programme.date)}</button></td>
+          <td>${formatValue(programme.partie)}</td>
           <td>${formatValue(programme.lieu)}</td>
           <td>${formatValue(programme.occasion)}</td>
           <td>${formatValue(programme.paroisse)}</td>
@@ -562,6 +563,7 @@
               <thead>
                 <tr>
                   <th>Date</th>
+                  <th>Partie</th>
                   <th>Lieu</th>
                   <th>Occasion</th>
                   <th>Paroisse</th>
