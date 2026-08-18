@@ -503,6 +503,7 @@ function handleProgrammeSave(PDO $pdo): void
             ':description' => $description,
         ]);
         $id = (int) $pdo->lastInsertId();
+        copyTemplateItems($pdo, $id, $paroisse);
     } else {
         $statement = $pdo->prepare(
             'UPDATE `Programme`
@@ -559,36 +560,6 @@ function copyTemplateItems(PDO $pdo, int $programmeId, string $paroisse): void
  * Replaces the whole content of a programme from a JSON list of entries,
  * resolving chants by their "<Path>/<Nom>/<NomFichier>" location under /pdf.
  */
-/**
- * A new programme starts from the programme whose Occasion is "Template",
- * preferring the one of the same paroisse.
- */
-function copyTemplateItems(PDO $pdo, int $programmeId, string $paroisse): void
-{
-    $statement = $pdo->prepare(
-        'SELECT ID FROM `Programme`
-         WHERE Occasion = \'Template\' AND ID <> :id
-         ORDER BY (Paroisse = :paroisse) DESC, ID DESC
-         LIMIT 1'
-    );
-    $statement->execute([':id' => $programmeId, ':paroisse' => $paroisse]);
-    $templateId = $statement->fetchColumn();
-
-    if ($templateId === false) {
-        return;
-    }
-
-    $items = array_map(static function (array $item): array {
-        return $item['type'] === 'partie'
-            ? ['type' => 'partie', 'partieId' => $item['partieId']]
-            : ['type' => 'chant', 'chantId' => $item['chantId'], 'fichierId' => $item['fichierId']];
-    }, loadItems($pdo, (int) $templateId));
-
-    if ($items) {
-        rewriteItems($pdo, $programmeId, $items);
-    }
-}
-
 function handleItemsSet(PDO $pdo): void
 {
     $programmeId = requiredInt('programme_id', 'L\'identifiant du programme');
