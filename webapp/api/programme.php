@@ -28,6 +28,10 @@ try {
             handleList($pdo);
             break;
 
+        case 'download_zip':
+            handleDownloadZip($pdo);
+            break;
+
         case 'detail':
             handleDetail($pdo);
             break;
@@ -301,6 +305,99 @@ function handleList(PDO $pdo): void
         'paroisses' => $paroisses,
         'programmes' => array_map('mapProgrammeRow', $statement->fetchAll()),
     ]);
+}
+
+/**
+ * Builds a ZIP with the files of the programme; complete mode adds every file
+ * of each chant folder instead of only the linked one.
+ */
+function handleDownloadZip(PDO $pdo): void
+{
+    if (!class_exists('ZipArchive')) {
+        throw new RuntimeException('ZipArchive n\'est pas disponible sur le serveur.');
+    }
+
+    $id = requiredInt('id', 'L\'identifiant du programme');
+    $complete = requestValue('complete') === '1';
+
+    $statement = $pdo->prepare('SELECT ID, `Date`, Lieu, Occasion, Paroisse FROM `Programme` WHERE ID = :id');
+    $statement->execute([':id' => $id]);
+    $programme = $statement->fetch();
+
+    if ($programme === false) {
+        throw new RuntimeException('Programme introuvable.');
+    }
+
+    $pdfRoot = realpath(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'pdf');
+    if ($pdfRoot === false || !is_dir($pdfRoot)) {
+        throw new RuntimeException('Dossier /pdf introuvable.');
+    }
+
+    $tempFile = tempnam(sys_get_temp_dir(), 'programme_zip_');
+    if ($tempFile === false) {
+        throw new RuntimeException('Impossible de creer un fichier temporaire.');
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($tempFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        @unlink($tempFile);
+        throw new RuntimeException('Impossible de creer l\'archive.');
+    }
+
+    $currentPartie = '';
+    $index = 0;
+
+    foreach (loadItems($pdo, $id) as $item) {
+        if ($item['type'] === 'partie') {
+            $currentPartie = $item['partieNom'];
+            continue;
+        }
+
+        $index += 1;
+        $chantDir = $pdfRoot . DIRECTORY_SEPARATOR
+            . implode(DIRECTORY_SEPARATOR, array_filter([$item['chantPath'], $item['chantNom']]));
+
+        $sources = [];
+        if ($complete) {
+            foreach ((array) glob($chantDir . DIRECTORY_SEPARATOR . '*') as $candidate) {
+                if (is_file($candidate)) {
+                    $sources[] = $candidate;
+                }
+            }
+        } elseif ($item['nomFichier'] !== '') {
+            $sources[] = $chantDir . DIRECTORY_SEPARATOR . $item['nomFichier'];
+        }
+
+        foreach ($sources as $source) {
+            if (!is_file($source)) {
+                continue;
+            }
+
+            $prefix = sprintf('%02d', $index);
+            $folder = $currentPartie !== '' ? sanitizeZipSegment($currentPartie) . '/' : '';
+            $zip->addFile($source, $folder . $prefix . '_' . basename($source));
+        }
+    }
+
+    $zip->close();
+
+    $baseName = sanitizeZipSegment(implode('_', array_filter([
+        (string) $programme['Date'],
+        (string) $programme['Lieu'],
+        (string) $programme['Occasion'],
+    ]))) ?: 'programme';
+
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . $baseName . '.zip"');
+    header('Content-Length: ' . (string) filesize($tempFile));
+    readfile($tempFile);
+    @unlink($tempFile);
+    exit;
+}
+
+function sanitizeZipSegment(string $value): string
+{
+    return trim((string) preg_replace('/[^\p{L}\p{N}_\-. ]+/u', '_', $value));
 }
 
 function handleDetail(PDO $pdo): void

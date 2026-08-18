@@ -360,6 +360,7 @@
       `;
 
       const programmePath = String(data.path || '').trim();
+      const programmeId = String(data.programmeId || '').trim();
       const normalizedProgrammePath = normalizePath(programmePath).replace(/^pdf\//i, '');
       const pdfProgrammePath = `/pdf/${normalizedProgrammePath}`;
       const programmeQuery = encodeURIComponent(pdfProgrammePath);
@@ -371,11 +372,24 @@
         .join('/')}`;
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.EXPLORER_API)
         || `${baseUrl}webapp/api/explorer.php`;
+      const programmeApiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PROGRAMME_API)
+        || `${baseUrl}webapp/api/programme.php`;
+      const shareUrl = programmeId
+        ? `${window.location.origin}${window.location.pathname}?programmeId=${encodeURIComponent(programmeId)}`
+        : programmeFileUrl;
       const actionUrls = {
-        modify: `./modifications.html?programme=${programmeQuery}`,
-        visualize: `./visualisation.html?programme=${programmeQuery}`,
-        zip: `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
-        'complete-zip': `${apiUrl}?action=download_program_complete&path=${encodeURIComponent(programmePath)}`,
+        modify: programmeId
+          ? `./modifications.html?programmeId=${encodeURIComponent(programmeId)}`
+          : `./modifications.html?programme=${programmeQuery}`,
+        visualize: programmeId
+          ? `./visualisation.html?programmeId=${encodeURIComponent(programmeId)}`
+          : `./visualisation.html?programme=${programmeQuery}`,
+        zip: programmeId
+          ? `${programmeApiUrl}?action=download_zip&id=${encodeURIComponent(programmeId)}`
+          : `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
+        'complete-zip': programmeId
+          ? `${programmeApiUrl}?action=download_zip&complete=1&id=${encodeURIComponent(programmeId)}`
+          : `${apiUrl}?action=download_program_complete&path=${encodeURIComponent(programmePath)}`,
       };
 
       async function copyProgrammeLink(button) {
@@ -384,7 +398,7 @@
 
         if (navigator.clipboard && window.isSecureContext) {
           try {
-            await navigator.clipboard.writeText(programmeFileUrl);
+            await navigator.clipboard.writeText(shareUrl);
             copied = true;
           } catch (error) {
             copied = false;
@@ -393,7 +407,7 @@
 
         if (!copied) {
           const textarea = document.createElement('textarea');
-          textarea.value = programmeFileUrl;
+          textarea.value = shareUrl;
           textarea.setAttribute('readonly', 'readonly');
           textarea.style.position = 'fixed';
           textarea.style.top = '-9999px';
@@ -415,7 +429,7 @@
           window.parent.postMessage({
             type: 'openPageTab',
             item: {
-              key: `${action}-programme-${programmePath}`,
+              key: `${action}-programme-${programmeId || programmePath}`,
               name: `${actionLabel} - ${data.name || 'Programme'}`,
               title: `${actionLabel} - ${data.name || 'Programme'}`,
               description: actionLabel,
@@ -436,7 +450,7 @@
           }
 
           const actionUrl = actionUrls[button.dataset.action];
-          if (!actionUrl || !programmePath) {
+          if (!actionUrl || (!programmePath && !programmeId)) {
             return;
           }
 
@@ -497,6 +511,7 @@
         title: programme.occasion ? `${programme.date} - ${programme.occasion}` : 'Informations de la messe',
         name: [programme.date, programme.lieu, programme.occasion].filter(Boolean).join(' - '),
         path: '',
+        programmeId: programme.id,
         date: programme.date,
         lieu: programme.lieu,
         occasion: programme.occasion,

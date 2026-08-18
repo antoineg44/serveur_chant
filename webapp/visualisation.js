@@ -4,6 +4,7 @@ const VISUALISATION_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/a
 const REMOTE_VIEWER_URL = WEBAPP_CONFIG.VIEWER_URL || `${BASE_URL}components/viewer/viewer.html`;
 const REMOTE_MUSICXML_VIEWER_URL = WEBAPP_CONFIG.MUSICXML_VIEWER_URL || `${BASE_URL}components/musicxml/index.html`;
 const REMOTE_PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
+const PROGRAMME_API_URL = WEBAPP_CONFIG.PROGRAMME_API || `${BASE_URL}webapp/api/programme.php`;
 
 let currentRelativePdfPath = '';
 let currentProgram = null;
@@ -93,6 +94,11 @@ function splitProgramLines(text) {
   const raw = String(text || '');
   const normalized = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   return normalized.split('\n');
+}
+
+function resolveProgrammeId() {
+  const params = new URLSearchParams(window.location.search);
+  return (params.get('programmeId') || '').trim();
 }
 
 function resolveProgramUrl() {
@@ -325,6 +331,48 @@ async function loadProgramDefinition(programUrl) {
     lieu: parsed.lieu,
     occasion: parsed.occasion,
     entries: parsed.entries,
+  };
+}
+
+/**
+ * Loads a programme stored in the database instead of a /pdf/programmes file.
+ */
+async function loadProgrammeFromDatabase(programmeId) {
+  const query = new URLSearchParams({ action: 'detail', id: programmeId }).toString();
+  const response = await fetch(`${PROGRAMME_API_URL}?${query}`, { credentials: 'include' });
+
+  if (response.status === 401) {
+    redirectToLogin();
+    return null;
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok || !payload || !payload.success) {
+    throw new Error((payload && payload.message) || `Erreur HTTP ${response.status} pendant le chargement du programme.`);
+  }
+
+  const programme = payload.programme;
+  const entries = (payload.items || []).map((item) => (item.type === 'partie'
+    ? { type: 'partie', name: item.partieNom || 'Partie' }
+    : {
+      type: 'chant',
+      name: item.chantNom || 'Chant',
+      path: item.nomFichier ? cleanPath([item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/')) : '',
+    }));
+
+  if (!entries.length) {
+    throw new Error('Le programme ne contient aucun element exploitable.');
+  }
+
+  return {
+    sourceUrl: '',
+    programmeId,
+    title: getProgramTitle(programme, ''),
+    date: programme.date,
+    lieu: programme.lieu,
+    occasion: programme.occasion,
+    entries,
   };
 }
 
@@ -666,6 +714,11 @@ async function initViewer() {
   document.getElementById('program-toggle')?.addEventListener('click', toggleProgramSidebar);
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);
   document.getElementById('program-info')?.addEventListener('click', () => {
+    if (currentProgram?.programmeId) {
+      window.open(`./informations.html?programmeId=${encodeURIComponent(currentProgram.programmeId)}`, '_blank');
+      return;
+    }
+
     if (currentProgram?.sourceUrl) {
       const relativePath = getRelativePathFromPdfUrl(currentProgram.sourceUrl);
       const programPath = encodeURIComponent(`/pdf/${relativePath}`);
@@ -676,11 +729,14 @@ async function initViewer() {
   });
   const programSidebar = document.getElementById('program-sidebar');
   const programFloatingButton = document.getElementById('program-toggle-floating');
-  const programUrl = resolveProgramUrl();
+  const programmeId = resolveProgrammeId();
+  const programUrl = programmeId ? '' : resolveProgramUrl();
 
-  if (programUrl) {
+  if (programmeId || programUrl) {
     try {
-      const programData = await loadProgramDefinition(programUrl);
+      const programData = programmeId
+        ? await loadProgrammeFromDatabase(programmeId)
+        : await loadProgramDefinition(programUrl);
       if (programData === null) {
         return;
       }
@@ -706,7 +762,7 @@ async function initViewer() {
   if (!pdfUrl && !currentProgram) {
     document.getElementById('folder-path').textContent = '/pdf';
     document.getElementById('file-list').innerHTML = '<div class="sidebar-empty">Ajoutez un PDF pour afficher les autres fichiers du dossier.</div>';
-    showMessage('Ajoutez un parametre ?url=, ?file=, ?lien= ou ?programme= pour afficher un PDF.');
+    showMessage('Ajoutez un parametre ?url=, ?file=, ?lien=, ?programme= ou ?programmeId= pour afficher un PDF.');
     return;
   }
 
