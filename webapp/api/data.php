@@ -51,6 +51,10 @@ try {
             handleChantDetail($pdo);
             break;
 
+        case 'chant_by_file':
+            handleChantByFile($pdo);
+            break;
+
         case 'chant_delete':
             handleChantDelete($pdo);
             break;
@@ -544,6 +548,48 @@ function handleChantDetail(PDO $pdo): void
         'chant' => mapChantRow($chant),
         'files' => array_map('mapFileRow', $files->fetchAll()),
         'programmes' => loadChantProgrammes($pdo, $id),
+    ]);
+}
+
+function handleChantByFile(PDO $pdo): void
+{
+    $filePath = normalizePath(requestValue('path'));
+    if ($filePath === '') {
+        throw new RuntimeException('Chemin de fichier manquant.');
+    }
+
+    $parts = explode('/', $filePath);
+    if (count($parts) < 2) {
+        throw new RuntimeException('Chemin de fichier invalide.');
+    }
+
+    $fileName = array_pop($parts);
+    $chantName = array_pop($parts);
+    $chantPath = implode('/', $parts);
+
+    $statement = $pdo->prepare(
+        'SELECT c.ID
+         FROM `Chant` c
+         INNER JOIN `Fichier` f ON f.ChantID = c.ID
+         WHERE c.Nom = :nom
+           AND c.Path = :path
+           AND f.NomFichier = :fichier
+         LIMIT 1'
+    );
+    $statement->execute([
+        ':nom' => $chantName,
+        ':path' => $chantPath,
+        ':fichier' => $fileName,
+    ]);
+    $chant = $statement->fetch();
+
+    if ($chant === false) {
+        throw new RuntimeException('Chant introuvable pour ce fichier.');
+    }
+
+    respondJson(200, [
+        'success' => true,
+        'chantId' => (int) $chant['ID'],
     ]);
 }
 

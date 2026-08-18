@@ -116,6 +116,13 @@
       border-bottom: 1px solid var(--line);
     }
 
+    .messe-popup-program-song-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     .messe-popup-program-song strong {
       display: block;
       color: var(--ink);
@@ -127,6 +134,29 @@
       color: var(--accent);
       font-size: 0.88rem;
       overflow-wrap: anywhere;
+    }
+
+    .chant-info-button {
+      flex: 0 0 26px;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--accent);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chant-info-button:hover {
+      background: var(--accent-soft);
+    }
+
+    .chant-info-button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
     .messe-popup-loading {
@@ -325,7 +355,10 @@
         const pathMarkup = path
           ? `<a href="#" data-chant-path="${escapeHtml(path)}">${escapeHtml(path)}</a>`
           : '<span>Aucun fichier associé</span>';
-        return `<div class="messe-popup-program-song"><strong>${escapeHtml(item.name)}</strong>${pathMarkup}</div>`;
+        const infoButton = path
+          ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}">i</button>`
+          : '<button type="button" class="chant-info-button" title="Aucun fichier associe" aria-label="Informations indisponibles" disabled>i</button>';
+        return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong>${infoButton}</div>${pathMarkup}</div>`;
       }).join('');
 
       const titleText = data.title || 'Informations de la messe';
@@ -486,6 +519,47 @@
           window.open(viewerUrl, '_blank', 'noopener,noreferrer');
         });
       });
+
+      container.querySelectorAll('[data-chant-info-path]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+
+          const infoWindow = window.open('about:blank', '_blank');
+          if (!infoWindow) {
+            return;
+          }
+
+          void openChantInfo(button.dataset.chantInfoPath, infoWindow);
+        });
+      });
+    }
+
+    async function openChantInfo(filePath, infoWindow) {
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.DATA_API)
+        || `${baseUrl}webapp/api/data.php`;
+      const query = new URLSearchParams({
+        action: 'chant_by_file',
+        path: normalizePath(filePath).replace(/^pdf\//i, ''),
+      }).toString();
+
+      try {
+        const response = await fetch(`${apiUrl}?${query}`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        if (response.status === 401) {
+          infoWindow.close();
+          redirectToLogin();
+          return;
+        }
+        if (!response.ok || !payload || !payload.success || !payload.chantId) {
+          throw new Error((payload && payload.message) || 'Informations du chant indisponibles.');
+        }
+
+        infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(payload.chantId)}`;
+      } catch (error) {
+        infoWindow.close();
+        console.error(error);
+      }
     }
 
     function redirectToLogin() {

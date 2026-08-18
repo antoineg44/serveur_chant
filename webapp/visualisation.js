@@ -462,6 +462,38 @@ function buildProtectedPdfUrl(relativePdfPath) {
   return `${VISUALISATION_API_URL}?${params.toString()}`;
 }
 
+async function resolveChantId(relativeFilePath) {
+  const query = new URLSearchParams({
+    action: 'chant_by_file',
+    path: cleanPath(relativeFilePath),
+  }).toString();
+  const response = await fetch(`${WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`}?${query}`, { credentials: 'include' });
+  const payload = await response.json().catch(() => null);
+
+  if (response.status === 401) {
+    redirectToLogin();
+    return null;
+  }
+
+  if (!response.ok || !payload?.success || !payload.chantId) {
+    throw new Error(payload?.message || 'Informations du chant indisponibles.');
+  }
+
+  return payload.chantId;
+}
+
+async function openChantInfo(relativeFilePath, infoWindow) {
+  try {
+    const chantId = await resolveChantId(relativeFilePath);
+    if (chantId) {
+      infoWindow.location.href = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+    }
+  } catch (error) {
+    infoWindow.close();
+    showMessage(error.message || 'Informations du chant indisponibles.');
+  }
+}
+
 function isAudioPath(path) {
   const lower = String(path || '').toLowerCase();
   return lower.endsWith('.mp3') || lower.endsWith('.m4a');
@@ -536,10 +568,8 @@ function renderFileList(items, currentFileName, folderPath) {
     const isMusicXml = isMusicXmlPath(filePath);
     const isSupported = isPdf || isMusicXml || isAudio;
     const isSelected = item.name === currentFileName;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `file-card${isSelected ? ' is-selected' : ''}${isSupported ? ' is-clickable' : ' is-disabled'}`;
-    button.disabled = !isSupported;
+    const card = document.createElement('div');
+    card.className = `file-card${isSelected ? ' is-selected' : ''}${isSupported ? ' is-clickable' : ' is-disabled'}`;
 
     const icon = document.createElement('span');
     icon.className = 'file-icon';
@@ -558,20 +588,37 @@ function renderFileList(items, currentFileName, folderPath) {
 
     content.appendChild(name);
     content.appendChild(meta);
-    button.appendChild(icon);
-    button.appendChild(content);
+    card.appendChild(icon);
+    card.appendChild(content);
 
     if (isSupported) {
-      button.addEventListener('click', () => {
+      card.addEventListener('click', () => {
         if (isAudio) {
           window.open(buildPdfFileUrl(filePath), '_blank', 'noopener,noreferrer');
           return;
         }
         void loadVisualisation(filePath);
       });
+
+      const infoButton = document.createElement('button');
+      infoButton.type = 'button';
+      infoButton.className = 'file-info-button';
+      infoButton.title = 'Informations du chant';
+      infoButton.setAttribute('aria-label', `Informations de ${item.name}`);
+      infoButton.textContent = 'i';
+      infoButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const infoWindow = window.open('about:blank', '_blank');
+        if (!infoWindow) {
+          showMessage('Autorisez les fenêtres contextuelles pour ouvrir les informations du chant.');
+          return;
+        }
+        void openChantInfo(filePath, infoWindow);
+      });
+      card.appendChild(infoButton);
     }
 
-    fileList.appendChild(button);
+    fileList.appendChild(card);
   }
 }
 
