@@ -122,6 +122,10 @@ function insertAelfSection(type, name, lecture, referenceSection, position) {
     var newSection = position === 'before' ? referenceSection.previousElementSibling : referenceSection.nextElementSibling;
     if (newSection) {
         newSection.setAttribute('data-aelf-reading', type);
+        var chantRow = newSection.querySelector("div[id^='chant_']");
+        if (chantRow) {
+            chantRow.setAttribute('data-aelf-reading', type); // Needed so collectProgramChantsFromDom() also excludes it.
+        }
         markAelfReadingHeading(newSection.querySelector("div[id^='chant_'] .part-column h1"));
     }
 
