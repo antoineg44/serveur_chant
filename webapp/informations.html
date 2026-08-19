@@ -259,14 +259,6 @@
       return String(value || '').trim() || '—';
     }
 
-    function isInModalPopup() {
-      try {
-        return Boolean(window.frameElement && window.frameElement.id === 'messe-info-modal-frame');
-      } catch {
-        return false;
-      }
-    }
-
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>'"]/g, (character) => ({
         '&': '&amp;',
@@ -451,7 +443,6 @@
             <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
             <button type="button" class="messe-popup-action-button" data-action="complete-zip">Créer un zip complet avec les fichiers dérivés</button>
             <button type="button" class="messe-popup-action-button" data-action="copy">Copier le lien du programme</button>
-            ${isInModalPopup() ? '<button type="button" class="messe-popup-action-button" data-action="new-tab">Nouvel Onglet</button>' : ''}
           </div>
         </div>
         
