@@ -986,6 +986,10 @@ function resolveChantReference(PDO $pdo, string $path): ?array
     }
 
     if ($chantId === false) {
+        $chantId = findSimilarChantId($pdo, $chantNom);
+    }
+
+    if ($chantId === false || $chantId === null) {
         return null;
     }
 
@@ -997,6 +1001,47 @@ function resolveChantReference(PDO $pdo, string $path): ?array
         'chantId' => (int) $chantId,
         'fichierId' => $fichierId === false ? null : (int) $fichierId,
     ];
+}
+
+/**
+ * Last-resort fallback: picks the existing chant whose name is closest to the
+ * requested one, ignoring accents/case/punctuation differences.
+ */
+function findSimilarChantId(PDO $pdo, string $chantNom): ?int
+{
+    $target = normalizeForSimilarity($chantNom);
+    if ($target === '') {
+        return null;
+    }
+
+    $rows = $pdo->query('SELECT ID, Nom FROM `Chant` WHERE Supprimer = 0')->fetchAll();
+
+    $bestId = null;
+    $bestScore = 0.0;
+
+    foreach ($rows as $row) {
+        similar_text($target, normalizeForSimilarity((string) $row['Nom']), $percent);
+        if ($percent > $bestScore) {
+            $bestScore = $percent;
+            $bestId = (int) $row['ID'];
+        }
+    }
+
+    return $bestScore >= 60.0 ? $bestId : null;
+}
+
+function normalizeForSimilarity(string $value): string
+{
+    $value = mb_strtolower(trim($value));
+
+    if (function_exists('iconv')) {
+        $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($converted !== false) {
+            $value = $converted;
+        }
+    }
+
+    return trim((string) preg_replace('/[^a-z0-9]+/', ' ', $value));
 }
 
 function mapProgrammeRow(array $row): array
