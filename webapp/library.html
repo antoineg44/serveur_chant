@@ -118,6 +118,30 @@
     .btn.btn-danger {
       max-width: 150px;
     }
+
+    .partie-categories-list {
+      display: grid;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      margin-bottom: 16px;
+    }
+
+    .partie-categories-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(200px, 2fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .partie-categories-row select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
   </style>
   <script>
     (async () => {
@@ -148,6 +172,7 @@
         <button id="library-create-program" class="btn" type="button">Nouveau programme</button>
         <button id="library-delete" class="btn btn-danger" type="button" disabled>Supprimer</button>
         <button id="library-manage-parties" class="btn btn-ghost" type="button">Parties</button>
+        <button id="library-manage-partie-categories" class="btn btn-ghost" type="button">Correspondance</button>
         <button id="library-refresh" class="btn btn-ghost icon-btn" type="button" title="Rafraichir la liste" aria-label="Rafraichir la liste">
           <span class="icon-glyph" aria-hidden="true">&#x21bb;</span><span class="sr-only">Rafraichir la liste</span>
         </button>
@@ -192,6 +217,16 @@
     <ul id="parties-list" class="parties-list"></ul>
     <div class="library-dialog-actions">
       <button type="button" class="btn btn-ghost" data-close-dialog>Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="partie-categories-dialog" class="library-dialog">
+    <h2>Correspondance Partie / Categorie</h2>
+    <p class="hint">Selectionnez, pour chaque partie, les categories associees (Ctrl/Cmd + clic pour en choisir plusieurs).</p>
+    <div id="partie-categories-list" class="partie-categories-list"></div>
+    <div class="library-dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close-dialog>Fermer</button>
+      <button type="button" id="partie-categories-save" class="btn">Enregistrer</button>
     </div>
   </dialog>
 

@@ -9,11 +9,16 @@ const countElement = document.getElementById('library-count');
 const createButton = document.getElementById('library-create-program');
 const deleteButton = document.getElementById('library-delete');
 const partiesButton = document.getElementById('library-manage-parties');
+const partieCategoriesButton = document.getElementById('library-manage-partie-categories');
 const refreshButton = document.getElementById('library-refresh');
 
 const partiesDialog = document.getElementById('parties-dialog');
 const partieCreateForm = document.getElementById('partie-create-form');
 const partiesList = document.getElementById('parties-list');
+
+const partieCategoriesDialog = document.getElementById('partie-categories-dialog');
+const partieCategoriesListEl = document.getElementById('partie-categories-list');
+const partieCategoriesSaveButton = document.getElementById('partie-categories-save');
 
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
@@ -287,6 +292,67 @@ deleteButton.addEventListener('click', async () => {
 partiesButton.addEventListener('click', async () => {
   await refreshPartiesList();
   partiesDialog.showModal();
+});
+
+async function loadPartieCategories() {
+  try {
+    const payload = await programmeApi('partie_categories');
+    const parties = payload.parties || [];
+    const categories = payload.categories || [];
+    partieCategoriesListEl.innerHTML = '';
+
+    if (!parties.length) {
+      partieCategoriesListEl.innerHTML = '<p class="hint">Aucune partie enregistree.</p>';
+      return;
+    }
+
+    parties.forEach((partie) => {
+      const row = document.createElement('div');
+      row.className = 'partie-categories-row';
+
+      const label = document.createElement('strong');
+      label.textContent = partie.nom;
+      row.appendChild(label);
+
+      const select = document.createElement('select');
+      select.multiple = true;
+      select.size = Math.min(6, Math.max(3, categories.length));
+      select.dataset.partieId = String(partie.id);
+
+      categories.forEach((categorie) => {
+        const option = document.createElement('option');
+        option.value = String(categorie.id);
+        option.textContent = categorie.nom;
+        option.selected = partie.categorieIds.includes(categorie.id);
+        select.appendChild(option);
+      });
+
+      row.appendChild(select);
+      partieCategoriesListEl.appendChild(row);
+    });
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+partieCategoriesSaveButton.addEventListener('click', async () => {
+  const mapping = {};
+
+  partieCategoriesListEl.querySelectorAll('select[data-partie-id]').forEach((select) => {
+    mapping[select.dataset.partieId] = Array.from(select.selectedOptions).map((option) => Number(option.value));
+  });
+
+  try {
+    await programmeApi('partie_categories_save', { mapping: JSON.stringify(mapping) }, 'POST');
+    partieCategoriesDialog.close();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+partieCategoriesButton.addEventListener('click', async () => {
+  await loadPartieCategories();
+  partieCategoriesDialog.showModal();
 });
 
 refreshButton.addEventListener('click', () => loadProgrammes());

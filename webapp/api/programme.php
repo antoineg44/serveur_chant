@@ -56,6 +56,14 @@ try {
             handlePartieDelete($pdo);
             break;
 
+        case 'partie_categories':
+            handlePartieCategories($pdo);
+            break;
+
+        case 'partie_categories_save':
+            handlePartieCategoriesSave($pdo);
+            break;
+
         case 'item_add_chant':
             handleItemAddChant($pdo);
             break;
@@ -213,6 +221,20 @@ function ensureSchema(PDO $pdo): void
                 REFERENCES `Programme` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT `fk_programme_partie_partie` FOREIGN KEY (`PartieID`)
                 REFERENCES `Partie` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    // Categorie is owned by data.php, but the FK just needs the table to exist by now.
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `PartieCategorie` (
+            `PartieID` INT UNSIGNED NOT NULL,
+            `CategorieID` INT UNSIGNED NOT NULL,
+            PRIMARY KEY (`PartieID`, `CategorieID`),
+            KEY `idx_partie_categorie_categorie` (`CategorieID`),
+            CONSTRAINT `fk_partie_categorie_partie` FOREIGN KEY (`PartieID`)
+                REFERENCES `Partie` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `fk_partie_categorie_categorie` FOREIGN KEY (`CategorieID`)
+                REFERENCES `Categorie` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
 }
@@ -674,6 +696,78 @@ function handlePartieDelete(PDO $pdo): void
         'success' => true,
         'deleted' => $statement->rowCount(),
     ]);
+}
+
+/**
+ * Every Partie alongside the Categorie IDs currently linked to it, plus the full Categorie list.
+ */
+function handlePartieCategories(PDO $pdo): void
+{
+    $parties = $pdo->query(
+        'SELECT p.ID, p.Nom,
+                (SELECT GROUP_CONCAT(pc.CategorieID ORDER BY pc.CategorieID SEPARATOR \',\')
+                 FROM `PartieCategorie` pc WHERE pc.PartieID = p.ID) AS CategorieIds
+         FROM `Partie` p
+         ORDER BY p.Nom ASC'
+    )->fetchAll();
+
+    $categories = $pdo->query('SELECT ID, Nom FROM `Categorie` ORDER BY Nom ASC')->fetchAll();
+
+    respondJson(200, [
+        'success' => true,
+        'parties' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+            'categorieIds' => $row['CategorieIds'] === null
+                ? []
+                : array_map('intval', explode(',', (string) $row['CategorieIds'])),
+        ], $parties),
+        'categories' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+        ], $categories),
+    ]);
+}
+
+/**
+ * Replaces the whole PartieCategorie mapping from a JSON object of partieId => [categorieId, ...].
+ */
+function handlePartieCategoriesSave(PDO $pdo): void
+{
+    $decoded = json_decode(requestValue('mapping'), true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException('Correspondance invalide.');
+    }
+
+    $delete = $pdo->prepare('DELETE FROM `PartieCategorie` WHERE PartieID = :partie');
+    $insert = $pdo->prepare('INSERT INTO `PartieCategorie` (PartieID, CategorieID) VALUES (:partie, :categorie)');
+
+    $pdo->beginTransaction();
+
+    try {
+        foreach ($decoded as $partieId => $categorieIds) {
+            $partieId = (int) $partieId;
+            if ($partieId <= 0) {
+                continue;
+            }
+
+            $delete->execute([':partie' => $partieId]);
+
+            foreach ((array) $categorieIds as $categorieId) {
+                $categorieId = (int) $categorieId;
+                if ($categorieId > 0) {
+                    $insert->execute([':partie' => $partieId, ':categorie' => $categorieId]);
+                }
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        $pdo->rollBack();
+        throw $error;
+    }
+
+    respondJson(200, ['success' => true]);
 }
 
 function handleItemAddChant(PDO $pdo): void
