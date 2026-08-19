@@ -162,6 +162,7 @@ function ensureSchema(PDO $pdo): void
             `DateAjout` DATETIME NOT NULL,
             `Cote` VARCHAR(20) NULL,
             `Informations` TEXT NULL,
+            `Supprimer` TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (`ID`),
             KEY `idx_chant_path` (`Path`(191)),
             KEY `idx_chant_nom` (`Nom`(191))
@@ -178,6 +179,7 @@ function ensureSchema(PDO $pdo): void
             `Accords` TINYINT(1) NOT NULL DEFAULT 0,
             `NbVoix` TINYINT UNSIGNED NULL,
             `Informations` TEXT NULL,
+            `Supprimer` TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (`ID`),
             KEY `idx_fichier_chant` (`ChantID`),
             CONSTRAINT `fk_fichier_chant` FOREIGN KEY (`ChantID`)
@@ -338,12 +340,12 @@ function handleList(PDO $pdo): void
 
     $statement = $pdo->prepare(
         'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
-                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID) AS FileCount,
+                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
                 (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
                  FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
                  WHERE ca.ChantID = c.ID) AS Auteurs
          FROM `Chant` c
-         WHERE c.Path = :path
+         WHERE c.Path = :path AND c.Supprimer = 0
          ORDER BY c.Nom ASC'
     );
     $statement->execute([':path' => $path]);
@@ -360,7 +362,7 @@ function handleList(PDO $pdo): void
 
 function listRootFolders(PDO $pdo): array
 {
-    $rows = $pdo->query('SELECT DISTINCT `Path` FROM `Chant` WHERE `Path` <> \'\' ORDER BY `Path` ASC')->fetchAll();
+    $rows = $pdo->query('SELECT DISTINCT `Path` FROM `Chant` WHERE `Path` <> \'\' AND `Supprimer` = 0 ORDER BY `Path` ASC')->fetchAll();
 
     $folders = [];
     foreach ($rows as $row) {
@@ -392,12 +394,13 @@ function handleSearch(PDO $pdo): void
 
     $statement = $pdo->prepare(<<<'SQL'
         SELECT DISTINCT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
-               (SELECT COUNT(*) FROM `Fichier` f2 WHERE f2.ChantID = c.ID) AS FileCount
+               (SELECT COUNT(*) FROM `Fichier` f2 WHERE f2.ChantID = c.ID AND f2.Supprimer = 0) AS FileCount
         FROM `Chant` c
-        LEFT JOIN `Fichier` f ON f.ChantID = c.ID
-        WHERE c.Nom LIKE :nom ESCAPE '\\'
+        LEFT JOIN `Fichier` f ON f.ChantID = c.ID AND f.Supprimer = 0
+        WHERE c.Supprimer = 0
+          AND (c.Nom LIKE :nom ESCAPE '\\'
            OR c.Path LIKE :path ESCAPE '\\'
-           OR f.NomFichier LIKE :file ESCAPE '\\'
+           OR f.NomFichier LIKE :file ESCAPE '\\')
         ORDER BY c.Path ASC, c.Nom ASC
         LIMIT 300
         SQL
@@ -428,7 +431,7 @@ function handleFiles(PDO $pdo): void
     $statement = $pdo->prepare(
         'SELECT ID, NomFichier, DateAjout, ChantID, Tonalite, Accords, NbVoix, Informations
          FROM `Fichier`
-         WHERE ChantID = :chant
+         WHERE ChantID = :chant AND Supprimer = 0
          ORDER BY NomFichier ASC'
     );
     $statement->execute([':chant' => $chantId]);
@@ -551,12 +554,12 @@ function handleChantDetail(PDO $pdo): void
 
     $statement = $pdo->prepare(
         'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
-                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID) AS FileCount,
+                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
                 (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
                  FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
                  WHERE ca.ChantID = c.ID) AS Auteurs
          FROM `Chant` c
-         WHERE c.ID = :id'
+         WHERE c.ID = :id AND c.Supprimer = 0'
     );
     $statement->execute([':id' => $id]);
     $chant = $statement->fetch();
@@ -568,7 +571,7 @@ function handleChantDetail(PDO $pdo): void
     $files = $pdo->prepare(
         'SELECT ID, NomFichier, DateAjout, ChantID, Tonalite, Accords, NbVoix, Informations
          FROM `Fichier`
-         WHERE ChantID = :chant
+         WHERE ChantID = :chant AND Supprimer = 0
          ORDER BY NomFichier ASC'
     );
     $files->execute([':chant' => $id]);
@@ -603,7 +606,9 @@ function handleChantByFile(PDO $pdo): void
          INNER JOIN `Fichier` f ON f.ChantID = c.ID
          WHERE c.Nom = :nom
            AND c.Path = :path
+           AND c.Supprimer = 0
            AND f.NomFichier = :fichier
+           AND f.Supprimer = 0
          LIMIT 1'
     );
     $statement->execute([
@@ -677,7 +682,13 @@ function handleChantDelete(PDO $pdo): void
         throw new RuntimeException('Identifiant de chant manquant.');
     }
 
-    $statement = $pdo->prepare('DELETE FROM `Chant` WHERE ID = :id');
+    $fileCount = $pdo->prepare('SELECT COUNT(*) FROM `Fichier` WHERE ChantID = :id');
+    $fileCount->execute([':id' => $id]);
+    if ((int) $fileCount->fetchColumn() > 0) {
+        throw new RuntimeException('Impossible de supprimer ce chant : il contient encore des fichiers.');
+    }
+
+    $statement = $pdo->prepare('UPDATE `Chant` SET Supprimer = 1 WHERE ID = :id');
     $statement->execute([':id' => $id]);
 
     respondJson(200, [
@@ -916,6 +927,69 @@ function chantDirectory(string $chantPath, string $chantName): string
     return $pdfRoot . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $segments);
 }
 
+/**
+ * Mirrors the chant's folder structure under /pdf/Recycle Bin/<Path>/<Nom>/.
+ */
+function recycleBinDirectory(string $chantPath, string $chantName): string
+{
+    $pdfRoot = realpath(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'pdf');
+    if ($pdfRoot === false || !is_dir($pdfRoot)) {
+        throw new RuntimeException('Dossier /pdf introuvable.');
+    }
+
+    $segments = array_filter(
+        ['Recycle Bin', validateFolderName($chantPath), validateFolderName($chantName)],
+        static fn (string $segment): bool => $segment !== ''
+    );
+
+    return $pdfRoot . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $segments);
+}
+
+/**
+ * Appends a numeric suffix if a file with the same name already sits in the recycle bin.
+ */
+function uniqueRecycleBinDestination(string $destination): string
+{
+    if (!file_exists($destination)) {
+        return $destination;
+    }
+
+    $directory = dirname($destination);
+    $extension = pathinfo($destination, PATHINFO_EXTENSION);
+    $baseName = pathinfo($destination, PATHINFO_FILENAME);
+    $suffix = 1;
+
+    do {
+        $candidate = $directory . DIRECTORY_SEPARATOR . $baseName . '_' . $suffix . ($extension !== '' ? '.' . $extension : '');
+        $suffix++;
+    } while (file_exists($candidate));
+
+    return $candidate;
+}
+
+/**
+ * Moves a soft-deleted file's physical copy into the recycle bin, keeping its folder structure.
+ */
+function moveFileToRecycleBin(string $chantPath, string $chantName, string $fileName): void
+{
+    $source = chantDirectory($chantPath, $chantName) . DIRECTORY_SEPARATOR . validateFileName($fileName);
+
+    if (!is_file($source)) {
+        return;
+    }
+
+    $targetDir = recycleBinDirectory($chantPath, $chantName);
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+        throw new RuntimeException('Impossible de creer le dossier de la corbeille.');
+    }
+
+    $destination = uniqueRecycleBinDestination($targetDir . DIRECTORY_SEPARATOR . validateFileName($fileName));
+
+    if (!rename($source, $destination)) {
+        throw new RuntimeException('Impossible de deplacer le fichier vers la corbeille.');
+    }
+}
+
 function validateFileName(string $name): string
 {
     $name = trim($name);
@@ -953,7 +1027,22 @@ function handleFileDelete(PDO $pdo): void
         throw new RuntimeException('Identifiant de fichier manquant.');
     }
 
-    $statement = $pdo->prepare('DELETE FROM `Fichier` WHERE ID = :id');
+    $current = $pdo->prepare(
+        'SELECT f.NomFichier, c.Nom AS ChantNom, c.Path AS ChantPath
+         FROM `Fichier` f
+         INNER JOIN `Chant` c ON c.ID = f.ChantID
+         WHERE f.ID = :id'
+    );
+    $current->execute([':id' => $id]);
+    $file = $current->fetch();
+
+    if ($file === false) {
+        throw new RuntimeException('Fichier introuvable.');
+    }
+
+    moveFileToRecycleBin((string) $file['ChantPath'], (string) $file['ChantNom'], (string) $file['NomFichier']);
+
+    $statement = $pdo->prepare('UPDATE `Fichier` SET Supprimer = 1 WHERE ID = :id');
     $statement->execute([':id' => $id]);
 
     respondJson(200, [
@@ -1029,7 +1118,7 @@ function handleFileMove(PDO $pdo): void
 
 function handleChantOptions(PDO $pdo): void
 {
-    $rows = $pdo->query('SELECT ID, Nom, Path FROM `Chant` ORDER BY Path ASC, Nom ASC')->fetchAll();
+    $rows = $pdo->query('SELECT ID, Nom, Path FROM `Chant` WHERE Supprimer = 0 ORDER BY Path ASC, Nom ASC')->fetchAll();
 
     respondJson(200, [
         'success' => true,

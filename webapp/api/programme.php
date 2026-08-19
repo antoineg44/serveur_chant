@@ -975,12 +975,12 @@ function resolveChantReference(PDO $pdo, string $path): ?array
     $chantNom = array_pop($segments);
     $chantPath = $segments ? (string) array_pop($segments) : '';
 
-    $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Path = :path');
+    $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Path = :path AND Supprimer = 0');
     $statement->execute([':nom' => $chantNom, ':path' => $chantPath]);
     $chantId = $statement->fetchColumn();
 
     if ($chantId === false) {
-        $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom LIMIT 1');
+        $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Supprimer = 0 LIMIT 1');
         $statement->execute([':nom' => $chantNom]);
         $chantId = $statement->fetchColumn();
     }
@@ -989,7 +989,7 @@ function resolveChantReference(PDO $pdo, string $path): ?array
         return null;
     }
 
-    $statement = $pdo->prepare('SELECT ID FROM `Fichier` WHERE ChantID = :chant AND NomFichier = :nom');
+    $statement = $pdo->prepare('SELECT ID FROM `Fichier` WHERE ChantID = :chant AND NomFichier = :nom AND Supprimer = 0');
     $statement->execute([':chant' => $chantId, ':nom' => $fileName]);
     $fichierId = $statement->fetchColumn();
 
