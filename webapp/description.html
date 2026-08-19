@@ -378,6 +378,14 @@
           </div>
           <input type="hidden" name="auteurs" id="auteurs-hidden" />
         </label>
+        <label>Categories
+          <div class="auteur-picker" id="categorie-picker">
+            <div class="auteur-chips" id="categorie-chips"></div>
+            <input type="text" id="categorie-search" placeholder="Rechercher une categorie existante ou en saisir une nouvelle" autocomplete="off" />
+            <div class="auteur-suggestions-list" id="categorie-suggestions-list" hidden></div>
+          </div>
+          <input type="hidden" name="categories" id="categories-hidden" />
+        </label>
         <label>Informations
           <textarea name="informations" rows="4" maxlength="5000"></textarea>
         </label>
@@ -684,134 +692,167 @@
       throw new Error(errors.join(' | ') || 'API inaccessible');
     }
 
-    async function loadAuteurOptions() {
-      try {
-        const response = await fetch(`${LOCAL_DATA_API}?action=auteurs`, { credentials: 'include' });
-        const payload = await response.json().catch(() => null);
-        auteurOptions = (payload && payload.auteurs) || [];
-      } catch {
-        // Suggestions are optional.
-      }
-    }
-
     const auteurChips = document.getElementById('auteur-chips');
     const auteurSearchInput = document.getElementById('auteur-search');
     const auteurSuggestionsList = document.getElementById('auteur-suggestions-list');
     const auteursHiddenInput = document.getElementById('auteurs-hidden');
-    let auteurOptions = [];
-    let selectedAuteurs = [];
+    const categorieChips = document.getElementById('categorie-chips');
+    const categorieSearchInput = document.getElementById('categorie-search');
+    const categorieSuggestionsList = document.getElementById('categorie-suggestions-list');
+    const categoriesHiddenInput = document.getElementById('categories-hidden');
 
-    function syncAuteursHiddenValue() {
-      auteursHiddenInput.value = selectedAuteurs.join(', ');
-    }
+    /**
+     * Builds a chip-based picker (search existing values or add a new one) backed
+     * by a hidden comma-separated input, shared by the Auteurs and Categories fields.
+     */
+    function createTagPicker({ chipsEl, searchInput: input, suggestionsList, hiddenInput, apiAction, apiKey, addLabel }) {
+      let allOptions = [];
+      let selected = [];
 
-    function renderAuteurChips() {
-      auteurChips.innerHTML = '';
-      selectedAuteurs.forEach((nom) => {
-        const chip = document.createElement('span');
-        chip.className = 'auteur-chip';
-
-        const label = document.createElement('span');
-        label.textContent = nom;
-        chip.appendChild(label);
-
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.className = 'auteur-chip-remove';
-        removeButton.textContent = '\u00d7';
-        removeButton.setAttribute('aria-label', `Retirer ${nom}`);
-        removeButton.addEventListener('click', () => removeAuteur(nom));
-        chip.appendChild(removeButton);
-
-        auteurChips.appendChild(chip);
-      });
-      syncAuteursHiddenValue();
-    }
-
-    function addAuteur(nom) {
-      const trimmed = nom.trim();
-      if (!trimmed) {
-        return;
-      }
-      const alreadySelected = selectedAuteurs.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
-      if (!alreadySelected) {
-        selectedAuteurs.push(trimmed);
-        renderAuteurChips();
-      }
-      auteurSearchInput.value = '';
-      hideAuteurSuggestions();
-      auteurSearchInput.focus();
-    }
-
-    function removeAuteur(nom) {
-      selectedAuteurs = selectedAuteurs.filter((existing) => existing !== nom);
-      renderAuteurChips();
-    }
-
-    function hideAuteurSuggestions() {
-      auteurSuggestionsList.hidden = true;
-      auteurSuggestionsList.innerHTML = '';
-    }
-
-    function renderAuteurSuggestions() {
-      const filter = auteurSearchInput.value.trim().toLowerCase();
-      const matches = auteurOptions.filter((auteur) => {
-        const nom = auteur.nom.toLowerCase();
-        const isSelected = selectedAuteurs.some((existing) => existing.toLowerCase() === nom);
-        return !isSelected && (!filter || nom.includes(filter));
-      });
-
-      auteurSuggestionsList.innerHTML = '';
-
-      matches.forEach((auteur) => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'auteur-suggestion-item';
-        item.textContent = auteur.nom;
-        item.addEventListener('click', () => addAuteur(auteur.nom));
-        auteurSuggestionsList.appendChild(item);
-      });
-
-      const filterValue = auteurSearchInput.value.trim();
-      const isExactMatch = auteurOptions.some((auteur) => auteur.nom.toLowerCase() === filterValue.toLowerCase());
-      if (filterValue && !isExactMatch) {
-        const addItem = document.createElement('button');
-        addItem.type = 'button';
-        addItem.className = 'auteur-suggestion-item is-add-new';
-        addItem.textContent = `Ajouter "${filterValue}" comme nouvel auteur`;
-        addItem.addEventListener('click', () => addAuteur(filterValue));
-        auteurSuggestionsList.appendChild(addItem);
+      function syncHidden() {
+        hiddenInput.value = selected.join(', ');
       }
 
-      auteurSuggestionsList.hidden = auteurSuggestionsList.children.length === 0;
-    }
+      function render() {
+        chipsEl.innerHTML = '';
+        selected.forEach((nom) => {
+          const chip = document.createElement('span');
+          chip.className = 'auteur-chip';
 
-    auteurSearchInput.addEventListener('input', () => {
-      renderAuteurSuggestions();
-    });
+          const label = document.createElement('span');
+          label.textContent = nom;
+          chip.appendChild(label);
 
-    auteurSearchInput.addEventListener('focus', () => {
-      renderAuteurSuggestions();
-    });
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'auteur-chip-remove';
+          removeButton.textContent = '\u00d7';
+          removeButton.setAttribute('aria-label', `Retirer ${nom}`);
+          removeButton.addEventListener('click', () => remove(nom));
+          chip.appendChild(removeButton);
 
-    auteurSearchInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        const firstSuggestion = auteurSuggestionsList.querySelector('.auteur-suggestion-item');
-        if (firstSuggestion) {
-          firstSuggestion.click();
-        } else if (auteurSearchInput.value.trim()) {
-          addAuteur(auteurSearchInput.value.trim());
+          chipsEl.appendChild(chip);
+        });
+        syncHidden();
+      }
+
+      function add(nom) {
+        const trimmed = nom.trim();
+        if (!trimmed) {
+          return;
         }
-      } else if (event.key === 'Escape') {
-        hideAuteurSuggestions();
+        const alreadySelected = selected.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
+        if (!alreadySelected) {
+          selected.push(trimmed);
+          render();
+        }
+        input.value = '';
+        hideSuggestions();
+        input.focus();
       }
+
+      function remove(nom) {
+        selected = selected.filter((existing) => existing !== nom);
+        render();
+      }
+
+      function hideSuggestions() {
+        suggestionsList.hidden = true;
+        suggestionsList.innerHTML = '';
+      }
+
+      function renderSuggestions() {
+        const filter = input.value.trim().toLowerCase();
+        const matches = allOptions.filter((option) => {
+          const nom = option.nom.toLowerCase();
+          const isSelected = selected.some((existing) => existing.toLowerCase() === nom);
+          return !isSelected && (!filter || nom.includes(filter));
+        });
+
+        suggestionsList.innerHTML = '';
+
+        matches.forEach((option) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'auteur-suggestion-item';
+          item.textContent = option.nom;
+          item.addEventListener('click', () => add(option.nom));
+          suggestionsList.appendChild(item);
+        });
+
+        const filterValue = input.value.trim();
+        const isExactMatch = allOptions.some((option) => option.nom.toLowerCase() === filterValue.toLowerCase());
+        if (filterValue && !isExactMatch) {
+          const addItem = document.createElement('button');
+          addItem.type = 'button';
+          addItem.className = 'auteur-suggestion-item is-add-new';
+          addItem.textContent = `Ajouter "${filterValue}" ${addLabel}`;
+          addItem.addEventListener('click', () => add(filterValue));
+          suggestionsList.appendChild(addItem);
+        }
+
+        suggestionsList.hidden = suggestionsList.children.length === 0;
+      }
+
+      input.addEventListener('input', renderSuggestions);
+      input.addEventListener('focus', renderSuggestions);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          const firstSuggestion = suggestionsList.querySelector('.auteur-suggestion-item');
+          if (firstSuggestion) {
+            firstSuggestion.click();
+          } else if (input.value.trim()) {
+            add(input.value.trim());
+          }
+        } else if (event.key === 'Escape') {
+          hideSuggestions();
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!chipsEl.parentElement.contains(event.target)) {
+          hideSuggestions();
+        }
+      });
+
+      return {
+        setSelected(values) {
+          selected = Array.isArray(values) ? [...values] : [];
+          input.value = '';
+          render();
+          hideSuggestions();
+        },
+        async loadOptions() {
+          try {
+            const response = await fetch(`${LOCAL_DATA_API}?action=${apiAction}`, { credentials: 'include' });
+            const payload = await response.json().catch(() => null);
+            allOptions = (payload && payload[apiKey]) || [];
+          } catch {
+            // Suggestions are optional.
+          }
+        },
+      };
+    }
+
+    const auteurPicker = createTagPicker({
+      chipsEl: auteurChips,
+      searchInput: auteurSearchInput,
+      suggestionsList: auteurSuggestionsList,
+      hiddenInput: auteursHiddenInput,
+      apiAction: 'auteurs',
+      apiKey: 'auteurs',
+      addLabel: 'comme nouvel auteur',
     });
 
-    document.addEventListener('click', (event) => {
-      if (!auteurChips.parentElement.contains(event.target)) {
-        hideAuteurSuggestions();
-      }
+    const categoriePicker = createTagPicker({
+      chipsEl: categorieChips,
+      searchInput: categorieSearchInput,
+      suggestionsList: categorieSuggestionsList,
+      hiddenInput: categoriesHiddenInput,
+      apiAction: 'categories',
+      apiKey: 'categories',
+      addLabel: 'comme nouvelle categorie',
     });
 
     function render(chant, files, programmes) {
@@ -860,6 +901,7 @@
           <div class="chant-card"><strong>Nom</strong><span>${formatValue(chant.nom)}</span></div>
           <div class="chant-card"><strong>Dossier</strong><span>${formatValue(chant.path)}</span></div>
           <div class="chant-card"><strong>Auteurs</strong><span>${formatValue(chant.auteurs)}</span></div>
+          <div class="chant-card"><strong>Categories</strong><span>${formatValue(chant.categories)}</span></div>
           <div class="chant-card"><strong>Cote</strong><span>${chant.cote === null ? '—' : escapeHtml(String(chant.cote))}</span></div>
           <div class="chant-card"><strong>Date d'ajout</strong><span>${formatDate(chant.dateAjout)}</span></div>
           <div class="chant-card"><strong>Fichiers</strong><span>${chant.fileCount}</span></div>
@@ -1056,13 +1098,14 @@
         form.elements.path.value = currentChant.path;
         form.elements.cote.value = currentChant.cote === null ? '' : String(currentChant.cote);
         form.elements.informations.value = currentChant.informations || '';
-        selectedAuteurs = currentChant.auteurs
+        auteurPicker.setSelected(currentChant.auteurs
           ? currentChant.auteurs.split(',').map((nom) => nom.trim()).filter(Boolean)
-          : [];
-        auteurSearchInput.value = '';
-        renderAuteurChips();
-        hideAuteurSuggestions();
-        loadAuteurOptions();
+          : []);
+        auteurPicker.loadOptions();
+        categoriePicker.setSelected(currentChant.categories
+          ? currentChant.categories.split(',').map((nom) => nom.trim()).filter(Boolean)
+          : []);
+        categoriePicker.loadOptions();
         dialog.showModal();
       });
 
@@ -1076,6 +1119,7 @@
             path: form.elements.path.value.trim(),
             cote: form.elements.cote.value.trim(),
             auteurs: form.elements.auteurs.value.trim(),
+            categories: form.elements.categories.value.trim(),
             informations: form.elements.informations.value.trim(),
           });
           dialog.close();

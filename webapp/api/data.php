@@ -47,6 +47,10 @@ try {
             handleAuteurs($pdo);
             break;
 
+        case 'categories':
+            handleCategories($pdo);
+            break;
+
         case 'chant_detail':
             handleChantDetail($pdo);
             break;
@@ -208,6 +212,28 @@ function ensureSchema(PDO $pdo): void
                 REFERENCES `Auteur` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `Categorie` (
+            `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `Nom` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (`ID`),
+            UNIQUE KEY `uq_categorie_nom` (`Nom`(191))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `ChantCategorie` (
+            `ChantID` INT UNSIGNED NOT NULL,
+            `CategorieID` INT UNSIGNED NOT NULL,
+            PRIMARY KEY (`ChantID`, `CategorieID`),
+            KEY `idx_chant_categorie_categorie` (`CategorieID`),
+            CONSTRAINT `fk_chant_categorie_chant` FOREIGN KEY (`ChantID`)
+                REFERENCES `Chant` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `fk_chant_categorie_categorie` FOREIGN KEY (`CategorieID`)
+                REFERENCES `Categorie` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 }
 
 function requestValue(string $key): string
@@ -343,7 +369,10 @@ function handleList(PDO $pdo): void
                 (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
                 (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
                  FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
-                 WHERE ca.ChantID = c.ID) AS Auteurs
+                 WHERE ca.ChantID = c.ID) AS Auteurs,
+                (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
+                 FROM `ChantCategorie` cc INNER JOIN `Categorie` cat ON cat.ID = cc.CategorieID
+                 WHERE cc.ChantID = c.ID) AS Categories
          FROM `Chant` c
          WHERE c.Path = :path AND c.Supprimer = 0
          ORDER BY c.Nom ASC'
@@ -493,6 +522,7 @@ function handleChantSave(PDO $pdo): void
     }
 
     saveChantAuteurs($pdo, $id, requestValue('auteurs'));
+    saveChantCategories($pdo, $id, requestValue('categories'));
 
     respondJson(200, [
         'success' => true,
@@ -543,6 +573,49 @@ function saveChantAuteurs(PDO $pdo, int $chantId, string $rawAuteurs): void
 }
 
 /**
+ * Categories are entered as a comma separated list and created on the fly,
+ * the same way authors are.
+ */
+function saveChantCategories(PDO $pdo, int $chantId, string $rawCategories): void
+{
+    $names = [];
+    foreach (explode(',', $rawCategories) as $name) {
+        $name = mb_substr(trim($name), 0, DATA_MAX_NAME_LENGTH);
+        if ($name !== '' && !in_array($name, $names, true)) {
+            $names[] = $name;
+        }
+    }
+
+    $delete = $pdo->prepare('DELETE FROM `ChantCategorie` WHERE ChantID = :chant');
+    $findCategorie = $pdo->prepare('SELECT ID FROM `Categorie` WHERE Nom = :nom');
+    $insertCategorie = $pdo->prepare('INSERT INTO `Categorie` (Nom) VALUES (:nom)');
+    $link = $pdo->prepare('INSERT INTO `ChantCategorie` (ChantID, CategorieID) VALUES (:chant, :categorie)');
+
+    $pdo->beginTransaction();
+
+    try {
+        $delete->execute([':chant' => $chantId]);
+
+        foreach ($names as $name) {
+            $findCategorie->execute([':nom' => $name]);
+            $categorieId = $findCategorie->fetchColumn();
+
+            if ($categorieId === false) {
+                $insertCategorie->execute([':nom' => $name]);
+                $categorieId = $pdo->lastInsertId();
+            }
+
+            $link->execute([':chant' => $chantId, ':categorie' => $categorieId]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        $pdo->rollBack();
+        throw $error;
+    }
+}
+
+/**
  * Everything known about one chant: metadata, authors and linked files.
  */
 function handleChantDetail(PDO $pdo): void
@@ -557,7 +630,10 @@ function handleChantDetail(PDO $pdo): void
                 (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
                 (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
                  FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
-                 WHERE ca.ChantID = c.ID) AS Auteurs
+                 WHERE ca.ChantID = c.ID) AS Auteurs,
+                (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
+                 FROM `ChantCategorie` cc INNER JOIN `Categorie` cat ON cat.ID = cc.CategorieID
+                 WHERE cc.ChantID = c.ID) AS Categories
          FROM `Chant` c
          WHERE c.ID = :id AND c.Supprimer = 0'
     );
@@ -669,6 +745,19 @@ function handleAuteurs(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'auteurs' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+        ], $rows),
+    ]);
+}
+
+function handleCategories(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT ID, Nom FROM `Categorie` ORDER BY Nom ASC')->fetchAll();
+
+    respondJson(200, [
+        'success' => true,
+        'categories' => array_map(static fn (array $row): array => [
             'id' => (int) $row['ID'],
             'nom' => (string) $row['Nom'],
         ], $rows),
@@ -1279,6 +1368,7 @@ function mapChantRow(array $row): array
         'cote' => $row['Cote'] === null ? null : (string) $row['Cote'],
         'informations' => $row['Informations'] === null ? '' : (string) $row['Informations'],
         'auteurs' => isset($row['Auteurs']) && $row['Auteurs'] !== null ? (string) $row['Auteurs'] : '',
+        'categories' => isset($row['Categories']) && $row['Categories'] !== null ? (string) $row['Categories'] : '',
         'fileCount' => (int) ($row['FileCount'] ?? 0),
     ];
 }

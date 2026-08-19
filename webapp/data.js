@@ -18,6 +18,10 @@ const auteurChips = document.getElementById('auteur-chips');
 const auteurSearchInput = document.getElementById('auteur-search');
 const auteurSuggestionsList = document.getElementById('auteur-suggestions-list');
 const auteursHiddenInput = document.getElementById('auteurs-hidden');
+const categorieChips = document.getElementById('categorie-chips');
+const categorieSearchInput = document.getElementById('categorie-search');
+const categorieSuggestionsList = document.getElementById('categorie-suggestions-list');
+const categoriesHiddenInput = document.getElementById('categories-hidden');
 const fileDialog = document.getElementById('file-dialog');
 const fileForm = document.getElementById('file-form');
 const fileDialogTitle = document.getElementById('file-dialog-title');
@@ -48,8 +52,6 @@ let editingChantId = null;
 let editingFileContext = null;
 let movingFileId = null;
 let moveOptions = [];
-let auteurOptions = [];
-let selectedAuteurs = [];
 
 // Path holds a single folder name, so any nesting is collapsed away.
 function normalizePath(value) {
@@ -635,137 +637,169 @@ function openChantDialog(chant) {
   chantForm.elements.path.value = chant ? chant.path : currentPath;
   chantForm.elements.cote.value = chant && chant.cote !== null ? String(chant.cote) : '';
   chantForm.elements.informations.value = chant ? chant.informations : '';
-  selectedAuteurs = chant && chant.auteurs
-    ? chant.auteurs.split(',').map((nom) => nom.trim()).filter(Boolean)
-    : [];
-  auteurSearchInput.value = '';
-  renderAuteurChips();
-  hideAuteurSuggestions();
-  loadAuteurOptions();
+  auteurPicker.setSelected(splitTagList(chant && chant.auteurs));
+  auteurPicker.loadOptions();
+  categoriePicker.setSelected(splitTagList(chant && chant.categories));
+  categoriePicker.loadOptions();
   chantDialog.showModal();
 }
 
-function syncAuteursHiddenValue() {
-  auteursHiddenInput.value = selectedAuteurs.join(', ');
+function splitTagList(value) {
+  return value ? value.split(',').map((nom) => nom.trim()).filter(Boolean) : [];
 }
 
-function renderAuteurChips() {
-  auteurChips.innerHTML = '';
-  selectedAuteurs.forEach((nom) => {
-    const chip = document.createElement('span');
-    chip.className = 'auteur-chip';
+/**
+ * Builds a chip-based picker (search existing values or add a new one) backed
+ * by a hidden comma-separated input, shared by the Auteurs and Categories fields.
+ */
+function createTagPicker({ chipsEl, searchInput: input, suggestionsList, hiddenInput, apiAction, apiKey, addLabel }) {
+  let allOptions = [];
+  let selected = [];
 
-    const label = document.createElement('span');
-    label.textContent = nom;
-    chip.appendChild(label);
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'auteur-chip-remove';
-    removeButton.textContent = '\u00d7';
-    removeButton.setAttribute('aria-label', `Retirer ${nom}`);
-    removeButton.addEventListener('click', () => removeAuteur(nom));
-    chip.appendChild(removeButton);
-
-    auteurChips.appendChild(chip);
-  });
-  syncAuteursHiddenValue();
-}
-
-function addAuteur(nom) {
-  const trimmed = nom.trim();
-  if (!trimmed) {
-    return;
-  }
-  const alreadySelected = selectedAuteurs.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
-  if (!alreadySelected) {
-    selectedAuteurs.push(trimmed);
-    renderAuteurChips();
-  }
-  auteurSearchInput.value = '';
-  hideAuteurSuggestions();
-  auteurSearchInput.focus();
-}
-
-function removeAuteur(nom) {
-  selectedAuteurs = selectedAuteurs.filter((existing) => existing !== nom);
-  renderAuteurChips();
-}
-
-function hideAuteurSuggestions() {
-  auteurSuggestionsList.hidden = true;
-  auteurSuggestionsList.innerHTML = '';
-}
-
-function renderAuteurSuggestions() {
-  const filter = auteurSearchInput.value.trim().toLowerCase();
-  const matches = auteurOptions.filter((auteur) => {
-    const nom = auteur.nom.toLowerCase();
-    const isSelected = selectedAuteurs.some((existing) => existing.toLowerCase() === nom);
-    return !isSelected && (!filter || nom.includes(filter));
-  });
-
-  auteurSuggestionsList.innerHTML = '';
-
-  matches.forEach((auteur) => {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'auteur-suggestion-item';
-    item.textContent = auteur.nom;
-    item.addEventListener('click', () => addAuteur(auteur.nom));
-    auteurSuggestionsList.appendChild(item);
-  });
-
-  const filterValue = auteurSearchInput.value.trim();
-  const isExactMatch = auteurOptions.some((auteur) => auteur.nom.toLowerCase() === filterValue.toLowerCase());
-  if (filterValue && !isExactMatch) {
-    const addItem = document.createElement('button');
-    addItem.type = 'button';
-    addItem.className = 'auteur-suggestion-item is-add-new';
-    addItem.textContent = `Ajouter "${filterValue}" comme nouvel auteur`;
-    addItem.addEventListener('click', () => addAuteur(filterValue));
-    auteurSuggestionsList.appendChild(addItem);
+  function syncHidden() {
+    hiddenInput.value = selected.join(', ');
   }
 
-  auteurSuggestionsList.hidden = auteurSuggestionsList.children.length === 0;
-}
+  function render() {
+    chipsEl.innerHTML = '';
+    selected.forEach((nom) => {
+      const chip = document.createElement('span');
+      chip.className = 'auteur-chip';
 
-auteurSearchInput.addEventListener('input', () => {
-  renderAuteurSuggestions();
-});
+      const label = document.createElement('span');
+      label.textContent = nom;
+      chip.appendChild(label);
 
-auteurSearchInput.addEventListener('focus', () => {
-  renderAuteurSuggestions();
-});
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'auteur-chip-remove';
+      removeButton.textContent = '\u00d7';
+      removeButton.setAttribute('aria-label', `Retirer ${nom}`);
+      removeButton.addEventListener('click', () => remove(nom));
+      chip.appendChild(removeButton);
 
-auteurSearchInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const firstSuggestion = auteurSuggestionsList.querySelector('.auteur-suggestion-item');
-    if (firstSuggestion) {
-      firstSuggestion.click();
-    } else if (auteurSearchInput.value.trim()) {
-      addAuteur(auteurSearchInput.value.trim());
+      chipsEl.appendChild(chip);
+    });
+    syncHidden();
+  }
+
+  function add(nom) {
+    const trimmed = nom.trim();
+    if (!trimmed) {
+      return;
     }
-  } else if (event.key === 'Escape') {
-    hideAuteurSuggestions();
+    const alreadySelected = selected.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
+    if (!alreadySelected) {
+      selected.push(trimmed);
+      render();
+    }
+    input.value = '';
+    hideSuggestions();
+    input.focus();
   }
-});
 
-document.addEventListener('click', (event) => {
-  if (!auteurChips.parentElement.contains(event.target)) {
-    hideAuteurSuggestions();
+  function remove(nom) {
+    selected = selected.filter((existing) => existing !== nom);
+    render();
   }
-});
 
-async function loadAuteurOptions() {
-  try {
-    const payload = await apiGet('auteurs');
-    auteurOptions = payload.auteurs || [];
-  } catch {
-    // Suggestions are optional.
+  function hideSuggestions() {
+    suggestionsList.hidden = true;
+    suggestionsList.innerHTML = '';
   }
+
+  function renderSuggestions() {
+    const filter = input.value.trim().toLowerCase();
+    const matches = allOptions.filter((option) => {
+      const nom = option.nom.toLowerCase();
+      const isSelected = selected.some((existing) => existing.toLowerCase() === nom);
+      return !isSelected && (!filter || nom.includes(filter));
+    });
+
+    suggestionsList.innerHTML = '';
+
+    matches.forEach((option) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'auteur-suggestion-item';
+      item.textContent = option.nom;
+      item.addEventListener('click', () => add(option.nom));
+      suggestionsList.appendChild(item);
+    });
+
+    const filterValue = input.value.trim();
+    const isExactMatch = allOptions.some((option) => option.nom.toLowerCase() === filterValue.toLowerCase());
+    if (filterValue && !isExactMatch) {
+      const addItem = document.createElement('button');
+      addItem.type = 'button';
+      addItem.className = 'auteur-suggestion-item is-add-new';
+      addItem.textContent = `Ajouter "${filterValue}" ${addLabel}`;
+      addItem.addEventListener('click', () => add(filterValue));
+      suggestionsList.appendChild(addItem);
+    }
+
+    suggestionsList.hidden = suggestionsList.children.length === 0;
+  }
+
+  input.addEventListener('input', renderSuggestions);
+  input.addEventListener('focus', renderSuggestions);
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const firstSuggestion = suggestionsList.querySelector('.auteur-suggestion-item');
+      if (firstSuggestion) {
+        firstSuggestion.click();
+      } else if (input.value.trim()) {
+        add(input.value.trim());
+      }
+    } else if (event.key === 'Escape') {
+      hideSuggestions();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!chipsEl.parentElement.contains(event.target)) {
+      hideSuggestions();
+    }
+  });
+
+  return {
+    setSelected(values) {
+      selected = Array.isArray(values) ? [...values] : [];
+      input.value = '';
+      render();
+      hideSuggestions();
+    },
+    async loadOptions() {
+      try {
+        const payload = await apiGet(apiAction);
+        allOptions = payload[apiKey] || [];
+      } catch {
+        // Suggestions are optional.
+      }
+    },
+  };
 }
+
+const auteurPicker = createTagPicker({
+  chipsEl: auteurChips,
+  searchInput: auteurSearchInput,
+  suggestionsList: auteurSuggestionsList,
+  hiddenInput: auteursHiddenInput,
+  apiAction: 'auteurs',
+  apiKey: 'auteurs',
+  addLabel: 'comme nouvel auteur',
+});
+
+const categoriePicker = createTagPicker({
+  chipsEl: categorieChips,
+  searchInput: categorieSearchInput,
+  suggestionsList: categorieSuggestionsList,
+  hiddenInput: categoriesHiddenInput,
+  apiAction: 'categories',
+  apiKey: 'categories',
+  addLabel: 'comme nouvelle categorie',
+});
 
 function openFileDialog(chant, file) {
   editingFileContext = { chantId: chant.id, fileId: file ? file.id : null };
@@ -855,6 +889,7 @@ chantForm.addEventListener('submit', async (event) => {
     path: normalizePath(chantForm.elements.path.value),
     cote: chantForm.elements.cote.value.trim(),
     auteurs: chantForm.elements.auteurs.value.trim(),
+    categories: chantForm.elements.categories.value.trim(),
     informations: chantForm.elements.informations.value.trim(),
   };
   if (editingChantId !== null) {
