@@ -14,7 +14,10 @@ const chantColumnHeaders = document.querySelectorAll('[data-chant-column]');
 const chantDialog = document.getElementById('chant-dialog');
 const chantForm = document.getElementById('chant-form');
 const chantDialogTitle = document.getElementById('chant-dialog-title');
-const auteurSuggestions = document.getElementById('auteur-suggestions');
+const auteurChips = document.getElementById('auteur-chips');
+const auteurSearchInput = document.getElementById('auteur-search');
+const auteurSuggestionsList = document.getElementById('auteur-suggestions-list');
+const auteursHiddenInput = document.getElementById('auteurs-hidden');
 const fileDialog = document.getElementById('file-dialog');
 const fileForm = document.getElementById('file-form');
 const fileDialogTitle = document.getElementById('file-dialog-title');
@@ -45,6 +48,8 @@ let editingChantId = null;
 let editingFileContext = null;
 let movingFileId = null;
 let moveOptions = [];
+let auteurOptions = [];
+let selectedAuteurs = [];
 
 // Path holds a single folder name, so any nesting is collapsed away.
 function normalizePath(value) {
@@ -629,21 +634,134 @@ function openChantDialog(chant) {
   chantForm.elements.nom.value = chant ? chant.nom : '';
   chantForm.elements.path.value = chant ? chant.path : currentPath;
   chantForm.elements.cote.value = chant && chant.cote !== null ? String(chant.cote) : '';
-  chantForm.elements.auteurs.value = chant ? (chant.auteurs || '') : '';
   chantForm.elements.informations.value = chant ? chant.informations : '';
-  loadAuteurSuggestions();
+  selectedAuteurs = chant && chant.auteurs
+    ? chant.auteurs.split(',').map((nom) => nom.trim()).filter(Boolean)
+    : [];
+  auteurSearchInput.value = '';
+  renderAuteurChips();
+  hideAuteurSuggestions();
+  loadAuteurOptions();
   chantDialog.showModal();
 }
 
-async function loadAuteurSuggestions() {
+function syncAuteursHiddenValue() {
+  auteursHiddenInput.value = selectedAuteurs.join(', ');
+}
+
+function renderAuteurChips() {
+  auteurChips.innerHTML = '';
+  selectedAuteurs.forEach((nom) => {
+    const chip = document.createElement('span');
+    chip.className = 'auteur-chip';
+
+    const label = document.createElement('span');
+    label.textContent = nom;
+    chip.appendChild(label);
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'auteur-chip-remove';
+    removeButton.textContent = '\u00d7';
+    removeButton.setAttribute('aria-label', `Retirer ${nom}`);
+    removeButton.addEventListener('click', () => removeAuteur(nom));
+    chip.appendChild(removeButton);
+
+    auteurChips.appendChild(chip);
+  });
+  syncAuteursHiddenValue();
+}
+
+function addAuteur(nom) {
+  const trimmed = nom.trim();
+  if (!trimmed) {
+    return;
+  }
+  const alreadySelected = selectedAuteurs.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
+  if (!alreadySelected) {
+    selectedAuteurs.push(trimmed);
+    renderAuteurChips();
+  }
+  auteurSearchInput.value = '';
+  hideAuteurSuggestions();
+  auteurSearchInput.focus();
+}
+
+function removeAuteur(nom) {
+  selectedAuteurs = selectedAuteurs.filter((existing) => existing !== nom);
+  renderAuteurChips();
+}
+
+function hideAuteurSuggestions() {
+  auteurSuggestionsList.hidden = true;
+  auteurSuggestionsList.innerHTML = '';
+}
+
+function renderAuteurSuggestions() {
+  const filter = auteurSearchInput.value.trim().toLowerCase();
+  const matches = auteurOptions.filter((auteur) => {
+    const nom = auteur.nom.toLowerCase();
+    const isSelected = selectedAuteurs.some((existing) => existing.toLowerCase() === nom);
+    return !isSelected && (!filter || nom.includes(filter));
+  });
+
+  auteurSuggestionsList.innerHTML = '';
+
+  matches.forEach((auteur) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'auteur-suggestion-item';
+    item.textContent = auteur.nom;
+    item.addEventListener('click', () => addAuteur(auteur.nom));
+    auteurSuggestionsList.appendChild(item);
+  });
+
+  const filterValue = auteurSearchInput.value.trim();
+  const isExactMatch = auteurOptions.some((auteur) => auteur.nom.toLowerCase() === filterValue.toLowerCase());
+  if (filterValue && !isExactMatch) {
+    const addItem = document.createElement('button');
+    addItem.type = 'button';
+    addItem.className = 'auteur-suggestion-item is-add-new';
+    addItem.textContent = `Ajouter "${filterValue}" comme nouvel auteur`;
+    addItem.addEventListener('click', () => addAuteur(filterValue));
+    auteurSuggestionsList.appendChild(addItem);
+  }
+
+  auteurSuggestionsList.hidden = auteurSuggestionsList.children.length === 0;
+}
+
+auteurSearchInput.addEventListener('input', () => {
+  renderAuteurSuggestions();
+});
+
+auteurSearchInput.addEventListener('focus', () => {
+  renderAuteurSuggestions();
+});
+
+auteurSearchInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const firstSuggestion = auteurSuggestionsList.querySelector('.auteur-suggestion-item');
+    if (firstSuggestion) {
+      firstSuggestion.click();
+    } else if (auteurSearchInput.value.trim()) {
+      addAuteur(auteurSearchInput.value.trim());
+    }
+  } else if (event.key === 'Escape') {
+    hideAuteurSuggestions();
+  }
+});
+
+document.addEventListener('click', (event) => {
+  if (!auteurChips.parentElement.contains(event.target)) {
+    hideAuteurSuggestions();
+  }
+});
+
+async function loadAuteurOptions() {
   try {
     const payload = await apiGet('auteurs');
-    auteurSuggestions.innerHTML = '';
-    (payload.auteurs || []).forEach((auteur) => {
-      const option = document.createElement('option');
-      option.value = auteur.nom;
-      auteurSuggestions.appendChild(option);
-    });
+    auteurOptions = payload.auteurs || [];
   } catch {
     // Suggestions are optional.
   }
