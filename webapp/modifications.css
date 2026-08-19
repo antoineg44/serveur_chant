@@ -1329,7 +1329,7 @@ details summary::-webkit-details-marker {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 0.85rem;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 0.75;
 }
 
 .button:hover {
