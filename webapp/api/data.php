@@ -427,7 +427,13 @@ function handleSearch(PDO $pdo): void
 
     $statement = $pdo->prepare(<<<'SQL'
         SELECT DISTINCT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
-               (SELECT COUNT(*) FROM `Fichier` f2 WHERE f2.ChantID = c.ID AND f2.Supprimer = 0) AS FileCount
+               (SELECT COUNT(*) FROM `Fichier` f2 WHERE f2.ChantID = c.ID AND f2.Supprimer = 0) AS FileCount,
+               (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR ', ')
+                FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
+                WHERE ca.ChantID = c.ID) AS Auteurs,
+               (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR ', ')
+                FROM `ChantCategorie` cc3 INNER JOIN `Categorie` cat ON cat.ID = cc3.CategorieID
+                WHERE cc3.ChantID = c.ID) AS Categories
         FROM `Chant` c
         LEFT JOIN `Fichier` f ON f.ChantID = c.ID AND f.Supprimer = 0
         WHERE c.Supprimer = 0
