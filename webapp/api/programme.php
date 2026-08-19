@@ -171,6 +171,7 @@ function ensureSchema(PDO $pdo): void
             `Occasion` VARCHAR(255) NOT NULL DEFAULT \'\',
             `Paroisse` VARCHAR(255) NOT NULL DEFAULT \'\',
             `Description` TEXT NULL,
+            `AELF` TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (`ID`),
             KEY `idx_programme_date` (`Date`),
             KEY `idx_programme_paroisse` (`Paroisse`(191))
@@ -181,6 +182,11 @@ function ensureSchema(PDO $pdo): void
     $hasDescription = $pdo->query('SHOW COLUMNS FROM `Programme` LIKE \'Description\'')->fetch();
     if ($hasDescription === false) {
         $pdo->exec('ALTER TABLE `Programme` ADD COLUMN `Description` TEXT NULL');
+    }
+
+    $hasAelf = $pdo->query('SHOW COLUMNS FROM `Programme` LIKE \'AELF\'')->fetch();
+    if ($hasAelf === false) {
+        $pdo->exec('ALTER TABLE `Programme` ADD COLUMN `AELF` TINYINT(1) NOT NULL DEFAULT 0');
     }
 
     $pdo->exec(
