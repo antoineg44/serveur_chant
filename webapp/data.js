@@ -6,6 +6,7 @@ const refreshButton = document.getElementById('refresh-list');
 const newChantButton = document.getElementById('new-chant');
 const editChantButton = document.getElementById('edit-chant');
 const deleteChantButton = document.getElementById('delete-chant');
+const advancedSearchButton = document.getElementById('advanced-search');
 const searchInput = document.getElementById('data-search-input');
 const dataBody = document.getElementById('data-body');
 const breadcrumbs = document.getElementById('breadcrumbs');
@@ -983,6 +984,26 @@ deleteChantButton.addEventListener('click', async () => {
   } catch (error) {
     setStatus(error.message, true);
   }
+});
+
+advancedSearchButton.addEventListener('click', () => {
+  const url = './recherche.html';
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'openPageTab',
+      item: {
+        key: 'recherche-avancee',
+        name: 'Recherche',
+        title: 'Recherche avancee',
+        description: 'Recherche par categorie ou cote',
+        url,
+      },
+    }, '*');
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
 });
 
 searchInput.addEventListener('input', () => {

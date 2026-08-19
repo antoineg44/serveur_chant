@@ -35,6 +35,10 @@ try {
             handleSearch($pdo);
             break;
 
+        case 'search_advanced':
+            handleSearchAdvanced($pdo);
+            break;
+
         case 'files':
             handleFiles($pdo);
             break;
@@ -439,6 +443,61 @@ function handleSearch(PDO $pdo): void
         ':path' => $pattern,
         ':file' => $pattern,
     ]);
+
+    respondJson(200, [
+        'success' => true,
+        'canEdit' => true,
+        'chants' => array_map('mapChantRow', $statement->fetchAll()),
+    ]);
+}
+
+/**
+ * Complex search combining an optional free-text term with Categorie and/or Cote filters.
+ */
+function handleSearchAdvanced(PDO $pdo): void
+{
+    $term = requestValue('q');
+    $cote = requestValue('cote');
+    $categorieId = nullableInt('categorie_id', 1, PHP_INT_MAX);
+
+    $conditions = ['c.Supprimer = 0'];
+    $params = [];
+
+    if ($term !== '') {
+        $conditions[] = '(c.Nom LIKE :nom ESCAPE \'\\\\\' OR c.Path LIKE :path ESCAPE \'\\\\\')';
+        $pattern = '%' . likeEscape($term) . '%';
+        $params[':nom'] = $pattern;
+        $params[':path'] = $pattern;
+    }
+
+    if ($cote !== '') {
+        $conditions[] = 'c.Cote LIKE :cote ESCAPE \'\\\\\'';
+        $params[':cote'] = '%' . likeEscape($cote) . '%';
+    }
+
+    if ($categorieId !== null) {
+        $conditions[] = 'EXISTS (
+            SELECT 1 FROM `ChantCategorie` cc
+            WHERE cc.ChantID = c.ID AND cc.CategorieID = :categorie
+        )';
+        $params[':categorie'] = $categorieId;
+    }
+
+    $statement = $pdo->prepare(
+        'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
+                (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
+                (SELECT GROUP_CONCAT(a.Nom ORDER BY a.Nom SEPARATOR \', \')
+                 FROM `ChantAuteur` ca INNER JOIN `Auteur` a ON a.ID = ca.AuteurID
+                 WHERE ca.ChantID = c.ID) AS Auteurs,
+                (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
+                 FROM `ChantCategorie` cc2 INNER JOIN `Categorie` cat ON cat.ID = cc2.CategorieID
+                 WHERE cc2.ChantID = c.ID) AS Categories
+         FROM `Chant` c
+         WHERE ' . implode(' AND ', $conditions) . '
+         ORDER BY c.Path ASC, c.Nom ASC
+         LIMIT 300'
+    );
+    $statement->execute($params);
 
     respondJson(200, [
         'success' => true,

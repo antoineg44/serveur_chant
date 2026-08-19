@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recherche avancee</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <style>
+    .search-page {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .search-title {
+      margin: 0 0 18px;
+      font-size: clamp(1.3rem, 2vw, 1.7rem);
+    }
+
+    .search-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .search-form label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .search-form input,
+    .search-form select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .search-form-actions {
+      display: flex;
+      gap: 8px;
+    }
+  </style>
+  <script>
+    (async () => {
+      try {
+        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
+          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
+        const res = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+          window.location.replace(`./login.html?return=${returnUrl}`);
+        }
+      } catch {
+        const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+        window.location.replace(`./login.html?return=${returnUrl}`);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <main class="search-page">
+    <h1 class="search-title">Recherche avancee</h1>
+
+    <form id="search-form" class="search-form">
+      <label>Nom ou dossier
+        <input type="text" name="q" placeholder="Texte libre" autocomplete="off" />
+      </label>
+      <label>Categorie
+        <select name="categorie_id">
+          <option value="">Toutes</option>
+        </select>
+      </label>
+      <label>Cote
+        <input type="text" name="cote" placeholder="ex: A, 1, ..." autocomplete="off" />
+      </label>
+      <div class="search-form-actions">
+        <button type="submit" class="btn">Rechercher</button>
+        <button type="button" id="search-reset" class="btn btn-ghost">Effacer</button>
+      </div>
+    </form>
+
+    <p class="hint" id="search-status" role="status">Choisissez au moins un critere puis lancez la recherche.</p>
+
+    <div class="explorer-list-wrap">
+      <table class="explorer-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Dossier</th>
+            <th>Cote</th>
+            <th>Categories</th>
+            <th>Auteurs</th>
+            <th>Fichiers</th>
+          </tr>
+        </thead>
+        <tbody id="search-results"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
+    const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+    const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
+
+    const form = document.getElementById('search-form');
+    const categorieSelect = form.elements.categorie_id;
+    const statusElement = document.getElementById('search-status');
+    const resultsBody = document.getElementById('search-results');
+
+    function setStatus(message, isError = false) {
+      statusElement.textContent = message;
+      statusElement.classList.toggle('is-error', isError);
+    }
+
+    function formatCote(value) {
+      return value === null || value === undefined || value === '' ? '-' : String(value);
+    }
+
+    function openChantDescription(chant) {
+      const url = `./description.html?chantId=${encodeURIComponent(chant.id)}`;
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'openPageTab',
+          item: {
+            key: `chant-${chant.id}`,
+            name: chant.nom,
+            title: chant.nom,
+            description: 'Informations du chant',
+            url,
+          },
+        }, '*');
+        return;
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function renderResults(chants) {
+      resultsBody.innerHTML = '';
+
+      if (!chants.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.textContent = 'Aucun resultat.';
+        row.appendChild(cell);
+        resultsBody.appendChild(row);
+        return;
+      }
+
+      chants.forEach((chant) => {
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => openChantDescription(chant));
+
+        const cells = [
+          chant.nom,
+          chant.path || '-',
+          formatCote(chant.cote),
+          chant.categories || '-',
+          chant.auteurs || '-',
+          String(chant.fileCount),
+        ];
+
+        cells.forEach((text) => {
+          const cell = document.createElement('td');
+          cell.textContent = text;
+          row.appendChild(cell);
+        });
+
+        resultsBody.appendChild(row);
+      });
+    }
+
+    async function loadCategories() {
+      try {
+        const response = await fetch(`${DATA_API}?action=categories`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        (payload && payload.categories || []).forEach((categorie) => {
+          const option = document.createElement('option');
+          option.value = String(categorie.id);
+          option.textContent = categorie.nom;
+          categorieSelect.appendChild(option);
+        });
+      } catch {
+        // Categories are optional for the form to still work.
+      }
+    }
+
+    async function runSearch() {
+      const q = form.elements.q.value.trim();
+      const cote = form.elements.cote.value.trim();
+      const categorieId = categorieSelect.value;
+
+      if (!q && !cote && !categorieId) {
+        setStatus('Choisissez au moins un critere puis lancez la recherche.');
+        resultsBody.innerHTML = '';
+        return;
+      }
+
+      setStatus('Recherche en cours...');
+
+      try {
+        const query = new URLSearchParams({ action: 'search_advanced' });
+        if (q) {
+          query.set('q', q);
+        }
+        if (cote) {
+          query.set('cote', cote);
+        }
+        if (categorieId) {
+          query.set('categorie_id', categorieId);
+        }
+
+        const response = await fetch(`${DATA_API}?${query.toString()}`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload || !payload.success) {
+          throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+        }
+
+        const chants = payload.chants || [];
+        renderResults(chants);
+        setStatus(`${chants.length} chant(s) trouve(s).`);
+      } catch (error) {
+        setStatus(error.message, true);
+      }
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      runSearch();
+    });
+
+    document.getElementById('search-reset').addEventListener('click', () => {
+      form.reset();
+      resultsBody.innerHTML = '';
+      setStatus('Choisissez au moins un critere puis lancez la recherche.');
+    });
+
+    void loadCategories();
+  </script>
+</body>
+</html>
