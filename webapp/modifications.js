@@ -137,7 +137,10 @@ function insertAelfSection(type, name, lecture, referenceSection, position) {
     return newSection;
 }
 
-async function chargerLecturesAelf() {
+async function chargerLecturesAelf(markChanged) {
+    if (markChanged === undefined) {
+        markChanged = true;
+    }
     var dateField = document.getElementById('programme_date');
     if (!dateField || !dateField.value) {
         return;
@@ -171,7 +174,9 @@ async function chargerLecturesAelf() {
         var evangileReference = alleluiaSection || lecture2Section || psaumeSection;
         insertAelfSection('evangile', 'Evangile', evangile, evangileReference, 'after');
 
-        markAsChanged();
+        if (markChanged) {
+            markAsChanged();
+        }
     } catch (error) {
         alert("Impossible de recuperer les lectures AELF : " + error.message);
     }
@@ -1012,6 +1017,10 @@ async function chargerProgramme() {
     };
 
     initFormulaire();
+
+    if (window.programme && programme.aelf) {
+        void chargerLecturesAelf(false);
+    }
 }
 
 async function chargerParoisses() {
