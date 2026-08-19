@@ -55,6 +55,10 @@ try {
             handleCategories($pdo);
             break;
 
+        case 'chant_categorie_add':
+            handleChantCategorieAdd($pdo);
+            break;
+
         case 'chant_detail':
             handleChantDetail($pdo);
             break;
@@ -835,6 +839,33 @@ function handleCategories(PDO $pdo): void
             'nom' => (string) $row['Nom'],
         ], $rows),
     ]);
+}
+
+/**
+ * Links one or more existing Categorie to a chant without touching its other categories.
+ */
+function handleChantCategorieAdd(PDO $pdo): void
+{
+    $chantId = nullableInt('chant_id', 1, PHP_INT_MAX);
+    if ($chantId === null) {
+        throw new RuntimeException('Identifiant de chant manquant.');
+    }
+
+    $categorieIds = array_filter(
+        array_map('intval', explode(',', requestValue('categorie_ids'))),
+        static fn (int $id): bool => $id > 0
+    );
+
+    if (!$categorieIds) {
+        throw new RuntimeException('Categorie manquante.');
+    }
+
+    $insert = $pdo->prepare('INSERT IGNORE INTO `ChantCategorie` (ChantID, CategorieID) VALUES (:chant, :categorie)');
+    foreach ($categorieIds as $categorieId) {
+        $insert->execute([':chant' => $chantId, ':categorie' => $categorieId]);
+    }
+
+    respondJson(200, ['success' => true]);
 }
 
 function handleChantDelete(PDO $pdo): void

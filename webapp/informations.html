@@ -159,6 +159,29 @@
       cursor: not-allowed;
     }
 
+    .chant-add-categorie-button {
+      flex: 0 0 26px;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #ffffff;
+      color: #b45309;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chant-add-categorie-button:hover {
+      background: #fef3c7;
+    }
+
+    .chant-add-categorie-button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     .messe-popup-loading {
       text-align: center;
       color: var(--ink-soft);
@@ -355,8 +378,10 @@
     function renderPopup(data) {
       const title = document.getElementById('messe-popup-title');
       const container = document.getElementById('messe-popup-content');
+      let currentPartieCategorieIds = [];
       const programItems = (data.program || []).map((item) => {
         if (item.type === 'partie') {
+          currentPartieCategorieIds = item.categorieIds || [];
           return `<div class="messe-popup-program-part">${escapeHtml(item.name)}</div>`;
         }
 
@@ -370,7 +395,14 @@
         const infoButton = path
           ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}" data-chant-info-name="${escapeHtml(item.name)}"${chantId ? ` data-chant-info-id="${chantId}"` : ''}>i</button>`
           : '<button type="button" class="chant-info-button" title="Aucun fichier associe" aria-label="Informations indisponibles" disabled>i</button>';
-        return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong>${infoButton}</div>${pathMarkup}</div>`;
+
+        const chantCategorieIds = item.categorieIds || [];
+        const hasCorrespondance = currentPartieCategorieIds.some((id) => chantCategorieIds.includes(id));
+        const addCategorieButton = chantId && currentPartieCategorieIds.length && !hasCorrespondance
+          ? `<button type="button" class="chant-add-categorie-button" title="Ajouter ce chant a la categorie de la partie" aria-label="Ajouter la categorie correspondante pour ${escapeHtml(item.name)}" data-add-categorie-chant-id="${chantId}" data-add-categorie-ids="${escapeHtml(currentPartieCategorieIds.join(','))}">+</button>`
+          : '';
+
+        return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong><span style="display:flex;gap:6px;">${addCategorieButton}${infoButton}</span></div>${pathMarkup}</div>`;
       }).join('');
 
       const titleText = data.title || 'Informations de la messe';
@@ -561,6 +593,48 @@
           void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow, button.dataset.chantInfoName);
         });
       });
+
+      container.querySelectorAll('[data-add-categorie-chant-id]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          button.disabled = true;
+
+          try {
+            await addChantCategories(button.dataset.addCategorieChantId, button.dataset.addCategorieIds);
+
+            const chantIdNum = Number(button.dataset.addCategorieChantId);
+            const categorieIdsToAdd = button.dataset.addCategorieIds.split(',').map(Number);
+            (data.program || []).forEach((item) => {
+              if (item.type === 'chant' && Number(item.chantId) === chantIdNum) {
+                item.categorieIds = Array.from(new Set([...(item.categorieIds || []), ...categorieIdsToAdd]));
+              }
+            });
+
+            renderPopup(data);
+          } catch (error) {
+            button.disabled = false;
+            console.error(error);
+          }
+        });
+      });
+    }
+
+    async function addChantCategories(chantId, categorieIds) {
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.DATA_API)
+        || `${baseUrl}webapp/api/data.php`;
+
+      const body = new FormData();
+      body.append('action', 'chant_categorie_add');
+      body.append('chant_id', chantId);
+      body.append('categorie_ids', categorieIds);
+
+      const response = await fetch(apiUrl, { method: 'POST', body, credentials: 'include' });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload || !payload.success) {
+        throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+      }
     }
 
     function goToChantDescription(chantId, infoWindow, fileName, fileBaseName) {
@@ -669,12 +743,13 @@
 
       const programme = payload.programme;
       const program = (payload.items || []).map((item) => (item.type === 'partie'
-        ? { type: 'partie', name: item.partieNom, path: '' }
+        ? { type: 'partie', name: item.partieNom, path: '', categorieIds: item.categorieIds || [] }
         : {
           type: 'chant',
           name: item.chantNom,
           chantId: item.chantId,
           path: [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/'),
+          categorieIds: item.categorieIds || [],
         }));
 
       renderPopup({

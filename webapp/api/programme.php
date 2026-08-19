@@ -458,7 +458,9 @@ function handleDetail(PDO $pdo): void
 function loadItems(PDO $pdo, int $programmeId): array
 {
     $chants = $pdo->prepare(
-        'SELECT pc.Position, pc.ChantID, pc.FichierID, c.Nom AS ChantNom, c.Path AS ChantPath, f.NomFichier
+        'SELECT pc.Position, pc.ChantID, pc.FichierID, c.Nom AS ChantNom, c.Path AS ChantPath, f.NomFichier,
+                (SELECT GROUP_CONCAT(cc.CategorieID ORDER BY cc.CategorieID SEPARATOR \',\')
+                 FROM `ChantCategorie` cc WHERE cc.ChantID = c.ID) AS CategorieIds
          FROM `ProgrammeChant` pc
          INNER JOIN `Chant` c ON c.ID = pc.ChantID
          LEFT JOIN `Fichier` f ON f.ID = pc.FichierID
@@ -467,7 +469,9 @@ function loadItems(PDO $pdo, int $programmeId): array
     $chants->execute([':id' => $programmeId]);
 
     $parties = $pdo->prepare(
-        'SELECT pp.Position, pp.PartieID, pa.Nom AS PartieNom
+        'SELECT pp.Position, pp.PartieID, pa.Nom AS PartieNom,
+                (SELECT GROUP_CONCAT(pc2.CategorieID ORDER BY pc2.CategorieID SEPARATOR \',\')
+                 FROM `PartieCategorie` pc2 WHERE pc2.PartieID = pa.ID) AS CategorieIds
          FROM `ProgrammePartie` pp
          INNER JOIN `Partie` pa ON pa.ID = pp.PartieID
          WHERE pp.ProgrammeID = :id'
@@ -485,6 +489,9 @@ function loadItems(PDO $pdo, int $programmeId): array
             'chantPath' => (string) $row['ChantPath'],
             'fichierId' => $row['FichierID'] === null ? null : (int) $row['FichierID'],
             'nomFichier' => $row['NomFichier'] === null ? '' : (string) $row['NomFichier'],
+            'categorieIds' => $row['CategorieIds'] === null
+                ? []
+                : array_map('intval', explode(',', (string) $row['CategorieIds'])),
         ];
     }
 
@@ -494,6 +501,9 @@ function loadItems(PDO $pdo, int $programmeId): array
             'position' => (int) $row['Position'],
             'partieId' => (int) $row['PartieID'],
             'partieNom' => (string) $row['PartieNom'],
+            'categorieIds' => $row['CategorieIds'] === null
+                ? []
+                : array_map('intval', explode(',', (string) $row['CategorieIds'])),
         ];
     }
 
