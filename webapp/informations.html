@@ -211,6 +211,14 @@
       return String(value || '').trim() || '—';
     }
 
+    function isInModalPopup() {
+      try {
+        return Boolean(window.frameElement && window.frameElement.id === 'messe-info-modal-frame');
+      } catch {
+        return false;
+      }
+    }
+
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>'"]/g, (character) => ({
         '&': '&amp;',
@@ -376,6 +384,7 @@
             <button type="button" class="messe-popup-action-button" data-action="zip">Créer un zip</button>
             <button type="button" class="messe-popup-action-button" data-action="complete-zip">Créer un zip complet avec les fichiers dérivés</button>
             <button type="button" class="messe-popup-action-button" data-action="copy">Copier le lien du programme</button>
+            ${isInModalPopup() ? '<button type="button" class="messe-popup-action-button" data-action="new-tab">Nouvel Onglet</button>' : ''}
           </div>
         </div>
         
@@ -484,6 +493,21 @@
         button.addEventListener('click', () => {
           if (button.dataset.action === 'copy') {
             void copyProgrammeLink(button);
+            return;
+          }
+
+          if (button.dataset.action === 'new-tab') {
+            const label = data.title || data.name || 'Informations de la messe';
+            window.parent.postMessage({
+              type: 'openPageTab',
+              item: {
+                key: `messe-info-${programmeId || programmePath}`,
+                name: label,
+                title: label,
+                description: 'Informations de la messe',
+                url: `./informations.html${window.location.search}`,
+              },
+            }, '*');
             return;
           }
 
