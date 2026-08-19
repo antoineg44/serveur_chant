@@ -7,6 +7,7 @@ const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${WEBAPP_CONFIG.BASE_URL || ''}pdf/`
 const tabsContainer = document.querySelector('.tabs');
 const panelsContainer = document.querySelector('.panels');
 const tabHistory = [];
+let currentMesseInfoItem = null;
 
 /**
  * Get all tab buttons
@@ -90,6 +91,7 @@ function closeMesseInfoModal() {
   if (frame) {
     frame.src = 'about:blank';
   }
+  currentMesseInfoItem = null;
 }
 
 function openMesseInfoModal(item) {
@@ -100,6 +102,7 @@ function openMesseInfoModal(item) {
     return;
   }
 
+  currentMesseInfoItem = item;
   title.textContent = item.title || 'Informations de la messe';
   frame.title = title.textContent;
   frame.src = item.url;
@@ -113,6 +116,24 @@ function openMesseInfoModalExternally() {
   }
 
   window.open(frame.src, '_blank', 'noopener,noreferrer');
+}
+
+function openMesseInfoModalInNewTab() {
+  const frame = document.getElementById('messe-info-modal-frame');
+  if (!frame || !frame.src || frame.src === 'about:blank') {
+    return;
+  }
+
+  const label = currentMesseInfoItem?.title || 'Informations de la messe';
+  const url = frame.src;
+  closeMesseInfoModal();
+  openPageInNewTab({
+    key: `messe-info-${url}`,
+    name: label,
+    title: label,
+    description: 'Informations de la messe',
+    url,
+  });
 }
 
 /**
@@ -415,6 +436,7 @@ function initApp() {
 
   document.getElementById('messe-info-modal-close')?.addEventListener('click', closeMesseInfoModal);
   document.getElementById('messe-info-modal-external')?.addEventListener('click', openMesseInfoModalExternally);
+  document.getElementById('messe-info-modal-new-tab')?.addEventListener('click', openMesseInfoModalInNewTab);
   document.getElementById('messe-info-modal')?.addEventListener('click', (event) => {
     if (event.target.id === 'messe-info-modal') {
       closeMesseInfoModal();
