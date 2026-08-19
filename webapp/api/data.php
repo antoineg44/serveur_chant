@@ -446,7 +446,7 @@ function handleChantSave(PDO $pdo): void
     $id = nullableInt('id', 1, PHP_INT_MAX);
     $nom = normalizeName(requestValue('nom'), 'Le nom du chant');
     $path = normalizePath(requestValue('path'));
-    $cote = nullableInt('cote', 0, 5);
+    $cote = nullableText('cote', 20);
     $informations = nullableText('informations');
 
     if ($id === null) {
@@ -1187,7 +1187,7 @@ function mapChantRow(array $row): array
         'nom' => (string) $row['Nom'],
         'path' => (string) $row['Path'],
         'dateAjout' => (string) $row['DateAjout'],
-        'cote' => $row['Cote'] === null ? null : (int) $row['Cote'],
+        'cote' => $row['Cote'] === null ? null : (string) $row['Cote'],
         'informations' => $row['Informations'] === null ? '' : (string) $row['Informations'],
         'auteurs' => isset($row['Auteurs']) && $row['Auteurs'] !== null ? (string) $row['Auteurs'] : '',
         'fileCount' => (int) ($row['FileCount'] ?? 0),

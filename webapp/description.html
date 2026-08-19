@@ -367,8 +367,8 @@
         <label>Dossier (Path)
           <input type="text" name="path" maxlength="500" pattern="[^/\\]*" title="Un seul nom de dossier, sans /" />
         </label>
-        <label>Cote (0 a 5)
-          <input type="number" name="cote" min="0" max="5" step="1" />
+        <label>Cote
+          <input type="text" name="cote" maxlength="20" />
         </label>
         <label>Auteurs
           <div class="auteur-picker" id="auteur-picker">
@@ -860,7 +860,7 @@
           <div class="chant-card"><strong>Nom</strong><span>${formatValue(chant.nom)}</span></div>
           <div class="chant-card"><strong>Dossier</strong><span>${formatValue(chant.path)}</span></div>
           <div class="chant-card"><strong>Auteurs</strong><span>${formatValue(chant.auteurs)}</span></div>
-          <div class="chant-card"><strong>Cote</strong><span>${chant.cote === null ? '—' : `${chant.cote}/5`}</span></div>
+          <div class="chant-card"><strong>Cote</strong><span>${chant.cote === null ? '—' : escapeHtml(String(chant.cote))}</span></div>
           <div class="chant-card"><strong>Date d'ajout</strong><span>${formatDate(chant.dateAjout)}</span></div>
           <div class="chant-card"><strong>Fichiers</strong><span>${chant.fileCount}</span></div>
         </div>

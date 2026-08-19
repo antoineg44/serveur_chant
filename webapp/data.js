@@ -78,10 +78,10 @@ function formatDate(value) {
 }
 
 function formatCote(value) {
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || value === '') {
     return '-';
   }
-  return `${value}/5`;
+  return String(value);
 }
 
 function encodeQuery(params) {
