@@ -248,6 +248,12 @@
       white-space: pre-line;
     }
 
+    .messe-popup-aelf-reading-preview {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .messe-popup-loading {
       text-align: center;
       color: var(--ink-soft);
@@ -445,11 +451,17 @@
 
         if (item.aelfReading) {
           const readingId = `aelf-reading-${index}`;
+          const readingLines = String(item.name || '').split('\n');
+          const firstLine = readingLines[0];
+          const restText = readingLines.slice(1).join('\n');
           return `<div class="messe-popup-program-song messe-popup-aelf-reading-row">
               <button type="button" class="aelf-reading-toggle" data-aelf-toggle aria-expanded="false" aria-controls="${readingId}" title="Afficher la lecture" aria-label="Afficher la lecture">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </button>
-              <div id="${readingId}" class="messe-popup-aelf-reading" hidden>${escapeHtml(item.name)}</div>
+              <div class="messe-popup-aelf-reading-content">
+                <div class="messe-popup-aelf-reading messe-popup-aelf-reading-preview" data-aelf-preview><strong>${escapeHtml(firstLine)}</strong></div>
+                <div id="${readingId}" class="messe-popup-aelf-reading" hidden><strong>${escapeHtml(firstLine)}</strong>${restText ? '\n' + escapeHtml(restText) : ''}</div>
+              </div>
             </div>`;
         }
 
@@ -677,9 +689,13 @@
           if (!target) {
             return;
           }
+          const preview = target.previousElementSibling;
           const expanded = button.getAttribute('aria-expanded') === 'true';
           button.setAttribute('aria-expanded', String(!expanded));
           target.hidden = expanded;
+          if (preview) {
+            preview.hidden = !expanded;
+          }
         });
       });
 

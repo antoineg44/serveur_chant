@@ -62,13 +62,23 @@ function removeExistingAelfChant(container, type) {
     }
 }
 
-// Distinguishes AELF reading text from regular chant titles (different font, smaller, honors line breaks).
+// Distinguishes AELF reading text from regular chant titles (different font, smaller, honors line breaks, bold first line).
 function markAelfReadingHeading(heading) {
     if (!heading) {
         return;
     }
     heading.classList.add('aelf-reading-text');
     heading.style.whiteSpace = 'pre-line';
+
+    var lines = heading.textContent.split('\n');
+    var firstLine = lines.shift();
+    heading.textContent = '';
+    var strong = document.createElement('strong');
+    strong.textContent = firstLine;
+    heading.appendChild(strong);
+    if (lines.length) {
+        heading.appendChild(document.createTextNode('\n' + lines.join('\n')));
+    }
 }
 
 // Appends (or replaces a previous) reading as a text-only chant entry inside an existing section.
