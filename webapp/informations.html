@@ -539,8 +539,12 @@
       });
     }
 
-    function goToChantDescription(chantId, infoWindow, fileName) {
-      const url = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+    function goToChantDescription(chantId, infoWindow, fileName, fileBaseName) {
+      const params = new URLSearchParams({ chantId: String(chantId) });
+      if (fileBaseName) {
+        params.set('file', fileBaseName);
+      }
+      const url = `./description.html?${params.toString()}`;
       const name = fileName || 'Chant';
 
       if (window.parent && window.parent !== window) {
@@ -566,8 +570,10 @@
     }
 
     async function openChantInfo(filePath, chantId, infoWindow, fileName) {
+      const fileBaseName = String(filePath || '').split('/').pop() || '';
+
       if (chantId) {
-        goToChantDescription(chantId, infoWindow, fileName);
+        goToChantDescription(chantId, infoWindow, fileName, fileBaseName);
         return;
       }
 
@@ -591,7 +597,7 @@
           throw new Error((payload && payload.message) || 'Informations du chant indisponibles.');
         }
 
-        goToChantDescription(payload.chantId, infoWindow, fileName);
+        goToChantDescription(payload.chantId, infoWindow, fileName, fileBaseName);
       } catch (error) {
         infoWindow?.close();
         console.error(error);

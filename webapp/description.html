@@ -144,44 +144,6 @@
       text-decoration: underline;
     }
 
-    .chant-audio-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .chant-audio-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #f8fafc;
-    }
-
-    .chant-audio-name {
-      flex: 1;
-      min-width: 0;
-      word-break: break-word;
-    }
-
-    .audio-play-button {
-      flex: 0 0 30px;
-      width: 30px;
-      height: 30px;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: #ffffff;
-      color: #0f766e;
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .audio-play-button:hover {
-      background: #ccfbf1;
-    }
-
     .chant-actions {
       display: flex;
       gap: 8px;
@@ -245,7 +207,6 @@
     <div id="chant-content">
       <p class="hint" role="status">Chargement des informations...</p>
     </div>
-    <audio id="chant-audio-player" hidden></audio>
     </main>
 
     <aside id="chant-preview" class="chant-preview" aria-label="Apercu du fichier">
@@ -338,19 +299,7 @@
     const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
     const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
     const LOCAL_DATA_API = './api/data.php';
-    const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
-
-    function isAudioFileName(fileName) {
-      return /\.(mp3|m4a|wav)$/i.test(String(fileName || ''));
-    }
-
-    function buildPdfFileUrl(relativePdfPath) {
-      return `${PDF_ROOT}${String(relativePdfPath || '')
-        .split('/')
-        .filter(Boolean)
-        .map((segment) => encodeURIComponent(segment))
-        .join('/')}`;
-    }
+    const requestedFileName = new URLSearchParams(window.location.search).get('file') || '';
 
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>'"]/g, (character) => ({
@@ -435,46 +384,11 @@
 
     function openFile(chant, file) {
       const path = [chant.path, chant.nom, file.nomFichier].filter(Boolean).join('/');
-
-      if (isAudioFileName(file.nomFichier)) {
-        window.open(buildPdfFileUrl(path), '_blank', 'noopener,noreferrer');
-        return;
-      }
-
       previewUrl = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
 
       document.getElementById('preview-title').textContent = file.nomFichier;
       document.getElementById('preview-frame').src = previewUrl;
       document.getElementById('chant-layout').classList.add('is-preview-visible');
-    }
-
-    const audioPlayer = document.getElementById('chant-audio-player');
-    let activeAudioButton = null;
-
-    function resetAudioButton() {
-      if (activeAudioButton) {
-        activeAudioButton.innerHTML = '&#9658;';
-        activeAudioButton = null;
-      }
-    }
-
-    audioPlayer.addEventListener('pause', resetAudioButton);
-    audioPlayer.addEventListener('ended', resetAudioButton);
-
-    function toggleAudioPlayback(chant, file, button) {
-      if (activeAudioButton === button) {
-        audioPlayer.pause();
-        return;
-      }
-
-      resetAudioButton();
-
-      const path = [chant.path, chant.nom, file.nomFichier].filter(Boolean).join('/');
-      audioPlayer.src = buildPdfFileUrl(path);
-      audioPlayer.play().catch(() => resetAudioButton());
-
-      activeAudioButton = button;
-      button.innerHTML = '&#9208;';
     }
 
     function closePreview() {
@@ -608,14 +522,6 @@
         </tr>
       `).join('');
 
-      const audioFiles = files.filter((file) => isAudioFileName(file.nomFichier));
-      const audioItems = audioFiles.map((file) => `
-        <div class="chant-audio-item">
-          <button type="button" class="audio-play-button" data-audio-id="${file.id}" aria-label="Lire ${escapeHtml(file.nomFichier)}">&#9658;</button>
-          <span class="chant-audio-name">${escapeHtml(file.nomFichier)}</span>
-        </div>
-      `).join('');
-
       document.getElementById('chant-content').innerHTML = `
         <div class="chant-grid">
           <div class="chant-card"><strong>Nom</strong><span>${formatValue(chant.nom)}</span></div>
@@ -630,13 +536,6 @@
           <h2>Informations</h2>
           <p class="chant-description">${formatValue(chant.informations)}</p>
         </section>
-
-        ${audioFiles.length ? `
-        <section class="chant-section">
-          <h2>Audio</h2>
-          <div class="chant-audio-list">${audioItems}</div>
-        </section>
-        ` : ''}
 
         <section class="chant-section">
           <h2>Fichiers</h2>
@@ -657,7 +556,6 @@
             </table>
           ` : '<p class="hint">Aucun fichier lie a ce chant.</p>'}
         </section>
-
         <section class="chant-section">
           <h2>Programmes</h2>
           ${programmes.length ? `
@@ -682,11 +580,6 @@
         button.addEventListener('click', () => openFile(chant, file));
       });
 
-      document.querySelectorAll('[data-audio-id]').forEach((button) => {
-        const file = files.find((item) => String(item.id) === button.dataset.audioId);
-        button.addEventListener('click', () => toggleAudioPlayback(chant, file, button));
-      });
-
       document.querySelectorAll('[data-programme-id]').forEach((button) => {
         button.addEventListener('click', () => openProgramme(button.dataset.programmeId));
       });
@@ -706,8 +599,12 @@
       });
 
       const firstPdf = files.find((file) => /\.pdf$/i.test(String(file.nomFichier || '')));
-      if (firstPdf) {
-        openFile(chant, firstPdf);
+      const requestedFile = requestedFileName
+        ? files.find((file) => String(file.nomFichier || '').toLowerCase() === requestedFileName.toLowerCase())
+        : null;
+      const fileToOpen = requestedFile || firstPdf;
+      if (fileToOpen) {
+        openFile(chant, fileToOpen);
       }
     }
 
