@@ -846,15 +846,15 @@ function collectProgramChantsFromDom() {
 
     sections.forEach(function(section) {
         var partTitle = section.querySelector("h1[id^='h1_']");
-        if (partTitle) {
-            chants.push({
-                type: "partie",
-                name: partTitle.textContent.trim()
-            });
-        }
+        var partName = partTitle ? partTitle.textContent.trim() : '';
 
         var chantRows = section.querySelectorAll("div[id^='chant_']");
+        var realChants = [];
         chantRows.forEach(function(row) {
+            if (row.hasAttribute('data-aelf-reading')) {
+                return; // AELF reading text: never persisted.
+            }
+
             var title = row.querySelector(".part-column h1");
             if (!title) return;
 
@@ -869,12 +869,23 @@ function collectProgramChantsFromDom() {
                 }
             }
 
-            chants.push({
+            realChants.push({
                 type: "chant",
                 name: title.textContent.trim(),
                 path: path || "null"
             });
         });
+
+        // A partie made up solely of AELF readings is transient and shouldn't be saved, except "Psaume".
+        var hasOnlyAelfReadings = chantRows.length > 0 && realChants.length === 0;
+        if (hasOnlyAelfReadings && partName.toLowerCase() !== 'psaume') {
+            return;
+        }
+
+        if (partTitle) {
+            chants.push({ type: "partie", name: partName });
+        }
+        chants = chants.concat(realChants);
     });
 
     return chants;
