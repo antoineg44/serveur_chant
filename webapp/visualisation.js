@@ -667,6 +667,24 @@ function renderProgramList(programEntries, currentPath, title) {
     const itemPath = cleanPath(entry.path);
     const isSelected = itemPath && itemPath === cleanPath(currentPath);
 
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `file-card${isSelected ? ' is-selected' : ''}${itemPath ? ' is-clickable' : ' is-disabled'}`;
+    if (!itemPath) {
+      button.disabled = true;
+    }
+
+    const icon = document.createElement('span');
+    icon.className = 'file-icon';
+    icon.textContent = 'PDF';
+
+    const content = document.createElement('span');
+    content.className = 'file-content';
+
+    const name = document.createElement('span');
+    name.className = 'file-name';
+    name.textContent = entry.name;
+
     const meta = document.createElement('span');
     meta.className = 'file-meta';
     meta.textContent = itemPath
