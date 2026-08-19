@@ -81,6 +81,13 @@
       <label>Cote
         <input type="text" name="cote" placeholder="ex: A, 1, ..." autocomplete="off" />
       </label>
+      <label>Trier par
+        <select name="sort">
+          <option value="">Nom / dossier</option>
+          <option value="programmes_desc">Programmes (le plus utilise)</option>
+          <option value="programmes_asc">Programmes (le moins utilise)</option>
+        </select>
+      </label>
       <div class="search-form-actions">
         <button type="submit" class="btn">Rechercher</button>
         <button type="button" id="search-reset" class="btn btn-ghost">Effacer</button>
@@ -99,6 +106,7 @@
             <th>Categories</th>
             <th>Auteurs</th>
             <th>Fichiers</th>
+            <th>Programmes</th>
           </tr>
         </thead>
         <tbody id="search-results"></tbody>
@@ -151,7 +159,7 @@
       if (!chants.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 6;
+        cell.colSpan = 7;
         cell.textContent = 'Aucun resultat.';
         row.appendChild(cell);
         resultsBody.appendChild(row);
@@ -170,6 +178,7 @@
           chant.categories || '-',
           chant.auteurs || '-',
           String(chant.fileCount),
+          String(chant.programmeCount),
         ];
 
         cells.forEach((text) => {
@@ -201,8 +210,9 @@
       const q = form.elements.q.value.trim();
       const cote = form.elements.cote.value.trim();
       const categorieId = categorieSelect.value;
+      const sort = form.elements.sort.value;
 
-      if (!q && !cote && !categorieId) {
+      if (!q && !cote && !categorieId && !sort) {
         setStatus('Choisissez au moins un critere puis lancez la recherche.');
         resultsBody.innerHTML = '';
         return;
@@ -220,6 +230,9 @@
         }
         if (categorieId) {
           query.set('categorie_id', categorieId);
+        }
+        if (sort) {
+          query.set('sort', sort);
         }
 
         const response = await fetch(`${DATA_API}?${query.toString()}`, { credentials: 'include' });

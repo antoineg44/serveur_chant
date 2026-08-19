@@ -459,6 +459,7 @@ function handleSearchAdvanced(PDO $pdo): void
     $term = requestValue('q');
     $cote = requestValue('cote');
     $categorieId = nullableInt('categorie_id', 1, PHP_INT_MAX);
+    $sort = requestValue('sort');
 
     $conditions = ['c.Supprimer = 0'];
     $params = [];
@@ -483,6 +484,12 @@ function handleSearchAdvanced(PDO $pdo): void
         $params[':categorie'] = $categorieId;
     }
 
+    $orderBy = match ($sort) {
+        'programmes_desc' => 'ProgrammeCount DESC, c.Nom ASC',
+        'programmes_asc' => 'ProgrammeCount ASC, c.Nom ASC',
+        default => 'c.Path ASC, c.Nom ASC',
+    };
+
     $statement = $pdo->prepare(
         'SELECT c.ID, c.Nom, c.Path, c.DateAjout, c.Cote, c.Informations,
                 (SELECT COUNT(*) FROM `Fichier` f WHERE f.ChantID = c.ID AND f.Supprimer = 0) AS FileCount,
@@ -491,10 +498,11 @@ function handleSearchAdvanced(PDO $pdo): void
                  WHERE ca.ChantID = c.ID) AS Auteurs,
                 (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
                  FROM `ChantCategorie` cc2 INNER JOIN `Categorie` cat ON cat.ID = cc2.CategorieID
-                 WHERE cc2.ChantID = c.ID) AS Categories
+                 WHERE cc2.ChantID = c.ID) AS Categories,
+                (SELECT COUNT(*) FROM `ProgrammeChant` pc WHERE pc.ChantID = c.ID) AS ProgrammeCount
          FROM `Chant` c
          WHERE ' . implode(' AND ', $conditions) . '
-         ORDER BY c.Path ASC, c.Nom ASC
+         ORDER BY ' . $orderBy . '
          LIMIT 300'
     );
     $statement->execute($params);
@@ -1429,6 +1437,7 @@ function mapChantRow(array $row): array
         'auteurs' => isset($row['Auteurs']) && $row['Auteurs'] !== null ? (string) $row['Auteurs'] : '',
         'categories' => isset($row['Categories']) && $row['Categories'] !== null ? (string) $row['Categories'] : '',
         'fileCount' => (int) ($row['FileCount'] ?? 0),
+        'programmeCount' => (int) ($row['ProgrammeCount'] ?? 0),
     ];
 }
 
