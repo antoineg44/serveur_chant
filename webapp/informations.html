@@ -207,10 +207,44 @@
       display: none;
     }
 
+    .messe-popup-aelf-reading-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .aelf-reading-toggle {
+      flex: 0 0 24px;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .aelf-reading-toggle:hover {
+      background: var(--accent-soft);
+    }
+
+    .aelf-reading-toggle svg {
+      transition: transform 0.15s ease;
+    }
+
+    .aelf-reading-toggle[aria-expanded="true"] svg {
+      transform: rotate(90deg);
+    }
+
     .messe-popup-aelf-reading {
+      flex: 1 1 auto;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 0.85rem;
-      line-height: 1.5;
+      line-height: 0.75;
       white-space: pre-line;
     }
 
@@ -403,14 +437,20 @@
       const title = document.getElementById('messe-popup-title');
       const container = document.getElementById('messe-popup-content');
       let currentPartieCategorieIds = [];
-      const programItems = (data.program || []).map((item) => {
+      const programItems = (data.program || []).map((item, index) => {
         if (item.type === 'partie') {
           currentPartieCategorieIds = item.categorieIds || [];
           return `<div class="messe-popup-program-part">${escapeHtml(item.name)}</div>`;
         }
 
         if (item.aelfReading) {
-          return `<div class="messe-popup-program-song messe-popup-aelf-reading">${escapeHtml(item.name)}</div>`;
+          const readingId = `aelf-reading-${index}`;
+          return `<div class="messe-popup-program-song messe-popup-aelf-reading-row">
+              <button type="button" class="aelf-reading-toggle" data-aelf-toggle aria-expanded="false" aria-controls="${readingId}" title="Afficher la lecture" aria-label="Afficher la lecture">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+              <div id="${readingId}" class="messe-popup-aelf-reading" hidden>${escapeHtml(item.name)}</div>
+            </div>`;
         }
 
         const path = String(item.path || '').trim();
@@ -628,6 +668,18 @@
           }
 
           void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow, button.dataset.chantInfoName);
+        });
+      });
+
+      container.querySelectorAll('[data-aelf-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const target = document.getElementById(button.getAttribute('aria-controls'));
+          if (!target) {
+            return;
+          }
+          const expanded = button.getAttribute('aria-expanded') === 'true';
+          button.setAttribute('aria-expanded', String(!expanded));
+          target.hidden = expanded;
         });
       });
 
