@@ -151,12 +151,18 @@
 
     .chant-audio-item {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 6px;
       padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #f8fafc;
+    }
+
+    .chant-audio-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .chant-audio-name {
@@ -180,6 +186,15 @@
 
     .audio-play-button:hover {
       background: #ccfbf1;
+    }
+
+    .audio-progress {
+      width: 100%;
+      accent-color: #0f766e;
+    }
+
+    .audio-progress:disabled {
+      opacity: 0.5;
     }
 
     .chant-actions {
@@ -232,6 +247,88 @@
       justify-content: flex-end;
       gap: 8px;
     }
+
+    .auteur-picker {
+      position: relative;
+    }
+
+    .auteur-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .auteur-chips:empty {
+      margin-bottom: 0;
+    }
+
+    .auteur-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px 4px 10px;
+      border-radius: 999px;
+      background: #ccfbf1;
+      color: var(--ink);
+      font-size: 0.85em;
+    }
+
+    .auteur-chip-remove {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      line-height: 1;
+      color: inherit;
+      opacity: 0.7;
+      padding: 2px 4px;
+    }
+
+    .auteur-chip-remove:hover {
+      opacity: 1;
+    }
+
+    .auteur-suggestions-list {
+      position: absolute;
+      z-index: 5;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .auteur-suggestions-list[hidden] {
+      display: none;
+    }
+
+    .auteur-suggestion-item {
+      display: block;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      background: none;
+      text-align: left;
+      font: inherit;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .auteur-suggestion-item:hover,
+    .auteur-suggestion-item:focus {
+      background: #ccfbf1;
+    }
+
+    .auteur-suggestion-item.is-add-new {
+      color: #0f766e;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -273,9 +370,13 @@
         <label>Cote (0 a 5)
           <input type="number" name="cote" min="0" max="5" step="1" />
         </label>
-        <label>Auteurs (separes par des virgules)
-          <input type="text" name="auteurs" maxlength="1000" list="auteur-suggestions" />
-          <datalist id="auteur-suggestions"></datalist>
+        <label>Auteurs
+          <div class="auteur-picker" id="auteur-picker">
+            <div class="auteur-chips" id="auteur-chips"></div>
+            <input type="text" id="auteur-search" placeholder="Rechercher un auteur existant ou en saisir un nouveau" autocomplete="off" />
+            <div class="auteur-suggestions-list" id="auteur-suggestions-list" hidden></div>
+          </div>
+          <input type="hidden" name="auteurs" id="auteurs-hidden" />
         </label>
         <label>Informations
           <textarea name="informations" rows="4" maxlength="5000"></textarea>
@@ -455,12 +556,26 @@
     function resetAudioButton() {
       if (activeAudioButton) {
         activeAudioButton.innerHTML = '&#9658;';
+        const progress = document.querySelector(`[data-audio-progress="${activeAudioButton.dataset.audioId}"]`);
+        if (progress) {
+          progress.value = 0;
+          progress.disabled = true;
+        }
         activeAudioButton = null;
       }
     }
 
     audioPlayer.addEventListener('pause', resetAudioButton);
     audioPlayer.addEventListener('ended', resetAudioButton);
+    audioPlayer.addEventListener('timeupdate', () => {
+      if (!activeAudioButton || !audioPlayer.duration) {
+        return;
+      }
+      const progress = document.querySelector(`[data-audio-progress="${activeAudioButton.dataset.audioId}"]`);
+      if (progress) {
+        progress.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      }
+    });
 
     function toggleAudioPlayback(chant, file, button) {
       if (activeAudioButton === button) {
@@ -476,6 +591,12 @@
 
       activeAudioButton = button;
       button.innerHTML = '&#9208;';
+
+      const progress = document.querySelector(`[data-audio-progress="${file.id}"]`);
+      if (progress) {
+        progress.value = 0;
+        progress.disabled = false;
+      }
     }
 
     function closePreview() {
@@ -563,21 +684,135 @@
       throw new Error(errors.join(' | ') || 'API inaccessible');
     }
 
-    async function loadAuteurSuggestions() {
+    async function loadAuteurOptions() {
       try {
         const response = await fetch(`${LOCAL_DATA_API}?action=auteurs`, { credentials: 'include' });
         const payload = await response.json().catch(() => null);
-        const list = document.getElementById('auteur-suggestions');
-        list.innerHTML = '';
-        ((payload && payload.auteurs) || []).forEach((auteur) => {
-          const option = document.createElement('option');
-          option.value = auteur.nom;
-          list.appendChild(option);
-        });
+        auteurOptions = (payload && payload.auteurs) || [];
       } catch {
         // Suggestions are optional.
       }
     }
+
+    const auteurChips = document.getElementById('auteur-chips');
+    const auteurSearchInput = document.getElementById('auteur-search');
+    const auteurSuggestionsList = document.getElementById('auteur-suggestions-list');
+    const auteursHiddenInput = document.getElementById('auteurs-hidden');
+    let auteurOptions = [];
+    let selectedAuteurs = [];
+
+    function syncAuteursHiddenValue() {
+      auteursHiddenInput.value = selectedAuteurs.join(', ');
+    }
+
+    function renderAuteurChips() {
+      auteurChips.innerHTML = '';
+      selectedAuteurs.forEach((nom) => {
+        const chip = document.createElement('span');
+        chip.className = 'auteur-chip';
+
+        const label = document.createElement('span');
+        label.textContent = nom;
+        chip.appendChild(label);
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'auteur-chip-remove';
+        removeButton.textContent = '\u00d7';
+        removeButton.setAttribute('aria-label', `Retirer ${nom}`);
+        removeButton.addEventListener('click', () => removeAuteur(nom));
+        chip.appendChild(removeButton);
+
+        auteurChips.appendChild(chip);
+      });
+      syncAuteursHiddenValue();
+    }
+
+    function addAuteur(nom) {
+      const trimmed = nom.trim();
+      if (!trimmed) {
+        return;
+      }
+      const alreadySelected = selectedAuteurs.some((existing) => existing.toLowerCase() === trimmed.toLowerCase());
+      if (!alreadySelected) {
+        selectedAuteurs.push(trimmed);
+        renderAuteurChips();
+      }
+      auteurSearchInput.value = '';
+      hideAuteurSuggestions();
+      auteurSearchInput.focus();
+    }
+
+    function removeAuteur(nom) {
+      selectedAuteurs = selectedAuteurs.filter((existing) => existing !== nom);
+      renderAuteurChips();
+    }
+
+    function hideAuteurSuggestions() {
+      auteurSuggestionsList.hidden = true;
+      auteurSuggestionsList.innerHTML = '';
+    }
+
+    function renderAuteurSuggestions() {
+      const filter = auteurSearchInput.value.trim().toLowerCase();
+      const matches = auteurOptions.filter((auteur) => {
+        const nom = auteur.nom.toLowerCase();
+        const isSelected = selectedAuteurs.some((existing) => existing.toLowerCase() === nom);
+        return !isSelected && (!filter || nom.includes(filter));
+      });
+
+      auteurSuggestionsList.innerHTML = '';
+
+      matches.forEach((auteur) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'auteur-suggestion-item';
+        item.textContent = auteur.nom;
+        item.addEventListener('click', () => addAuteur(auteur.nom));
+        auteurSuggestionsList.appendChild(item);
+      });
+
+      const filterValue = auteurSearchInput.value.trim();
+      const isExactMatch = auteurOptions.some((auteur) => auteur.nom.toLowerCase() === filterValue.toLowerCase());
+      if (filterValue && !isExactMatch) {
+        const addItem = document.createElement('button');
+        addItem.type = 'button';
+        addItem.className = 'auteur-suggestion-item is-add-new';
+        addItem.textContent = `Ajouter "${filterValue}" comme nouvel auteur`;
+        addItem.addEventListener('click', () => addAuteur(filterValue));
+        auteurSuggestionsList.appendChild(addItem);
+      }
+
+      auteurSuggestionsList.hidden = auteurSuggestionsList.children.length === 0;
+    }
+
+    auteurSearchInput.addEventListener('input', () => {
+      renderAuteurSuggestions();
+    });
+
+    auteurSearchInput.addEventListener('focus', () => {
+      renderAuteurSuggestions();
+    });
+
+    auteurSearchInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const firstSuggestion = auteurSuggestionsList.querySelector('.auteur-suggestion-item');
+        if (firstSuggestion) {
+          firstSuggestion.click();
+        } else if (auteurSearchInput.value.trim()) {
+          addAuteur(auteurSearchInput.value.trim());
+        }
+      } else if (event.key === 'Escape') {
+        hideAuteurSuggestions();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!auteurChips.parentElement.contains(event.target)) {
+        hideAuteurSuggestions();
+      }
+    });
 
     function render(chant, files, programmes) {
       document.getElementById('chant-title').textContent = chant.nom;
@@ -612,8 +847,11 @@
       const audioFiles = files.filter((file) => isAudioFileName(file.nomFichier));
       const audioItems = audioFiles.map((file) => `
         <div class="chant-audio-item">
-          <button type="button" class="audio-play-button" data-audio-id="${file.id}" aria-label="Lire ${escapeHtml(file.nomFichier)}">&#9658;</button>
-          <span class="chant-audio-name">${escapeHtml(file.nomFichier)}</span>
+          <div class="chant-audio-row">
+            <button type="button" class="audio-play-button" data-audio-id="${file.id}" aria-label="Lire ${escapeHtml(file.nomFichier)}">&#9658;</button>
+            <span class="chant-audio-name">${escapeHtml(file.nomFichier)}</span>
+          </div>
+          <input type="range" class="audio-progress" data-audio-progress="${file.id}" min="0" max="100" step="0.1" value="0" disabled aria-label="Progression de ${escapeHtml(file.nomFichier)}" />
         </div>
       `).join('');
 
@@ -685,6 +923,14 @@
       document.querySelectorAll('[data-audio-id]').forEach((button) => {
         const file = files.find((item) => String(item.id) === button.dataset.audioId);
         button.addEventListener('click', () => toggleAudioPlayback(chant, file, button));
+      });
+
+      document.querySelectorAll('[data-audio-progress]').forEach((input) => {
+        input.addEventListener('input', () => {
+          if (activeAudioButton && activeAudioButton.dataset.audioId === input.dataset.audioProgress && audioPlayer.duration) {
+            audioPlayer.currentTime = (Number(input.value) / 100) * audioPlayer.duration;
+          }
+        });
       });
 
       document.querySelectorAll('[data-programme-id]').forEach((button) => {
@@ -809,9 +1055,14 @@
         form.elements.nom.value = currentChant.nom;
         form.elements.path.value = currentChant.path;
         form.elements.cote.value = currentChant.cote === null ? '' : String(currentChant.cote);
-        form.elements.auteurs.value = currentChant.auteurs || '';
         form.elements.informations.value = currentChant.informations || '';
-        loadAuteurSuggestions();
+        selectedAuteurs = currentChant.auteurs
+          ? currentChant.auteurs.split(',').map((nom) => nom.trim()).filter(Boolean)
+          : [];
+        auteurSearchInput.value = '';
+        renderAuteurChips();
+        hideAuteurSuggestions();
+        loadAuteurOptions();
         dialog.showModal();
       });
 
