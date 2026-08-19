@@ -443,7 +443,7 @@ function handleDetail(PDO $pdo): void
 {
     $id = requiredInt('id', 'L\'identifiant du programme');
 
-    $statement = $pdo->prepare('SELECT ID, `Date`, Lieu, Occasion, Paroisse, Description FROM `Programme` WHERE ID = :id');
+    $statement = $pdo->prepare('SELECT ID, `Date`, Lieu, Occasion, Paroisse, Description, AELF FROM `Programme` WHERE ID = :id');
     $statement->execute([':id' => $id]);
     $programme = $statement->fetch();
 
@@ -527,11 +527,12 @@ function handleProgrammeSave(PDO $pdo): void
     $paroisse = textValue('paroisse');
     $description = requestValue('description');
     $description = $description === '' ? null : mb_substr($description, 0, 5000);
+    $aelf = requestValue('aelf') === '1' ? 1 : 0;
 
     if ($id === null) {
         $statement = $pdo->prepare(
-            'INSERT INTO `Programme` (`Date`, Lieu, Occasion, Paroisse, Description)
-             VALUES (:date, :lieu, :occasion, :paroisse, :description)'
+            'INSERT INTO `Programme` (`Date`, Lieu, Occasion, Paroisse, Description, AELF)
+             VALUES (:date, :lieu, :occasion, :paroisse, :description, :aelf)'
         );
         $statement->execute([
             ':date' => $date,
@@ -539,13 +540,14 @@ function handleProgrammeSave(PDO $pdo): void
             ':occasion' => $occasion,
             ':paroisse' => $paroisse,
             ':description' => $description,
+            ':aelf' => $aelf,
         ]);
         $id = (int) $pdo->lastInsertId();
         copyTemplateItems($pdo, $id, $paroisse);
     } else {
         $statement = $pdo->prepare(
             'UPDATE `Programme`
-             SET `Date` = :date, Lieu = :lieu, Occasion = :occasion, Paroisse = :paroisse, Description = :description
+             SET `Date` = :date, Lieu = :lieu, Occasion = :occasion, Paroisse = :paroisse, Description = :description, AELF = :aelf
              WHERE ID = :id'
         );
         $statement->execute([
@@ -554,6 +556,7 @@ function handleProgrammeSave(PDO $pdo): void
             ':occasion' => $occasion,
             ':paroisse' => $paroisse,
             ':description' => $description,
+            ':aelf' => $aelf,
             ':id' => $id,
         ]);
     }
@@ -1191,6 +1194,7 @@ function mapProgrammeRow(array $row): array
         'occasion' => (string) $row['Occasion'],
         'paroisse' => (string) $row['Paroisse'],
         'description' => isset($row['Description']) && $row['Description'] !== null ? (string) $row['Description'] : '',
+        'aelf' => isset($row['AELF']) && (int) $row['AELF'] === 1,
         'chantCount' => (int) ($row['ChantCount'] ?? 0),
         'partieCount' => (int) ($row['PartieCount'] ?? 0),
     ];

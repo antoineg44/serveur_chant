@@ -14,12 +14,94 @@ function markAsChanged() {
     hasUnsavedChanges = true;
 }
 
+var AELF_READINGS_MARKER = '--- Lectures du jour (AELF) ---';
+var AELF_TYPE_LABELS = {
+    lecture_1: 'Premiere lecture',
+    lecture_2: 'Deuxieme lecture',
+    psaume: 'Psaume',
+    evangile: 'Evangile'
+};
+
+function aelfHtmlToText(html) {
+    return String(html || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\u00a0/g, ' ')
+        .trim();
+}
+
+function buildAelfReadingsText(messe) {
+    var sections = (messe.lectures || []).map(function(lecture) {
+        var label = AELF_TYPE_LABELS[lecture.type] || lecture.type;
+        var ref = lecture.ref ? ' (' + lecture.ref + ')' : '';
+        var intro = lecture.intro_lue ? aelfHtmlToText(lecture.intro_lue) + '\n' : '';
+        var refrain = lecture.refrain_psalmique ? aelfHtmlToText(lecture.refrain_psalmique) + '\n' : '';
+        var contenu = aelfHtmlToText(lecture.contenu);
+        return label + ref + '\n' + intro + refrain + contenu;
+    });
+
+    return sections.join('\n\n');
+}
+
+async function chargerLecturesAelf() {
+    var dateField = document.getElementById('programme_date');
+    var descriptionField = document.getElementById('programme_description');
+    if (!dateField || !descriptionField || !dateField.value) {
+        return;
+    }
+
+    try {
+        var response = await fetch('https://api.aelf.org/v1/messes/' + dateField.value + '/france');
+        var payload = await response.json().catch(function() { return null; });
+
+        if (!response.ok || !payload || !Array.isArray(payload.messes) || !payload.messes.length) {
+            throw new Error('Lectures indisponibles pour cette date.');
+        }
+
+        var readingsText = AELF_READINGS_MARKER + '\n' + buildAelfReadingsText(payload.messes[0]);
+        var currentText = descriptionField.value || '';
+        var markerIndex = currentText.indexOf(AELF_READINGS_MARKER);
+        var baseText = markerIndex === -1 ? currentText.trim() : currentText.slice(0, markerIndex).trim();
+
+        descriptionField.value = (baseText ? baseText + '\n\n' : '') + readingsText;
+        if (window.programme) {
+            programme.description = descriptionField.value;
+        }
+        markAsChanged();
+    } catch (error) {
+        alert("Impossible de recuperer les lectures AELF : " + error.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var aelfField = document.getElementById('programme_aelf');
+    var dateField = document.getElementById('programme_date');
+
+    if (aelfField) {
+        aelfField.addEventListener('change', function() {
+            if (aelfField.checked) {
+                void chargerLecturesAelf();
+            }
+        });
+    }
+
+    if (dateField) {
+        dateField.addEventListener('change', function() {
+            if (aelfField && aelfField.checked) {
+                void chargerLecturesAelf();
+            }
+        });
+    }
+});
+
 function updateProgrammeInformationFromForm() {
     var dateField = document.getElementById('programme_date');
     var lieuField = document.getElementById('programme_lieu');
     var occasionField = document.getElementById('programme_occasion');
     var paroisseField = document.getElementById('select_paroisse');
     var descriptionField = document.getElementById('programme_description');
+    var aelfField = document.getElementById('programme_aelf');
 
     if (dateField) programme.date = dateField.value;
     if (lieuField) programme.lieu = lieuField.value.trim();
@@ -28,6 +110,7 @@ function updateProgrammeInformationFromForm() {
         programme.paroisse = paroisseField.value.trim();
     }
     if (descriptionField) programme.description = descriptionField.value;
+    if (aelfField) programme.aelf = aelfField.checked;
 }
 
 function getProgrammeParoisseFromPath() {
@@ -305,11 +388,14 @@ function initFormulaire()
   // description
   document.getElementById("programme_description").value = programme.description;
 
+  // AELF
+  document.getElementById("programme_aelf").checked = Boolean(programme.aelf);
+
   // title
   document.getElementById("title_section").innerHTML = '<div class="href-target" id="intro"></div>' + "<h1 class='package-name'>Messe du " + programme.date + " à " + programme.lieu + " pour " + programme.occasion + "</h1><p>Paroisse de " + programme.paroisse + ".</p>";
 
   // Add change listeners to form fields
-  var formFields = ['select_paroisse', 'programme_lieu', 'programme_occasion', 'programme_date', 'programme_description'];
+  var formFields = ['select_paroisse', 'programme_lieu', 'programme_occasion', 'programme_date', 'programme_description', 'programme_aelf'];
   formFields.forEach(function(fieldId) {
     var field = document.getElementById(fieldId);
     if (field) {
@@ -738,7 +824,8 @@ async function enregistrer() {
             lieu: programme.lieu,
             occasion: programme.occasion,
             paroisse: programme.paroisse,
-            description: programme.description
+            description: programme.description,
+            aelf: programme.aelf ? '1' : '0'
         });
 
         var payload = await postProgrammeAction('items_set', {
@@ -793,6 +880,7 @@ async function chargerProgramme() {
         occasion: detail.occasion,
         paroisse: detail.paroisse,
         description: detail.description || '',
+        aelf: Boolean(detail.aelf),
         chants: (payload.items || []).map(function(item) {
             if (item.type === 'partie') {
                 return { type: 'partie', name: item.partieNom };
