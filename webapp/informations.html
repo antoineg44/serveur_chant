@@ -207,6 +207,13 @@
       display: none;
     }
 
+    .messe-popup-aelf-reading {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
     .messe-popup-loading {
       text-align: center;
       color: var(--ink-soft);
@@ -400,6 +407,10 @@
         if (item.type === 'partie') {
           currentPartieCategorieIds = item.categorieIds || [];
           return `<div class="messe-popup-program-part">${escapeHtml(item.name)}</div>`;
+        }
+
+        if (item.aelfReading) {
+          return `<div class="messe-popup-program-song messe-popup-aelf-reading">${escapeHtml(item.name)}</div>`;
         }
 
         const path = String(item.path || '').trim();
@@ -792,6 +803,120 @@
       }
     }
 
+    function aelfHtmlToText(html) {
+      return String(html || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\u00a0/g, ' ')
+        .trim();
+    }
+
+    function buildAelfReadingText(lecture) {
+      const parts = [];
+      if (lecture.intro_lue) {
+        parts.push(aelfHtmlToText(lecture.intro_lue) + (lecture.ref ? ` (${lecture.ref})` : ''));
+      } else if (lecture.ref) {
+        parts.push(lecture.ref);
+      }
+      if (lecture.refrain_psalmique) {
+        parts.push(aelfHtmlToText(lecture.refrain_psalmique));
+      }
+      parts.push(aelfHtmlToText(lecture.contenu));
+      return parts.join('\n\n');
+    }
+
+    // A "section" runs from a partie entry up to (excluding) the next partie entry, or the array end.
+    function findPartieBounds(program, name) {
+      const normalized = name.trim().toLowerCase();
+      const startIndex = program.findIndex((item) => item.type === 'partie' && String(item.name || '').trim().toLowerCase() === normalized);
+      if (startIndex === -1) {
+        return null;
+      }
+      let endIndex = program.length;
+      for (let i = startIndex + 1; i < program.length; i += 1) {
+        if (program[i].type === 'partie') {
+          endIndex = i;
+          break;
+        }
+      }
+      return { startIndex, endIndex };
+    }
+
+    function buildAelfReadingItem(lecture) {
+      return { type: 'chant', name: buildAelfReadingText(lecture), chantId: '', path: '', categorieIds: [], aelfReading: true };
+    }
+
+    // Mirrors modifications.js's chargerLecturesAelf() positional rules: before/into/after "Psaume", after "Alléluia".
+    function insertAelfReadingsIntoProgram(program, lectures) {
+      let psaumeBounds = findPartieBounds(program, 'Psaume');
+      if (!psaumeBounds) {
+        return program;
+      }
+
+      const { lecture1, psaume, lecture2, evangile } = lectures;
+
+      if (lecture1) {
+        program.splice(psaumeBounds.startIndex, 0,
+          { type: 'partie', name: 'Premiere lecture', categorieIds: [] },
+          buildAelfReadingItem(lecture1));
+        psaumeBounds = findPartieBounds(program, 'Psaume');
+      }
+
+      if (psaume) {
+        program.splice(psaumeBounds.endIndex, 0, buildAelfReadingItem(psaume));
+        psaumeBounds = findPartieBounds(program, 'Psaume');
+      }
+
+      let lecture2Created = false;
+      if (lecture2) {
+        program.splice(psaumeBounds.endIndex, 0,
+          { type: 'partie', name: 'Deuxieme lecture', categorieIds: [] },
+          buildAelfReadingItem(lecture2));
+        lecture2Created = true;
+      }
+
+      if (evangile) {
+        const alleluiaBounds = findPartieBounds(program, 'Alleluia') || findPartieBounds(program, 'Alléluia');
+        let insertAt;
+        if (alleluiaBounds) {
+          insertAt = alleluiaBounds.endIndex;
+        } else if (lecture2Created) {
+          insertAt = findPartieBounds(program, 'Deuxieme lecture').endIndex;
+        } else {
+          insertAt = findPartieBounds(program, 'Psaume').endIndex;
+        }
+        program.splice(insertAt, 0,
+          { type: 'partie', name: 'Evangile', categorieIds: [] },
+          buildAelfReadingItem(evangile));
+      }
+
+      return program;
+    }
+
+    async function fetchAelfLectures(date) {
+      if (!date) {
+        return null;
+      }
+      try {
+        const response = await fetch(`https://api.aelf.org/v1/messes/${date}/france`);
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || !Array.isArray(payload.messes) || !payload.messes.length) {
+          return null;
+        }
+        const lectures = payload.messes[0].lectures || [];
+        return {
+          lecture1: lectures.find((l) => l.type === 'lecture_1'),
+          psaume: lectures.find((l) => l.type === 'psaume'),
+          lecture2: lectures.find((l) => l.type === 'lecture_2'),
+          evangile: lectures.find((l) => l.type === 'evangile'),
+        };
+      } catch (error) {
+        console.warn('Impossible de recuperer les lectures AELF.', error);
+        return null;
+      }
+    }
+
     async function loadProgrammeFromDatabase(id) {
       const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PROGRAMME_API)
@@ -816,6 +941,13 @@
           path: [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/'),
           categorieIds: item.categorieIds || [],
         }));
+
+      if (programme.aelf) {
+        const lectures = await fetchAelfLectures(programme.date);
+        if (lectures) {
+          insertAelfReadingsIntoProgram(program, lectures);
+        }
+      }
 
       renderPopup({
         title: programme.occasion ? `${programme.date} - ${programme.occasion}` : 'Informations de la messe',
