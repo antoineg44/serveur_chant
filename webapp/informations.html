@@ -182,6 +182,31 @@
       cursor: not-allowed;
     }
 
+    .chant-add-categorie-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .chant-add-categorie-select {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 5;
+      margin-top: 4px;
+      min-width: 200px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font: inherit;
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .chant-add-categorie-select[hidden] {
+      display: none;
+    }
+
     .messe-popup-loading {
       text-align: center;
       color: var(--ink-soft);
@@ -398,8 +423,18 @@
 
         const chantCategorieIds = item.categorieIds || [];
         const hasCorrespondance = currentPartieCategorieIds.some((id) => chantCategorieIds.includes(id));
+        const categoriesById = data.categoriesById || {};
+        const addCategorieOptions = currentPartieCategorieIds
+          .map((id) => `<option value="${id}">${escapeHtml(categoriesById[id] || `Categorie ${id}`)}</option>`)
+          .join('');
         const addCategorieButton = chantId && currentPartieCategorieIds.length && !hasCorrespondance
-          ? `<button type="button" class="chant-add-categorie-button" title="Ajouter ce chant a la categorie de la partie" aria-label="Ajouter la categorie correspondante pour ${escapeHtml(item.name)}" data-add-categorie-chant-id="${chantId}" data-add-categorie-ids="${escapeHtml(currentPartieCategorieIds.join(','))}" data-add-categorie-name="${escapeHtml(item.name)}">+</button>`
+          ? `<span class="chant-add-categorie-wrap">
+              <button type="button" class="chant-add-categorie-button" title="Ajouter une categorie correspondante" aria-label="Ajouter une categorie a ${escapeHtml(item.name)}" data-add-categorie-toggle data-chant-id="${chantId}">+</button>
+              <select class="chant-add-categorie-select" hidden data-chant-id="${chantId}">
+                <option value="">Choisir une categorie</option>
+                ${addCategorieOptions}
+              </select>
+            </span>`
           : '';
 
         return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong><span style="display:flex;gap:6px;">${addCategorieButton}${infoButton}</span></div>${pathMarkup}</div>`;
@@ -594,31 +629,45 @@
         });
       });
 
-      container.querySelectorAll('[data-add-categorie-chant-id]').forEach((button) => {
-        button.addEventListener('click', async (event) => {
+      container.querySelectorAll('[data-add-categorie-toggle]').forEach((button) => {
+        button.addEventListener('click', (event) => {
           event.stopPropagation();
+          const select = button.parentElement.querySelector('.chant-add-categorie-select');
+          if (!select) {
+            return;
+          }
+          select.hidden = !select.hidden;
+          if (!select.hidden) {
+            select.focus();
+          }
+        });
+      });
 
-          const chantName = button.dataset.addCategorieName || 'ce chant';
-          if (!window.confirm(`Ajouter "${chantName}" a la categorie correspondante de cette partie ?`)) {
+      container.querySelectorAll('.chant-add-categorie-select').forEach((select) => {
+        select.addEventListener('click', (event) => event.stopPropagation());
+        select.addEventListener('change', async () => {
+          const categorieId = select.value;
+          if (!categorieId) {
             return;
           }
 
-          button.disabled = true;
+          const chantIdValue = select.dataset.chantId;
+          select.disabled = true;
 
           try {
-            await addChantCategories(button.dataset.addCategorieChantId, button.dataset.addCategorieIds);
+            await addChantCategories(chantIdValue, categorieId);
 
-            const chantIdNum = Number(button.dataset.addCategorieChantId);
-            const categorieIdsToAdd = button.dataset.addCategorieIds.split(',').map(Number);
+            const chantIdNum = Number(chantIdValue);
+            const categorieIdNum = Number(categorieId);
             (data.program || []).forEach((item) => {
               if (item.type === 'chant' && Number(item.chantId) === chantIdNum) {
-                item.categorieIds = Array.from(new Set([...(item.categorieIds || []), ...categorieIdsToAdd]));
+                item.categorieIds = Array.from(new Set([...(item.categorieIds || []), categorieIdNum]));
               }
             });
 
             renderPopup(data);
           } catch (error) {
-            button.disabled = false;
+            select.disabled = false;
             console.error(error);
           }
         });
@@ -734,6 +783,24 @@
       }
     }
 
+    async function fetchCategoriesById() {
+      const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
+      const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.DATA_API)
+        || `${baseUrl}webapp/api/data.php`;
+
+      try {
+        const response = await fetch(`${apiUrl}?action=categories`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        const categoriesById = {};
+        ((payload && payload.categories) || []).forEach((categorie) => {
+          categoriesById[categorie.id] = categorie.nom;
+        });
+        return categoriesById;
+      } catch {
+        return {};
+      }
+    }
+
     async function loadProgrammeFromDatabase(id) {
       const baseUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || '';
       const apiUrl = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PROGRAMME_API)
@@ -747,6 +814,7 @@
         throw new Error((payload && payload.message) || `Impossible de charger le programme: ${response.status}`);
       }
 
+      const categoriesById = await fetchCategoriesById();
       const programme = payload.programme;
       const program = (payload.items || []).map((item) => (item.type === 'partie'
         ? { type: 'partie', name: item.partieNom, path: '', categorieIds: item.categorieIds || [] }
@@ -768,6 +836,7 @@
         occasion: programme.occasion,
         paroisse: programme.paroisse,
         description: programme.description || '',
+        categoriesById,
         program,
       });
     }
