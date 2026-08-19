@@ -275,6 +275,16 @@
       }
     });
 
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>'"]/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      }[character]));
+    }
+
     document.getElementById('import-programmes').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       const status = document.getElementById('import-programmes-status');
@@ -288,7 +298,7 @@
 
       button.disabled = true;
       status.classList.remove('is-error');
-      status.textContent = 'Import des programmes en cours...';
+      status.innerHTML = 'Import des programmes en cours...';
 
       try {
         const body = new FormData();
@@ -300,7 +310,25 @@
           throw new Error((payload && payload.message) || `HTTP ${response.status}`);
         }
 
-        status.textContent = `${payload.imported} programme(s) importe(s), ${payload.skipped} ignore(s), ${payload.unmatched} chant(s) non retrouve(s).`;
+        const summary = `${payload.imported} programme(s) importe(s), ${payload.skipped} ignore(s), ${payload.unmatched} chant(s) non retrouve(s).`;
+
+        const skippedDetails = payload.skippedDetails || [];
+        const unmatchedDetails = payload.unmatchedDetails || [];
+        const details = [];
+
+        if (skippedDetails.length) {
+          details.push(`<strong>Fichiers ignores :</strong><ul>${skippedDetails
+            .map((item) => `<li>${escapeHtml(item.file)} : ${escapeHtml(item.reason)}</li>`)
+            .join('')}</ul>`);
+        }
+
+        if (unmatchedDetails.length) {
+          details.push(`<strong>Chants non retrouves :</strong><ul>${unmatchedDetails
+            .map((item) => `<li>${escapeHtml(item.file)} : "${escapeHtml(item.name)}" (${escapeHtml(item.path) || 'chemin manquant'})</li>`)
+            .join('')}</ul>`);
+        }
+
+        status.innerHTML = details.length ? `${escapeHtml(summary)}${details.join('')}` : escapeHtml(summary);
       } catch (error) {
         status.classList.add('is-error');
         status.textContent = error.message;

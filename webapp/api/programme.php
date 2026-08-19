@@ -591,12 +591,7 @@ function handleItemsSet(PDO $pdo): void
         }
 
         $path = (string) ($entry['path'] ?? '');
-        if ($path === '' || $path === 'null') {
-            $unmatched[] = $name;
-            continue;
-        }
-
-        $reference = resolveChantReference($pdo, $path);
+        $reference = resolveChantReference($pdo, $path, $name);
         if ($reference === null) {
             $unmatched[] = $name !== '' ? $name : $path;
             continue;
@@ -831,8 +826,8 @@ function handleImportJson(PDO $pdo): void
     );
 
     $imported = 0;
-    $skipped = 0;
-    $unmatched = 0;
+    $skippedDetails = [];
+    $unmatchedDetails = [];
 
     foreach ($iterator as $file) {
         if (!$file->isFile() || strtolower($file->getExtension()) !== 'json') {
@@ -846,13 +841,13 @@ function handleImportJson(PDO $pdo): void
 
         $program = json_decode((string) file_get_contents($file->getPathname()), true);
         if (!is_array($program)) {
-            $skipped += 1;
+            $skippedDetails[] = ['file' => $relative, 'reason' => 'JSON illisible ou invalide.'];
             continue;
         }
 
         $date = normalizeImportedDate((string) ($program['date'] ?? ''));
         if ($date === null) {
-            $skipped += 1;
+            $skippedDetails[] = ['file' => $relative, 'reason' => 'Date manquante ou invalide (' . (string) ($program['date'] ?? '') . ').'];
             continue;
         }
 
@@ -876,7 +871,7 @@ function handleImportJson(PDO $pdo): void
         ]);
 
         if ($exists->fetchColumn() !== false) {
-            $skipped += 1;
+            $skippedDetails[] = ['file' => $relative, 'reason' => 'Programme deja importe (meme date/lieu/occasion/paroisse).'];
             continue;
         }
 
@@ -910,9 +905,10 @@ function handleImportJson(PDO $pdo): void
                 continue;
             }
 
-            $reference = resolveChantReference($pdo, (string) ($entry['path'] ?? ''));
+            $path = (string) ($entry['path'] ?? '');
+            $reference = resolveChantReference($pdo, $path, $name);
             if ($reference === null) {
-                $unmatched += 1;
+                $unmatchedDetails[] = ['file' => $relative, 'name' => $name, 'path' => $path];
                 continue;
             }
 
@@ -930,8 +926,10 @@ function handleImportJson(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'imported' => $imported,
-        'skipped' => $skipped,
-        'unmatched' => $unmatched,
+        'skipped' => count($skippedDetails),
+        'unmatched' => count($unmatchedDetails),
+        'skippedDetails' => $skippedDetails,
+        'unmatchedDetails' => $unmatchedDetails,
     ]);
 }
 
@@ -963,43 +961,73 @@ function resolvePartieId(PDO $pdo, string $nom): int
 
 /**
  * Legacy paths look like "<Path>/<Nom du chant>/<NomFichier>" relative to /pdf.
+ * When the path can't be resolved, falls back to matching the raw "name" field.
  */
-function resolveChantReference(PDO $pdo, string $path): ?array
+function resolveChantReference(PDO $pdo, string $path, string $name = ''): ?array
 {
     $segments = array_values(array_filter(explode('/', str_replace('\\', '/', trim($path)))));
-    if (count($segments) < 2) {
+
+    if (count($segments) >= 2) {
+        $fileName = array_pop($segments);
+        $chantNom = array_pop($segments);
+        $chantPath = $segments ? (string) array_pop($segments) : '';
+
+        $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Path = :path AND Supprimer = 0');
+        $statement->execute([':nom' => $chantNom, ':path' => $chantPath]);
+        $chantId = $statement->fetchColumn();
+
+        if ($chantId === false) {
+            $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Supprimer = 0 LIMIT 1');
+            $statement->execute([':nom' => $chantNom]);
+            $chantId = $statement->fetchColumn();
+        }
+
+        if ($chantId === false) {
+            $chantId = findSimilarChantId($pdo, $chantNom);
+        }
+
+        if ($chantId !== false && $chantId !== null) {
+            return buildChantReference($pdo, (int) $chantId, $fileName);
+        }
+    }
+
+    $name = trim($name);
+    if ($name === '') {
         return null;
     }
 
-    $fileName = array_pop($segments);
-    $chantNom = array_pop($segments);
-    $chantPath = $segments ? (string) array_pop($segments) : '';
-
-    $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Path = :path AND Supprimer = 0');
-    $statement->execute([':nom' => $chantNom, ':path' => $chantPath]);
+    $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Supprimer = 0 LIMIT 1');
+    $statement->execute([':nom' => $name]);
     $chantId = $statement->fetchColumn();
 
     if ($chantId === false) {
-        $statement = $pdo->prepare('SELECT ID FROM `Chant` WHERE Nom = :nom AND Supprimer = 0 LIMIT 1');
-        $statement->execute([':nom' => $chantNom]);
-        $chantId = $statement->fetchColumn();
-    }
-
-    if ($chantId === false) {
-        $chantId = findSimilarChantId($pdo, $chantNom);
+        $chantId = findSimilarChantId($pdo, $name);
     }
 
     if ($chantId === false || $chantId === null) {
         return null;
     }
 
-    $statement = $pdo->prepare('SELECT ID FROM `Fichier` WHERE ChantID = :chant AND NomFichier = :nom AND Supprimer = 0');
-    $statement->execute([':chant' => $chantId, ':nom' => $fileName]);
-    $fichierId = $statement->fetchColumn();
+    return buildChantReference($pdo, (int) $chantId, '');
+}
+
+/**
+ * Looks up (at most) the Fichier linked to a chant by name; leaves fichierId null when unknown.
+ */
+function buildChantReference(PDO $pdo, int $chantId, string $fileName): array
+{
+    $fichierId = null;
+
+    if ($fileName !== '') {
+        $statement = $pdo->prepare('SELECT ID FROM `Fichier` WHERE ChantID = :chant AND NomFichier = :nom AND Supprimer = 0');
+        $statement->execute([':chant' => $chantId, ':nom' => $fileName]);
+        $result = $statement->fetchColumn();
+        $fichierId = $result === false ? null : (int) $result;
+    }
 
     return [
-        'chantId' => (int) $chantId,
-        'fichierId' => $fichierId === false ? null : (int) $fichierId,
+        'chantId' => $chantId,
+        'fichierId' => $fichierId,
     ];
 }
 
