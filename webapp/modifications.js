@@ -62,6 +62,15 @@ function removeExistingAelfChant(container, type) {
     }
 }
 
+// Distinguishes AELF reading text from regular chant titles (different font, smaller, honors line breaks).
+function markAelfReadingHeading(heading) {
+    if (!heading) {
+        return;
+    }
+    heading.classList.add('aelf-reading-text');
+    heading.style.whiteSpace = 'pre-line';
+}
+
 // Appends (or replaces a previous) reading as a text-only chant entry inside an existing section.
 function appendAelfReadingChant(section, type, lecture) {
     if (!section) {
@@ -82,6 +91,7 @@ function appendAelfReadingChant(section, type, lecture) {
     var inserted = container.lastElementChild;
     if (inserted) {
         inserted.setAttribute('data-aelf-reading', type);
+        markAelfReadingHeading(inserted.querySelector('.part-column h1'));
     }
 }
 
@@ -112,6 +122,7 @@ function insertAelfSection(type, name, lecture, referenceSection, position) {
     var newSection = position === 'before' ? referenceSection.previousElementSibling : referenceSection.nextElementSibling;
     if (newSection) {
         newSection.setAttribute('data-aelf-reading', type);
+        markAelfReadingHeading(newSection.querySelector("div[id^='chant_'] .part-column h1"));
     }
 
     var referenceLink = document.getElementById('link_' + referenceSection.id.slice(5));
@@ -546,15 +557,17 @@ function add_chant(chant, modification_visible=false) {
     var modification_style = "";
     var text_path = chant.path;
     var click_action = 'onclick="openChantPdf(this, \''+chant.path.replaceAll("'","\\'")+'\')"';
+    var icon_path = "../components/icons/pdf.png";
     if(text_path == "null") {
         text_path = "";
         click_action = "";
+        icon_path = "../components/icons/doc.png"; // Text-only entry (e.g. AELF reading), not a PDF chant.
     }
     if(modification_visible == false)
         modification_style = 'style="position:absolute;visibility:collapse"';
     return '<div id="chant_'+codage_path_javascript(chant.name)+'" style="margin-top:24px"><div class="row">\
             <div class="column"><h1>\
-                <div class="row"><div class="column"><img src="../components/icons/pdf.png" style="height:1em">\
+                <div class="row"><div class="column"><img src="'+icon_path+'" style="height:1em">\
             </h1></div>\
             <div class="column part-column"><h1 '+click_action+' style="white-space: normal;">'+chant.name+'</h1></div>\
             <!--<div class="column"><img src="../components/icons/edit.png"\
