@@ -31,6 +31,7 @@ let paroisses = [];
 let selectedProgrammeId = null;
 let searchTerm = '';
 let searchDebounceTimer = null;
+let partieCategoriesPickers = [];
 
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
@@ -294,12 +295,117 @@ partiesButton.addEventListener('click', async () => {
   partiesDialog.showModal();
 });
 
+/**
+ * Chip-based picker showing only the selected categories, with a search box to add more.
+ */
+function createCategoriePicker(categories, initialSelectedIds) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'categorie-picker';
+
+  const chips = document.createElement('div');
+  chips.className = 'categorie-picker-chips';
+
+  const search = document.createElement('input');
+  search.type = 'text';
+  search.className = 'categorie-picker-search';
+  search.placeholder = 'Rechercher une categorie...';
+  search.autocomplete = 'off';
+
+  const suggestions = document.createElement('div');
+  suggestions.className = 'categorie-picker-suggestions';
+  suggestions.hidden = true;
+
+  wrapper.appendChild(chips);
+  wrapper.appendChild(search);
+  wrapper.appendChild(suggestions);
+
+  let selected = categories.filter((categorie) => initialSelectedIds.includes(categorie.id));
+
+  function renderChips() {
+    chips.innerHTML = '';
+    selected.forEach((categorie) => {
+      const chip = document.createElement('span');
+      chip.className = 'categorie-picker-chip';
+
+      const label = document.createElement('span');
+      label.textContent = categorie.nom;
+      chip.appendChild(label);
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'categorie-picker-chip-remove';
+      removeButton.textContent = '\u00d7';
+      removeButton.setAttribute('aria-label', `Retirer ${categorie.nom}`);
+      removeButton.addEventListener('click', () => {
+        selected = selected.filter((existing) => existing.id !== categorie.id);
+        renderChips();
+      });
+      chip.appendChild(removeButton);
+
+      chips.appendChild(chip);
+    });
+  }
+
+  function hideSuggestions() {
+    suggestions.hidden = true;
+    suggestions.innerHTML = '';
+  }
+
+  function renderSuggestions() {
+    const filter = search.value.trim().toLowerCase();
+    const matches = categories.filter((categorie) => {
+      const isSelected = selected.some((existing) => existing.id === categorie.id);
+      return !isSelected && (!filter || categorie.nom.toLowerCase().includes(filter));
+    });
+
+    suggestions.innerHTML = '';
+    matches.forEach((categorie) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'categorie-picker-suggestion';
+      item.textContent = categorie.nom;
+      item.addEventListener('click', () => {
+        selected.push(categorie);
+        renderChips();
+        search.value = '';
+        hideSuggestions();
+        search.focus();
+      });
+      suggestions.appendChild(item);
+    });
+
+    suggestions.hidden = suggestions.children.length === 0;
+  }
+
+  search.addEventListener('input', renderSuggestions);
+  search.addEventListener('focus', renderSuggestions);
+  search.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      hideSuggestions();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!wrapper.contains(event.target)) {
+      hideSuggestions();
+    }
+  });
+
+  renderChips();
+
+  return {
+    element: wrapper,
+    getSelectedIds: () => selected.map((categorie) => categorie.id),
+  };
+}
+
 async function loadPartieCategories() {
   try {
     const payload = await programmeApi('partie_categories');
     const parties = payload.parties || [];
     const categories = payload.categories || [];
     partieCategoriesListEl.innerHTML = '';
+    partieCategoriesPickers = [];
 
     if (!parties.length) {
       partieCategoriesListEl.innerHTML = '<p class="hint">Aucune partie enregistree.</p>';
@@ -314,21 +420,10 @@ async function loadPartieCategories() {
       label.textContent = partie.nom;
       row.appendChild(label);
 
-      const select = document.createElement('select');
-      select.multiple = true;
-      select.size = Math.min(6, Math.max(3, categories.length));
-      select.dataset.partieId = String(partie.id);
-
-      categories.forEach((categorie) => {
-        const option = document.createElement('option');
-        option.value = String(categorie.id);
-        option.textContent = categorie.nom;
-        option.selected = partie.categorieIds.includes(categorie.id);
-        select.appendChild(option);
-      });
-
-      row.appendChild(select);
+      const picker = createCategoriePicker(categories, partie.categorieIds || []);
+      row.appendChild(picker.element);
       partieCategoriesListEl.appendChild(row);
+      partieCategoriesPickers.push({ partieId: partie.id, picker });
     });
   } catch (error) {
     setStatus(error.message, true);
@@ -338,8 +433,8 @@ async function loadPartieCategories() {
 partieCategoriesSaveButton.addEventListener('click', async () => {
   const mapping = {};
 
-  partieCategoriesListEl.querySelectorAll('select[data-partie-id]').forEach((select) => {
-    mapping[select.dataset.partieId] = Array.from(select.selectedOptions).map((option) => Number(option.value));
+  partieCategoriesPickers.forEach(({ partieId, picker }) => {
+    mapping[partieId] = picker.getSelectedIds();
   });
 
   try {

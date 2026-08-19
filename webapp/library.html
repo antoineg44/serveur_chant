@@ -129,18 +129,96 @@
 
     .partie-categories-row {
       display: grid;
-      grid-template-columns: minmax(120px, 1fr) minmax(200px, 2fr);
+      grid-template-columns: minmax(120px, 1fr) minmax(220px, 2fr);
       gap: 10px;
-      align-items: center;
+      align-items: start;
     }
 
-    .partie-categories-row select {
+    .categorie-picker {
+      position: relative;
+    }
+
+    .categorie-picker-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .categorie-picker-chips:empty {
+      margin-bottom: 0;
+    }
+
+    .categorie-picker-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft, #e2e8f0);
+      color: var(--ink);
+      font-size: 0.85em;
+    }
+
+    .categorie-picker-chip-remove {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      line-height: 1;
+      color: inherit;
+      opacity: 0.7;
+      padding: 2px 4px;
+    }
+
+    .categorie-picker-chip-remove:hover {
+      opacity: 1;
+    }
+
+    .categorie-picker-search {
+      width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 6px 8px;
       font: inherit;
       background: #fff;
       color: var(--ink);
+    }
+
+    .categorie-picker-suggestions {
+      position: absolute;
+      z-index: 5;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .categorie-picker-suggestions[hidden] {
+      display: none;
+    }
+
+    .categorie-picker-suggestion {
+      display: block;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      background: none;
+      text-align: left;
+      font: inherit;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .categorie-picker-suggestion:hover,
+    .categorie-picker-suggestion:focus {
+      background: var(--accent-soft, #e2e8f0);
     }
   </style>
   <script>

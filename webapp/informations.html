@@ -167,7 +167,7 @@
       border: 1px solid var(--line);
       border-radius: 50%;
       background: #ffffff;
-      color: #b45309;
+      color: #555;
       font: inherit;
       font-weight: 700;
       cursor: pointer;
@@ -399,7 +399,7 @@
         const chantCategorieIds = item.categorieIds || [];
         const hasCorrespondance = currentPartieCategorieIds.some((id) => chantCategorieIds.includes(id));
         const addCategorieButton = chantId && currentPartieCategorieIds.length && !hasCorrespondance
-          ? `<button type="button" class="chant-add-categorie-button" title="Ajouter ce chant a la categorie de la partie" aria-label="Ajouter la categorie correspondante pour ${escapeHtml(item.name)}" data-add-categorie-chant-id="${chantId}" data-add-categorie-ids="${escapeHtml(currentPartieCategorieIds.join(','))}">+</button>`
+          ? `<button type="button" class="chant-add-categorie-button" title="Ajouter ce chant a la categorie de la partie" aria-label="Ajouter la categorie correspondante pour ${escapeHtml(item.name)}" data-add-categorie-chant-id="${chantId}" data-add-categorie-ids="${escapeHtml(currentPartieCategorieIds.join(','))}" data-add-categorie-name="${escapeHtml(item.name)}">+</button>`
           : '';
 
         return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong><span style="display:flex;gap:6px;">${addCategorieButton}${infoButton}</span></div>${pathMarkup}</div>`;
@@ -597,6 +597,12 @@
       container.querySelectorAll('[data-add-categorie-chant-id]').forEach((button) => {
         button.addEventListener('click', async (event) => {
           event.stopPropagation();
+
+          const chantName = button.dataset.addCategorieName || 'ce chant';
+          if (!window.confirm(`Ajouter "${chantName}" a la categorie correspondante de cette partie ?`)) {
+            return;
+          }
+
           button.disabled = true;
 
           try {
