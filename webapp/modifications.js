@@ -14,14 +14,6 @@ function markAsChanged() {
     hasUnsavedChanges = true;
 }
 
-var AELF_READINGS_MARKER = '--- Lectures du jour (AELF) ---';
-var AELF_TYPE_LABELS = {
-    lecture_1: 'Premiere lecture',
-    lecture_2: 'Deuxieme lecture',
-    psaume: 'Psaume',
-    evangile: 'Evangile'
-};
-
 function aelfHtmlToText(html) {
     return String(html || '')
         .replace(/<br\s*\/?>/gi, '\n')
@@ -31,23 +23,114 @@ function aelfHtmlToText(html) {
         .trim();
 }
 
-function buildAelfReadingsText(messe) {
-    var sections = (messe.lectures || []).map(function(lecture) {
-        var label = AELF_TYPE_LABELS[lecture.type] || lecture.type;
-        var ref = lecture.ref ? ' (' + lecture.ref + ')' : '';
-        var intro = lecture.intro_lue ? aelfHtmlToText(lecture.intro_lue) + '\n' : '';
-        var refrain = lecture.refrain_psalmique ? aelfHtmlToText(lecture.refrain_psalmique) + '\n' : '';
-        var contenu = aelfHtmlToText(lecture.contenu);
-        return label + ref + '\n' + intro + refrain + contenu;
-    });
+function buildAelfReadingText(lecture) {
+    var parts = [];
+    if (lecture.intro_lue) {
+        parts.push(aelfHtmlToText(lecture.intro_lue) + (lecture.ref ? ' (' + lecture.ref + ')' : ''));
+    } else if (lecture.ref) {
+        parts.push(lecture.ref);
+    }
+    if (lecture.refrain_psalmique) {
+        parts.push(aelfHtmlToText(lecture.refrain_psalmique));
+    }
+    parts.push(aelfHtmlToText(lecture.contenu));
+    return parts.join('\n\n');
+}
 
-    return sections.join('\n\n');
+/**
+ * Finds a partie section by its displayed name (case-insensitive), not by guessing its encoded id.
+ */
+function findSectionByPartieName(name) {
+    var normalized = name.trim().toLowerCase();
+    var sections = document.querySelectorAll('section[id^="part_"]');
+    for (var i = 0; i < sections.length; i++) {
+        var heading = sections[i].querySelector('.part-column h1');
+        if (heading && heading.textContent.trim().toLowerCase() === normalized) {
+            return sections[i];
+        }
+    }
+    return null;
+}
+
+function removeExistingAelfChant(container, type) {
+    if (!container) {
+        return;
+    }
+    var existing = container.querySelector('[data-aelf-reading="' + type + '"]');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+// Appends (or replaces a previous) reading as a text-only chant entry inside an existing section.
+function appendAelfReadingChant(section, type, lecture) {
+    if (!section) {
+        return;
+    }
+    var container = document.getElementById('doc_' + section.id.slice(5));
+    if (!container) {
+        return;
+    }
+
+    removeExistingAelfChant(container, type);
+    if (!lecture) {
+        return;
+    }
+
+    container.insertAdjacentHTML('beforeend', add_chant({ name: buildAelfReadingText(lecture), path: 'null' }));
+
+    var inserted = container.lastElementChild;
+    if (inserted) {
+        inserted.setAttribute('data-aelf-reading', type);
+    }
+}
+
+function removeExistingAelfSection(type) {
+    var existingSection = document.querySelector('section[data-aelf-reading="' + type + '"]');
+    if (!existingSection) {
+        return;
+    }
+    var existingLink = document.getElementById('link_' + existingSection.id.slice(5));
+    if (existingLink) {
+        existingLink.remove();
+    }
+    existingSection.remove();
+}
+
+// Creates a brand new section (with a single text-only reading chant) just before/after a reference section.
+function insertAelfSection(type, name, lecture, referenceSection, position) {
+    removeExistingAelfSection(type);
+
+    if (!lecture || !referenceSection) {
+        return null;
+    }
+
+    var sectionHtml = add_section({ name: name }, add_chant({ name: buildAelfReadingText(lecture), path: 'null' }));
+    var linkHtml = add_link_section(name);
+
+    referenceSection.insertAdjacentHTML(position === 'before' ? 'beforebegin' : 'afterend', sectionHtml);
+    var newSection = position === 'before' ? referenceSection.previousElementSibling : referenceSection.nextElementSibling;
+    if (newSection) {
+        newSection.setAttribute('data-aelf-reading', type);
+    }
+
+    var referenceLink = document.getElementById('link_' + referenceSection.id.slice(5));
+    if (referenceLink) {
+        referenceLink.insertAdjacentHTML(position === 'before' ? 'beforebegin' : 'afterend', linkHtml);
+    }
+
+    return newSection;
 }
 
 async function chargerLecturesAelf() {
     var dateField = document.getElementById('programme_date');
-    var descriptionField = document.getElementById('programme_description');
-    if (!dateField || !descriptionField || !dateField.value) {
+    if (!dateField || !dateField.value) {
+        return;
+    }
+
+    var psaumeSection = findSectionByPartieName('Psaume');
+    if (!psaumeSection) {
+        alert('Aucune partie "Psaume" trouvee dans le programme : impossible d\'inserer les lectures AELF.');
         return;
     }
 
@@ -59,15 +142,20 @@ async function chargerLecturesAelf() {
             throw new Error('Lectures indisponibles pour cette date.');
         }
 
-        var readingsText = AELF_READINGS_MARKER + '\n' + buildAelfReadingsText(payload.messes[0]);
-        var currentText = descriptionField.value || '';
-        var markerIndex = currentText.indexOf(AELF_READINGS_MARKER);
-        var baseText = markerIndex === -1 ? currentText.trim() : currentText.slice(0, markerIndex).trim();
+        var lectures = payload.messes[0].lectures || [];
+        var lecture1 = lectures.find(function(l) { return l.type === 'lecture_1'; });
+        var psaume = lectures.find(function(l) { return l.type === 'psaume'; });
+        var lecture2 = lectures.find(function(l) { return l.type === 'lecture_2'; });
+        var evangile = lectures.find(function(l) { return l.type === 'evangile'; });
 
-        descriptionField.value = (baseText ? baseText + '\n\n' : '') + readingsText;
-        if (window.programme) {
-            programme.description = descriptionField.value;
-        }
+        insertAelfSection('lecture_1', 'Premiere lecture', lecture1, psaumeSection, 'before');
+        appendAelfReadingChant(psaumeSection, 'psaume', psaume);
+        var lecture2Section = insertAelfSection('lecture_2', 'Deuxieme lecture', lecture2, psaumeSection, 'after');
+
+        var alleluiaSection = findSectionByPartieName('Alleluia') || findSectionByPartieName('Alléluia');
+        var evangileReference = alleluiaSection || lecture2Section || psaumeSection;
+        insertAelfSection('evangile', 'Evangile', evangile, evangileReference, 'after');
+
         markAsChanged();
     } catch (error) {
         alert("Impossible de recuperer les lectures AELF : " + error.message);
