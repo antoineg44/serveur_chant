@@ -158,9 +158,9 @@ function ensureSchema(PDO $pdo): void
         'CREATE TABLE IF NOT EXISTS `Chant` (
             `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
             `Nom` VARCHAR(255) NOT NULL,
-            `Path` VARCHAR(500) NOT NULL DEFAULT \'\',
+            `Path` VARCHAR(50) NOT NULL DEFAULT \'\',
             `DateAjout` DATETIME NOT NULL,
-            `Cote` TINYINT UNSIGNED NULL,
+            `Cote` VARCHAR(20) NULL,
             `Informations` TEXT NULL,
             PRIMARY KEY (`ID`),
             KEY `idx_chant_path` (`Path`(191)),
