@@ -1332,6 +1332,10 @@ details summary::-webkit-details-marker {
     line-height: 0.75;
 }
 
+.aelf-reading-text strong {
+    font-weight: 700; /* Overrides the global reset's `strong { font: inherit }`. */
+}
+
 .button:hover {
     background-color: #c5c5c5;
 }
