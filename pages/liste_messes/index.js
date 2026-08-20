@@ -152,7 +152,7 @@ function activate() {
 
 function ajouterNouveauProgramme() {
     console.log('Ajouter un nouveau programme clicked');
-    window.location.href = window.location.origin+"/webapp/create.html/";
+    window.location.href = window.location.origin+"/webapp/create.html";
 }
 
 function gererProgramme() {
