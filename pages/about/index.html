@@ -9,15 +9,15 @@
   <!-- CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- JS -->
-  <script src="../js/jquery-latest.js"></script>
-  <script src="../js/config.js"></script>
+  <script src="../../js/jquery-latest.js"></script>
+  <script src="../../js/config.js"></script>
   <!-- Title -->
   <title>A propos</title>
 </head>
 
 <body class="h-full w-full"><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
     <div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
-    <img src="../fond.jpg" style="position:fixed;height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+    <img src="../../fond.jpg" style="position:fixed;height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
     <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl" aria-hidden="true" style="overflow-y:scroll"></div>
     <div class="mx-auto max-w-7xl px-6 lg:px-8">
       <div class="mx-auto lg:mx-0">
@@ -31,30 +31,28 @@
 
       </div>
 
-      <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
+      <!--<div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
         <h3 class="text-2xl tracking-tight text-white sm:text-3xl">Télécharger l'application</h3>
         <p class="mt-6 text-lg leading-8 text-gray-300">Seul des verions Android sont développés car Android est libre : toutes les biliothèques sont disponibles et beaucoup utilisées, ce qui rend le projet très sécurisé, fiable et durable dans le temps.</p>
         <div id="appversion" class="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
         </div>
-      </div>
+      </div>-->
       <div class="mx-auto mt-10 max-w-2xl lg:mx-0 lg:max-w-none">
         <h3 class="text-2xl tracking-tight text-white sm:text-3xl">Lien vers le projet</h3>
         <p class="mt-6 text-lg leading-8 text-gray-300">J'ai besoin d'aide pour développer le projet et serais très heureux d'en discuter avec vous. Pour avoir l'accès, n'hésitez pas à me contacter par mail : antoine.nort@netc.fr</p>
         <div class="grid grid-cols-1 gap-x-8 gap-y-6 text-base font-semibold leading-7 text-white sm:grid-cols-2 md:flex lg:gap-x-10">
           <a href="https://github.com/antoineg44/serveur_chant" style="color: #3498db;">Projet GitHub<span aria-hidden="true">&rarr;</span></a>
           <a href="https://antoineg44.github.io/serveur_chant/" style="color: #3498db;">Test GitHub<span aria-hidden="true">&rarr;</span></a>
-          <a href="https://filemanager.ai/new/#" style="color: #3498db;">Serveur<span aria-hidden="true">&rarr;</span></a>
-          ftp.cluster027.hosting.ovh.net
         </div>
       </div>
     </div>
   </div>
 
     <script>
-    $(document).ready(function() {
+    /*$(document).ready(function() {
         $.ajax({
             type: 'GET',
-            url: window.location.origin + '/php/app_list.php',
+            url: window.location.origin + '..//php/app_list.php',
             crossDomain: true,
             contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
             success: function(data){
@@ -67,7 +65,7 @@
                 }
             }
         });
-    });
+    });*/
     </script>
 </body>
 
