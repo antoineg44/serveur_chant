@@ -501,6 +501,7 @@ function handleSearchAdvanced(PDO $pdo): void
     $term = requestValue('q');
     $cote = requestValue('cote');
     $categorieId = nullableInt('categorie_id', 1, PHP_INT_MAX);
+    $tempsLiturgiqueId = nullableInt('temps_liturgique_id', 1, PHP_INT_MAX);
     $sort = requestValue('sort');
 
     $conditions = ['c.Supprimer = 0'];
@@ -524,6 +525,14 @@ function handleSearchAdvanced(PDO $pdo): void
             WHERE cc.ChantID = c.ID AND cc.CategorieID = :categorie
         )';
         $params[':categorie'] = $categorieId;
+    }
+
+    if ($tempsLiturgiqueId !== null) {
+        $conditions[] = 'EXISTS (
+            SELECT 1 FROM `ChantTempsLiturgique` ctl4
+            WHERE ctl4.ChantID = c.ID AND ctl4.TempsLiturgiqueID = :temps_liturgique
+        )';
+        $params[':temps_liturgique'] = $tempsLiturgiqueId;
     }
 
     $orderBy = match ($sort) {

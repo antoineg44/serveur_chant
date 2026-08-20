@@ -78,6 +78,11 @@
           <option value="">Toutes</option>
         </select>
       </label>
+      <label>Temps liturgique
+        <select name="temps_liturgique_id">
+          <option value="">Tous</option>
+        </select>
+      </label>
       <label>Cote
         <input type="text" name="cote" placeholder="ex: A, 1, ..." autocomplete="off" />
       </label>
@@ -122,6 +127,7 @@
 
     const form = document.getElementById('search-form');
     const categorieSelect = form.elements.categorie_id;
+    const tempsLiturgiqueSelect = form.elements.temps_liturgique_id;
     const statusElement = document.getElementById('search-status');
     const resultsBody = document.getElementById('search-results');
 
@@ -208,13 +214,29 @@
       }
     }
 
+    async function loadTempsLiturgiques() {
+      try {
+        const response = await fetch(`${DATA_API}?action=temps_liturgiques`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        (payload && payload.tempsLiturgiques || []).forEach((tempsLiturgique) => {
+          const option = document.createElement('option');
+          option.value = String(tempsLiturgique.id);
+          option.textContent = tempsLiturgique.nom;
+          tempsLiturgiqueSelect.appendChild(option);
+        });
+      } catch {
+        // Temps liturgiques are optional for the form to still work.
+      }
+    }
+
     async function runSearch() {
       const q = form.elements.q.value.trim();
       const cote = form.elements.cote.value.trim();
       const categorieId = categorieSelect.value;
+      const tempsLiturgiqueId = tempsLiturgiqueSelect.value;
       const sort = form.elements.sort.value;
 
-      if (!q && !cote && !categorieId && !sort) {
+      if (!q && !cote && !categorieId && !tempsLiturgiqueId && !sort) {
         setStatus('Choisissez au moins un critere puis lancez la recherche.');
         resultsBody.innerHTML = '';
         return;
@@ -232,6 +254,9 @@
         }
         if (categorieId) {
           query.set('categorie_id', categorieId);
+        }
+        if (tempsLiturgiqueId) {
+          query.set('temps_liturgique_id', tempsLiturgiqueId);
         }
         if (sort) {
           query.set('sort', sort);
@@ -264,6 +289,7 @@
     });
 
     void loadCategories();
+    void loadTempsLiturgiques();
   </script>
 </body>
 </html>
