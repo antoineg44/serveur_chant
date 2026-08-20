@@ -13,14 +13,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-requireAuthenticatedUser();
-
 const DATA_MAX_PATH_LENGTH = 500;
 const DATA_MAX_NAME_LENGTH = 255;
 const DATA_SEED_EXTENSIONS = ['pdf', 'mp3', 'm4a', 'musicxml', 'mxl', 'xml'];
 const DATA_SEED_EXCLUDED_ROOTS = ['Recycle Bin', 'programmes'];
 
 $action = (string) ($_REQUEST['action'] ?? 'list');
+
+// The homepage displays aggregate stats publicly, without requiring a login.
+$publicActions = ['stats'];
+if (!(in_array($action, $publicActions, true) && $_SERVER['REQUEST_METHOD'] === 'GET')) {
+    requireAuthenticatedUser();
+}
 
 try {
     $pdo = resolveDatabase();

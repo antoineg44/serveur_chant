@@ -13,11 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-requireAuthenticatedUser();
-
 const PROGRAMME_MAX_TEXT_LENGTH = 255;
 
 $action = (string) ($_REQUEST['action'] ?? 'list');
+
+// The homepage displays the upcoming masses list publicly, without requiring a login.
+$publicActions = ['list'];
+if (!(in_array($action, $publicActions, true) && $_SERVER['REQUEST_METHOD'] === 'GET')) {
+    requireAuthenticatedUser();
+}
 
 try {
     $pdo = resolveDatabase();
