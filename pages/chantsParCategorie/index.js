@@ -134,3 +134,8 @@ function open_chant_info(element) {
 function open_chant_from_div(element) {
     open_chant_info(element);
 }
+
+function ouvrirRechercheApprofondie() {
+    window.open(`${BASE_URL}webapp/recherche.html`, '_blank', 'noopener,noreferrer');
+}
+
