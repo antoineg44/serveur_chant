@@ -6,3 +6,7 @@
     height:2em;
     padding: 0px;
 }
+
+.bg-white.rounded.shadow:hover {
+  background-color: #eee;
+}
