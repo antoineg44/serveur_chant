@@ -123,7 +123,7 @@ function insert_paroisse(paroisse, programmes) {
           <div style="padding: 10px;">'+label+'</div><div class="flex space-x-2">\
             <img class="button" src="../../components/icons/edit.png" onclick="edit_programme(this)">\
             <img class="button" src="../../components/icons/arrow.png" onclick="view_programme(this)">\
-            <svg class="button" width="20" height="20" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
+            <svg class="button" width="20" height="35" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
           </div></div></div>';
     }).join('');
 
