@@ -11,6 +11,7 @@
   <!-- JS -->
   <script src="js/jquery-latest.js"></script>
   <script src="js/config.js"></script>
+  <script src="webapp/config.js"></script>
 
   <!-- JS -->
 
@@ -56,74 +57,168 @@
             <dd id="nb_dernierFichier" class="text-2xl font-bold leading-9 tracking-tight text-white">0</dd>
           </div>
         </dl>
+
+        <div class="bg-white rounded-md shadow-md" style="margin-top: 32px;">
+          <h4 class="px-4 pt-3 text-lg font-semibold text-gray-800">Messes à venir</h4>
+          <ul id="liste_messes_a_venir" class="divide-y divide-gray-200 px-4 pb-3 pt-2">
+          </ul>
+        </div>
       </div>
     </div>
   </div>
   <script>
-    $(document).ready(function() {
-        $.ajax({
-            type: 'GET',
-            url: window.location.origin + '/php/file.php?action=nombre_fichiers_pdf',
-            crossDomain: true,
-            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
-            success: function(data){
-                console.log("fichiers : " + data);
-                var number_file = data.split("£");
-                if(number_file.length == 3)
-                {
-                    $('#number_file').html(number_file[1]);
-                }
+    // "Messes a venir" list, backed by the DB-based webapp/api/programme.php (same approach as pages/liste_messes).
+    const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
+    const BASE_URL = WEBAPP_CONFIG.BASE_URL || '/';
+    const PROGRAMME_API = WEBAPP_CONFIG.PROGRAMME_API || `${BASE_URL}webapp/api/programme.php`;
+    const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
+
+    async function loadStats() {
+        const chantCountElement = document.getElementById('number_folder');
+        const fileCountElement = document.getElementById('number_file');
+        const recentFileCountElement = document.getElementById('nb_dernierFichier');
+        if (!chantCountElement && !fileCountElement && !recentFileCountElement) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${DATA_API}?action=stats`, { credentials: 'include' });
+            if (response.status === 401) {
+                return;
             }
-        });
-        $.ajax({
-            type: 'GET',
-            url: window.location.origin + '/php/file.php?action=nombre_dossier',
-            crossDomain: true,
-            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
-            success: function(data){
-                console.log("fichiers : " + data);
-                var number_folder = data.split("£");
-                if(number_folder.length == 3)
-                {
-                    $('#number_folder').html(number_folder[1]);
-                }
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload || !payload.success) {
+                throw new Error((payload && payload.message) || `HTTP ${response.status}`);
             }
-        });
-        $.ajax({
-            type: 'GET',
-            url: window.location.origin + '/php/programme/interface.php?action=prochains',
-            crossDomain: true,
-            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
-            success: function(data){
-                console.log("fichiers : " + data);
-                var messes_a_venir = data.split("£");
-                var number = messes_a_venir[1].replaceAll("Â", "");
-                if(messes_a_venir.length == 3)
-                {
-                    $('#messes_a_venir').html(number);
-                }
+
+            if (chantCountElement) {
+                chantCountElement.textContent = String(payload.chantCount);
             }
-        });
-        let date = new Date();
-        var month = date.getMonth();
-        if(month == 0)month = 12;
-        console.log("date=" + date.getFullYear() + "-" + String(month).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'));
-        $.ajax({
-            type: 'GET',
-            url: window.location.origin + '/php/file.php?action=nombreFichierAjout',
-            data: "date=" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate(),
-            crossDomain: true,
-            contentType: "application/x-www-form-urlencoded;charset=ISO-8859-15",
-            success: function(data){
-                console.log("fichiers : " + data);
-                var ajoute = data.split("£#");
-                if(ajoute[0].length > 5) {
-                    var file = ajoute[0].split("%#");
-                    $('#nb_dernierFichier').html(file.length -1);
-                }
+            if (fileCountElement) {
+                fileCountElement.textContent = String(payload.fileCount);
             }
-        });
-    });
+            if (recentFileCountElement) {
+                recentFileCountElement.textContent = String(payload.recentFileCount);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function formatDate(value) {
+        const date = new Date(`${value}T00:00:00`);
+        if (Number.isNaN(date.getTime())) {
+            return value || '-';
+        }
+        return date.toLocaleDateString('fr-FR');
+    }
+
+    function getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getProgrammeIdFromElement(element) {
+        const container = element.closest('[data-programme-id]');
+        return container ? container.getAttribute('data-programme-id') : null;
+    }
+
+    function edit_programme(element) {
+        const programmeId = getProgrammeIdFromElement(element);
+        if (!programmeId) {
+            return;
+        }
+        window.open(`${BASE_URL}webapp/modifications.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+    }
+
+    function view_programme(element) {
+        const programmeId = getProgrammeIdFromElement(element);
+        if (!programmeId) {
+            return;
+        }
+        window.open(`${BASE_URL}webapp/visualisation.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+    }
+
+    function view_programme_from_div(element) {
+        view_programme(element);
+    }
+
+    function open_programme_info(element) {
+        const programmeId = getProgrammeIdFromElement(element);
+        if (!programmeId) {
+            return;
+        }
+        const infoUrl = `${BASE_URL}webapp/informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+        window.open(infoUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function renderUpcomingMasses(programmes) {
+        const container = document.getElementById('liste_messes_a_venir');
+        if (!container) {
+            return;
+        }
+
+        const today = getTodayDateString();
+        const allUpcoming = programmes.filter((programme) => programme.date >= today);
+
+        const statElement = document.getElementById('messes_a_venir');
+        if (statElement) {
+            statElement.textContent = String(allUpcoming.length);
+        }
+
+        const upcoming = allUpcoming
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(0, 10);
+
+        if (!upcoming.length) {
+            container.innerHTML = '<li class="py-3 text-gray-500">Aucune messe à venir.</li>';
+            return;
+        }
+
+        container.innerHTML = upcoming.map((programme) => {
+            const label = [formatDate(programme.date), programme.lieu, programme.occasion, programme.paroisse].filter(Boolean).join(' - ');
+            return '<li class="py-2" data-programme-id="'+programme.id+'"><div class="flex items-center justify-between cursor-pointer select-none" ondblclick="view_programme_from_div(this)">\
+          <div>'+label+'</div><div class="flex space-x-2">\
+            <img class="button" src="./components/icons/edit.png" onclick="edit_programme(this)">\
+            <img class="button" src="./components/icons/arrow.png" onclick="view_programme(this)">\
+            <svg class="button" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
+          </div></div></li>';
+        }).join('');
+    }
+
+    async function loadUpcomingMasses() {
+        const container = document.getElementById('liste_messes_a_venir');
+        if (!container) {
+            return;
+        }
+
+        try {
+            const query = new URLSearchParams({ action: 'list' }).toString();
+            const response = await fetch(`${PROGRAMME_API}?${query}`, { credentials: 'include' });
+
+            if (response.status === 401) {
+                container.innerHTML = '<li class="py-3 text-gray-500">Connectez-vous pour voir les messes à venir.</li>';
+                return;
+            }
+
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload || !payload.success) {
+                throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+            }
+
+            renderUpcomingMasses(payload.programmes || []);
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<li class="py-3 text-gray-500">Impossible de charger les messes à venir.</li>';
+        }
+    }
+
+    loadUpcomingMasses();
+    loadStats();
     </script>
 </body>
 

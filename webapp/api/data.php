@@ -63,6 +63,10 @@ try {
             handleTempsLiturgiques($pdo);
             break;
 
+        case 'stats':
+            handleStats($pdo);
+            break;
+
         case 'chant_detail':
             handleChantDetail($pdo);
             break;
@@ -942,6 +946,25 @@ function handleTempsLiturgiques(PDO $pdo): void
             'id' => (int) $row['ID'],
             'nom' => (string) $row['Nom'],
         ], $rows),
+    ]);
+}
+
+function handleStats(PDO $pdo): void
+{
+    $chantCount = (int) $pdo->query('SELECT COUNT(*) FROM `Chant` WHERE Supprimer = 0')->fetchColumn();
+    $fileCount = (int) $pdo->query('SELECT COUNT(*) FROM `Fichier` WHERE Supprimer = 0')->fetchColumn();
+
+    date_default_timezone_set('Europe/Paris');
+    $oneMonthAgo = date('Y-m-d H:i:s', strtotime('-1 month'));
+    $recentFile = $pdo->prepare('SELECT COUNT(*) FROM `Fichier` WHERE Supprimer = 0 AND DateAjout >= :since');
+    $recentFile->execute([':since' => $oneMonthAgo]);
+    $recentFileCount = (int) $recentFile->fetchColumn();
+
+    respondJson(200, [
+        'success' => true,
+        'chantCount' => $chantCount,
+        'fileCount' => $fileCount,
+        'recentFileCount' => $recentFileCount,
     ]);
 }
 
