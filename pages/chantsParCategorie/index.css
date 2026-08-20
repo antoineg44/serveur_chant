@@ -1,0 +1,8 @@
+.button:hover {
+    background-color: #c5c5c5;
+}
+
+.button {
+    height:2em;
+    padding: 8px;
+}
