@@ -8,11 +8,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    img {
-      height: 20px;
-    }
-  </style>
   <!-- JS -->
   <script src="js/jquery-latest.js"></script>
   <script src="js/config.js"></script>
@@ -188,8 +183,8 @@
             const label = [formatDate(programme.date), programme.lieu, programme.occasion, programme.paroisse].filter(Boolean).join(' - ');
             return '<li class="py-2" data-programme-id="'+programme.id+'"><div class="flex items-center justify-between cursor-pointer select-none" ondblclick="view_programme_from_div(this)">\
           <div>'+label+'</div><div class="flex space-x-2">\
-            <img class="button" src="./components/icons/edit.png" onclick="edit_programme(this)">\
-            <img class="button" src="./components/icons/arrow.png" onclick="view_programme(this)">\
+            <img class="button" style="height: 20px;" src="./components/icons/edit.png" onclick="edit_programme(this)">\
+            <img class="button" style="height: 20px;" src="./components/icons/arrow.png" onclick="view_programme(this)">\
             <svg class="button" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
           </div></div></li>';
         }).join('');
