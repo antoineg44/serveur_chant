@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Chants par temps liturgique</title>
+	<meta name="description" content="">
+	<meta name="keywords" content="">
+  <!-- CSS -->
+	<link href="index.css" rel="stylesheet">
+  <link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel=" stylesheet">
+  <!-- JS -->
+  <script src="../../webapp/config.js"></script>
+  <script src="index.js"></script>
+</head>
+
+<body class="h-full w-full"><noscript><strong>Il faut activer le Javascript !!!</strong></noscript>
+	<div class="h-full w-full isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
+		<img src="../../fond.jpg" style="z-index:-1;position: fixed; height: 100%; filter: brightness(20%)" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover object-right md:object-center">
+		<div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl" aria-hidden="true" style="overflow-y:scroll"></div>
+		<div class="mx-auto max-w-7xl px-6 lg:px-8">
+			<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
+			<div class="mx-auto lg:mx-0">
+				<h3 class="text-4xl font-bold tracking-tight text-white sm:text-6xl">Chants par temps liturgique</h3>
+				<p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: justify;">Vous trouverez ici la liste de tous les chants classes par temps liturgique. Selectionnez un temps liturgique pour voir ses chants.</p>
+				<button onclick="ouvrirRechercheApprofondie()" class="mt-6 inline-flex items-center rounded-md bg-gray-500 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Recherche approfondie</button>
+			</div>
+
+			<div class="bg-white rounded-md shadow-md" style="margin-top: 30px;">
+				<ul id="liste_temps_liturgiques" class="divide-y divide-gray-200">
+				</ul>
+			  </div>
+
+			  <script>
+        fill_list();
+			  </script>
+
+		</div>
+	</div>
+
+</body>
+
+</html>
