@@ -136,6 +136,11 @@
       statusElement.classList.toggle('is-error', isError);
     }
 
+    function redirectToLogin() {
+      const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+      window.location.replace(`./login.html?return=${returnUrl}`);
+    }
+
     function formatCote(value) {
       return value === null || value === undefined || value === '' ? '-' : String(value);
     }
@@ -264,6 +269,11 @@
 
         const response = await fetch(`${DATA_API}?${query.toString()}`, { credentials: 'include' });
         const payload = await response.json().catch(() => null);
+
+        if (response.status === 401) {
+          redirectToLogin();
+          return;
+        }
 
         if (!response.ok || !payload || !payload.success) {
           throw new Error((payload && payload.message) || `HTTP ${response.status}`);
