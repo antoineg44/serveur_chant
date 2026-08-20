@@ -386,6 +386,14 @@
           </div>
           <input type="hidden" name="categories" id="categories-hidden" />
         </label>
+        <label>Temps liturgiques
+          <div class="auteur-picker" id="temps-liturgique-picker">
+            <div class="auteur-chips" id="temps-liturgique-chips"></div>
+            <input type="text" id="temps-liturgique-search" placeholder="Rechercher un temps liturgique existant ou en saisir un nouveau" autocomplete="off" />
+            <div class="auteur-suggestions-list" id="temps-liturgique-suggestions-list" hidden></div>
+          </div>
+          <input type="hidden" name="temps_liturgiques" id="temps-liturgiques-hidden" />
+        </label>
         <label>Informations
           <textarea name="informations" rows="4" maxlength="5000"></textarea>
         </label>
@@ -700,6 +708,10 @@
     const categorieSearchInput = document.getElementById('categorie-search');
     const categorieSuggestionsList = document.getElementById('categorie-suggestions-list');
     const categoriesHiddenInput = document.getElementById('categories-hidden');
+    const tempsLiturgiqueChips = document.getElementById('temps-liturgique-chips');
+    const tempsLiturgiqueSearchInput = document.getElementById('temps-liturgique-search');
+    const tempsLiturgiqueSuggestionsList = document.getElementById('temps-liturgique-suggestions-list');
+    const tempsLiturgiquesHiddenInput = document.getElementById('temps-liturgiques-hidden');
 
     /**
      * Builds a chip-based picker (search existing values or add a new one) backed
@@ -855,6 +867,16 @@
       addLabel: 'comme nouvelle categorie',
     });
 
+    const tempsLiturgiquePicker = createTagPicker({
+      chipsEl: tempsLiturgiqueChips,
+      searchInput: tempsLiturgiqueSearchInput,
+      suggestionsList: tempsLiturgiqueSuggestionsList,
+      hiddenInput: tempsLiturgiquesHiddenInput,
+      apiAction: 'temps_liturgiques',
+      apiKey: 'tempsLiturgiques',
+      addLabel: 'comme nouveau temps liturgique',
+    });
+
     function render(chant, files, programmes) {
       document.getElementById('chant-title').textContent = chant.nom;
       document.getElementById('chant-subtitle').textContent = chant.path ? `Dossier : ${chant.path}` : 'A la racine';
@@ -902,6 +924,7 @@
           <div class="chant-card"><strong>Dossier</strong><span>${formatValue(chant.path)}</span></div>
           <div class="chant-card"><strong>Auteurs</strong><span>${formatValue(chant.auteurs)}</span></div>
           <div class="chant-card"><strong>Categories</strong><span>${formatValue(chant.categories)}</span></div>
+          <div class="chant-card"><strong>Temps liturgiques</strong><span>${formatValue(chant.tempsLiturgiques)}</span></div>
           <div class="chant-card"><strong>Cote</strong><span>${chant.cote === null ? '—' : escapeHtml(String(chant.cote))}</span></div>
           <div class="chant-card"><strong>Date d'ajout</strong><span>${formatDate(chant.dateAjout)}</span></div>
           <div class="chant-card"><strong>Fichiers</strong><span>${chant.fileCount}</span></div>
@@ -1106,6 +1129,10 @@
           ? currentChant.categories.split(',').map((nom) => nom.trim()).filter(Boolean)
           : []);
         categoriePicker.loadOptions();
+        tempsLiturgiquePicker.setSelected(currentChant.tempsLiturgiques
+          ? currentChant.tempsLiturgiques.split(',').map((nom) => nom.trim()).filter(Boolean)
+          : []);
+        tempsLiturgiquePicker.loadOptions();
         dialog.showModal();
       });
 
@@ -1120,6 +1147,7 @@
             cote: form.elements.cote.value.trim(),
             auteurs: form.elements.auteurs.value.trim(),
             categories: form.elements.categories.value.trim(),
+            temps_liturgiques: form.elements.temps_liturgiques.value.trim(),
             informations: form.elements.informations.value.trim(),
           });
           dialog.close();

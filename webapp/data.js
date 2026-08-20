@@ -23,6 +23,10 @@ const categorieChips = document.getElementById('categorie-chips');
 const categorieSearchInput = document.getElementById('categorie-search');
 const categorieSuggestionsList = document.getElementById('categorie-suggestions-list');
 const categoriesHiddenInput = document.getElementById('categories-hidden');
+const tempsLiturgiqueChips = document.getElementById('temps-liturgique-chips');
+const tempsLiturgiqueSearchInput = document.getElementById('temps-liturgique-search');
+const tempsLiturgiqueSuggestionsList = document.getElementById('temps-liturgique-suggestions-list');
+const tempsLiturgiquesHiddenInput = document.getElementById('temps-liturgiques-hidden');
 const fileDialog = document.getElementById('file-dialog');
 const fileForm = document.getElementById('file-form');
 const fileDialogTitle = document.getElementById('file-dialog-title');
@@ -642,6 +646,8 @@ function openChantDialog(chant) {
   auteurPicker.loadOptions();
   categoriePicker.setSelected(splitTagList(chant && chant.categories));
   categoriePicker.loadOptions();
+  tempsLiturgiquePicker.setSelected(splitTagList(chant && chant.tempsLiturgiques));
+  tempsLiturgiquePicker.loadOptions();
   chantDialog.showModal();
 }
 
@@ -802,6 +808,16 @@ const categoriePicker = createTagPicker({
   addLabel: 'comme nouvelle categorie',
 });
 
+const tempsLiturgiquePicker = createTagPicker({
+  chipsEl: tempsLiturgiqueChips,
+  searchInput: tempsLiturgiqueSearchInput,
+  suggestionsList: tempsLiturgiqueSuggestionsList,
+  hiddenInput: tempsLiturgiquesHiddenInput,
+  apiAction: 'temps_liturgiques',
+  apiKey: 'tempsLiturgiques',
+  addLabel: 'comme nouveau temps liturgique',
+});
+
 function openFileDialog(chant, file) {
   editingFileContext = { chantId: chant.id, fileId: file ? file.id : null };
   fileDialogTitle.textContent = file ? 'Modifier le fichier' : 'Nouveau fichier';
@@ -891,6 +907,7 @@ chantForm.addEventListener('submit', async (event) => {
     cote: chantForm.elements.cote.value.trim(),
     auteurs: chantForm.elements.auteurs.value.trim(),
     categories: chantForm.elements.categories.value.trim(),
+    temps_liturgiques: chantForm.elements.temps_liturgiques.value.trim(),
     informations: chantForm.elements.informations.value.trim(),
   };
   if (editingChantId !== null) {

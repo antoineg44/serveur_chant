@@ -59,6 +59,10 @@ try {
             handleChantCategorieAdd($pdo);
             break;
 
+        case 'temps_liturgiques':
+            handleTempsLiturgiques($pdo);
+            break;
+
         case 'chant_detail':
             handleChantDetail($pdo);
             break;
@@ -242,6 +246,28 @@ function ensureSchema(PDO $pdo): void
                 REFERENCES `Categorie` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `TempsLiturgique` (
+            `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `Nom` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (`ID`),
+            UNIQUE KEY `uq_temps_liturgique_nom` (`Nom`(191))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `ChantTempsLiturgique` (
+            `ChantID` INT UNSIGNED NOT NULL,
+            `TempsLiturgiqueID` INT UNSIGNED NOT NULL,
+            PRIMARY KEY (`ChantID`, `TempsLiturgiqueID`),
+            KEY `idx_chant_temps_liturgique_temps` (`TempsLiturgiqueID`),
+            CONSTRAINT `fk_chant_temps_liturgique_chant` FOREIGN KEY (`ChantID`)
+                REFERENCES `Chant` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `fk_chant_temps_liturgique_temps` FOREIGN KEY (`TempsLiturgiqueID`)
+                REFERENCES `TempsLiturgique` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 }
 
 function requestValue(string $key): string
@@ -380,7 +406,10 @@ function handleList(PDO $pdo): void
                  WHERE ca.ChantID = c.ID) AS Auteurs,
                 (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
                  FROM `ChantCategorie` cc INNER JOIN `Categorie` cat ON cat.ID = cc.CategorieID
-                 WHERE cc.ChantID = c.ID) AS Categories
+                 WHERE cc.ChantID = c.ID) AS Categories,
+                (SELECT GROUP_CONCAT(tl.Nom ORDER BY tl.Nom SEPARATOR \', \')
+                 FROM `ChantTempsLiturgique` ctl INNER JOIN `TempsLiturgique` tl ON tl.ID = ctl.TempsLiturgiqueID
+                 WHERE ctl.ChantID = c.ID) AS TempsLiturgiques
          FROM `Chant` c
          WHERE c.Path = :path AND c.Supprimer = 0
          ORDER BY c.Nom ASC'
@@ -437,7 +466,10 @@ function handleSearch(PDO $pdo): void
                 WHERE ca.ChantID = c.ID) AS Auteurs,
                (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR ', ')
                 FROM `ChantCategorie` cc3 INNER JOIN `Categorie` cat ON cat.ID = cc3.CategorieID
-                WHERE cc3.ChantID = c.ID) AS Categories
+                WHERE cc3.ChantID = c.ID) AS Categories,
+               (SELECT GROUP_CONCAT(tl.Nom ORDER BY tl.Nom SEPARATOR ', ')
+                FROM `ChantTempsLiturgique` ctl2 INNER JOIN `TempsLiturgique` tl ON tl.ID = ctl2.TempsLiturgiqueID
+                WHERE ctl2.ChantID = c.ID) AS TempsLiturgiques
         FROM `Chant` c
         LEFT JOIN `Fichier` f ON f.ChantID = c.ID AND f.Supprimer = 0
         WHERE c.Supprimer = 0
@@ -509,6 +541,9 @@ function handleSearchAdvanced(PDO $pdo): void
                 (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
                  FROM `ChantCategorie` cc2 INNER JOIN `Categorie` cat ON cat.ID = cc2.CategorieID
                  WHERE cc2.ChantID = c.ID) AS Categories,
+                (SELECT GROUP_CONCAT(tl.Nom ORDER BY tl.Nom SEPARATOR \', \')
+                 FROM `ChantTempsLiturgique` ctl3 INNER JOIN `TempsLiturgique` tl ON tl.ID = ctl3.TempsLiturgiqueID
+                 WHERE ctl3.ChantID = c.ID) AS TempsLiturgiques,
                 (SELECT COUNT(*) FROM `ProgrammeChant` pc WHERE pc.ChantID = c.ID) AS ProgrammeCount
          FROM `Chant` c
          WHERE ' . implode(' AND ', $conditions) . '
@@ -600,6 +635,7 @@ function handleChantSave(PDO $pdo): void
 
     saveChantAuteurs($pdo, $id, requestValue('auteurs'));
     saveChantCategories($pdo, $id, requestValue('categories'));
+    saveChantTempsLiturgiques($pdo, $id, requestValue('temps_liturgiques'));
 
     respondJson(200, [
         'success' => true,
@@ -693,6 +729,49 @@ function saveChantCategories(PDO $pdo, int $chantId, string $rawCategories): voi
 }
 
 /**
+ * Temps liturgiques are entered as a comma separated list and created on the fly,
+ * the same way categories are.
+ */
+function saveChantTempsLiturgiques(PDO $pdo, int $chantId, string $rawTempsLiturgiques): void
+{
+    $names = [];
+    foreach (explode(',', $rawTempsLiturgiques) as $name) {
+        $name = mb_substr(trim($name), 0, DATA_MAX_NAME_LENGTH);
+        if ($name !== '' && !in_array($name, $names, true)) {
+            $names[] = $name;
+        }
+    }
+
+    $delete = $pdo->prepare('DELETE FROM `ChantTempsLiturgique` WHERE ChantID = :chant');
+    $findTempsLiturgique = $pdo->prepare('SELECT ID FROM `TempsLiturgique` WHERE Nom = :nom');
+    $insertTempsLiturgique = $pdo->prepare('INSERT INTO `TempsLiturgique` (Nom) VALUES (:nom)');
+    $link = $pdo->prepare('INSERT INTO `ChantTempsLiturgique` (ChantID, TempsLiturgiqueID) VALUES (:chant, :temps)');
+
+    $pdo->beginTransaction();
+
+    try {
+        $delete->execute([':chant' => $chantId]);
+
+        foreach ($names as $name) {
+            $findTempsLiturgique->execute([':nom' => $name]);
+            $tempsLiturgiqueId = $findTempsLiturgique->fetchColumn();
+
+            if ($tempsLiturgiqueId === false) {
+                $insertTempsLiturgique->execute([':nom' => $name]);
+                $tempsLiturgiqueId = $pdo->lastInsertId();
+            }
+
+            $link->execute([':chant' => $chantId, ':temps' => $tempsLiturgiqueId]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        $pdo->rollBack();
+        throw $error;
+    }
+}
+
+/**
  * Everything known about one chant: metadata, authors and linked files.
  */
 function handleChantDetail(PDO $pdo): void
@@ -710,7 +789,10 @@ function handleChantDetail(PDO $pdo): void
                  WHERE ca.ChantID = c.ID) AS Auteurs,
                 (SELECT GROUP_CONCAT(cat.Nom ORDER BY cat.Nom SEPARATOR \', \')
                  FROM `ChantCategorie` cc INNER JOIN `Categorie` cat ON cat.ID = cc.CategorieID
-                 WHERE cc.ChantID = c.ID) AS Categories
+                 WHERE cc.ChantID = c.ID) AS Categories,
+                (SELECT GROUP_CONCAT(tl.Nom ORDER BY tl.Nom SEPARATOR \', \')
+                 FROM `ChantTempsLiturgique` ctl INNER JOIN `TempsLiturgique` tl ON tl.ID = ctl.TempsLiturgiqueID
+                 WHERE ctl.ChantID = c.ID) AS TempsLiturgiques
          FROM `Chant` c
          WHERE c.ID = :id AND c.Supprimer = 0'
     );
@@ -835,6 +917,19 @@ function handleCategories(PDO $pdo): void
     respondJson(200, [
         'success' => true,
         'categories' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['ID'],
+            'nom' => (string) $row['Nom'],
+        ], $rows),
+    ]);
+}
+
+function handleTempsLiturgiques(PDO $pdo): void
+{
+    $rows = $pdo->query('SELECT ID, Nom FROM `TempsLiturgique` ORDER BY Nom ASC')->fetchAll();
+
+    respondJson(200, [
+        'success' => true,
+        'tempsLiturgiques' => array_map(static fn (array $row): array => [
             'id' => (int) $row['ID'],
             'nom' => (string) $row['Nom'],
         ], $rows),
@@ -1473,6 +1568,7 @@ function mapChantRow(array $row): array
         'informations' => $row['Informations'] === null ? '' : (string) $row['Informations'],
         'auteurs' => isset($row['Auteurs']) && $row['Auteurs'] !== null ? (string) $row['Auteurs'] : '',
         'categories' => isset($row['Categories']) && $row['Categories'] !== null ? (string) $row['Categories'] : '',
+        'tempsLiturgiques' => isset($row['TempsLiturgiques']) && $row['TempsLiturgiques'] !== null ? (string) $row['TempsLiturgiques'] : '',
         'fileCount' => (int) ($row['FileCount'] ?? 0),
         'programmeCount' => (int) ($row['ProgrammeCount'] ?? 0),
     ];

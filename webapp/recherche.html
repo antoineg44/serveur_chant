@@ -104,6 +104,7 @@
             <th>Dossier</th>
             <th>Cote</th>
             <th>Categories</th>
+            <th>Temps liturgiques</th>
             <th>Auteurs</th>
             <th>Fichiers</th>
             <th>Programmes</th>
@@ -159,7 +160,7 @@
       if (!chants.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 7;
+        cell.colSpan = 8;
         cell.textContent = 'Aucun resultat.';
         row.appendChild(cell);
         resultsBody.appendChild(row);
@@ -176,6 +177,7 @@
           chant.path || '-',
           formatCote(chant.cote),
           chant.categories || '-',
+          chant.tempsLiturgiques || '-',
           chant.auteurs || '-',
           String(chant.fileCount),
           String(chant.programmeCount),
