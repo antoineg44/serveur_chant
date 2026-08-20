@@ -57,6 +57,8 @@ async function fill_list() {
         const paroisses = payload.paroisses || [];
         const programmes = payload.programmes || [];
 
+        renderUpcomingMasses(programmes);
+
         paroisses.forEach((paroisse) => {
             const programmesForParoisse = programmes.filter((programme) => programme.paroisse === paroisse);
             insert_paroisse(paroisse, programmesForParoisse);
@@ -68,6 +70,42 @@ async function fill_list() {
         document.getElementById('liste_paroisses').innerHTML =
             `<li class="p-4 text-red-600">Impossible de charger les programmes : ${error.message}</li>`;
     }
+}
+
+function getTodayDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function renderUpcomingMasses(programmes) {
+    const container = document.getElementById('liste_messes_a_venir');
+    if (!container) {
+        return;
+    }
+
+    const today = getTodayDateString();
+    const upcoming = programmes
+        .filter((programme) => programme.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 10);
+
+    if (!upcoming.length) {
+        container.innerHTML = '<li class="py-3 text-gray-500">Aucune messe à venir.</li>';
+        return;
+    }
+
+    container.innerHTML = upcoming.map((programme) => {
+        const label = [formatDate(programme.date), programme.lieu, programme.occasion, programme.paroisse].filter(Boolean).join(' - ');
+        return '<li class="py-2" data-programme-id="'+programme.id+'"><div class="flex items-center justify-between cursor-pointer select-none" ondblclick="view_programme_from_div(this)">\
+          <div>'+label+'</div><div class="flex space-x-2">\
+            <img class="button" src="../../components/icons/edit.png" onclick="edit_programme(this)">\
+            <img class="button" src="../../components/icons/arrow.png" onclick="view_programme(this)">\
+            <svg class="button" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
+          </div></div></li>';
+    }).join('');
 }
 
 function insert_paroisse(paroisse, programmes) {
@@ -85,7 +123,7 @@ function insert_paroisse(paroisse, programmes) {
           <div style="padding: 10px;">'+label+'</div><div class="flex space-x-2">\
             <img class="button" src="../../components/icons/edit.png" onclick="edit_programme(this)">\
             <img class="button" src="../../components/icons/arrow.png" onclick="view_programme(this)">\
-            <img class="button" src="../../components/icons/share.png" style="margin-right: 15px;" onclick="share_programme(this)">\
+            <svg class="button" style="margin-right: 15px; cursor: pointer;" onclick="open_programme_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
           </div></div></div>';
     }).join('');
 
@@ -142,13 +180,11 @@ function view_programme_from_div(element) {
     view_programme(element);
 }
 
-function share_programme(element) {
+function open_programme_info(element) {
     const programmeId = getProgrammeIdFromElement(element);
     if (!programmeId) {
         return;
     }
-    const shareUrl = `${BASE_URL}webapp/informations.html?programmeId=${encodeURIComponent(programmeId)}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("Lien copié : " + shareUrl);
-    });
+    const infoUrl = `${BASE_URL}webapp/informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+    window.open(infoUrl, '_blank', 'noopener,noreferrer');
 }
