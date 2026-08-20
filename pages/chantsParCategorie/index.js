@@ -90,7 +90,7 @@ function insert_categorie(nom, chants) {
             const label = [chant.nom, chant.path].filter(Boolean).join(' - ');
             return '<div class="bg-white rounded shadow" data-chant-id="'+chant.id+'"><div class="flex items-center justify-between p-3 cursor-pointer select-none" style="padding: 2px;" ondblclick="open_chant_from_div(this)">\
           <div style="padding: 10px;">'+label+'</div><div class="flex space-x-2">\
-            <svg class="button" width="20" height="20" style="margin-right: 15px; cursor: pointer;" onclick="open_chant_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
+            <svg class="button" width="35" height="20" style="margin-right: 15px; cursor: pointer;" onclick="open_chant_info(this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>\
           </div></div></div>';
         }).join('')
         : '<p class="text-gray-500 py-2">Aucun chant dans cette categorie.</p>';
