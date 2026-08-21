@@ -8,7 +8,7 @@ $contextOptions = [
     'socket' => [
         'family' => AF_INET6,
     ],
-],
+];
 $context = stream_context_create($contextOptions);
 
 // Tentative de connexion
