@@ -1305,11 +1305,8 @@ function ymusicRequest(array $query): array
     ]);
     $body = curl_exec($ch);
     if ($body === false) {
-        $error = curl_error($ch);
-        curl_close($ch);
-        throw new RuntimeException('Connexion a YMusic impossible: ' . $error);
+        throw new RuntimeException('Connexion a YMusic impossible: ' . curl_error($ch));
     }
-    curl_close($ch);
 
     $data = json_decode((string) $body, true);
     if (!is_array($data)) {
@@ -1373,7 +1370,6 @@ function ymusicUrlExists(string $url): bool
     ]);
     curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     return $status >= 200 && $status < 400;
 }
@@ -1389,7 +1385,6 @@ function ymusicFetchBinary(string $url): string
     ]);
     $body = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($body === false || $status < 200 || $status >= 300) {
         throw new RuntimeException('Telechargement du fichier audio YMusic echoue.');
