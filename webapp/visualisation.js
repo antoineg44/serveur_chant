@@ -533,13 +533,79 @@ function openCurrentChantInfo() {
 }
 
 function isAudioPath(path) {
-  const lower = String(path || '').toLowerCase();
-  return lower.endsWith('.mp3') || lower.endsWith('.m4a');
+  return /\.(mp3|m4a|wav|webm|ogg|oga|opus|aac|flac)$/i.test(String(path || ''));
 }
 
 function isMusicXmlPath(path) {
   const lower = String(path || '').toLowerCase();
   return lower.endsWith('.musicxml') || lower.endsWith('.mxl') || lower.endsWith('.xml');
+}
+
+function setAudioDockOpen(open) {
+  const panel = document.getElementById('audio-dock-panel');
+  const toggle = document.getElementById('audio-dock-toggle');
+  if (!panel || !toggle) {
+    return;
+  }
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(Boolean(open)));
+}
+
+function setAudioDockSource(path) {
+  const player = document.getElementById('audio-dock-player');
+  const select = document.getElementById('audio-dock-select');
+  if (!player) {
+    return;
+  }
+  player.dataset.path = path;
+  player.src = buildPdfFileUrl(path);
+  if (select) {
+    select.value = path;
+  }
+}
+
+/**
+ * Shows/hides the bottom-right audio dock based on the audio files found in the
+ * current chant folder, keeping the current track when navigating between files.
+ */
+function updateAudioDock(audioFiles) {
+  const dock = document.getElementById('audio-dock');
+  const select = document.getElementById('audio-dock-select');
+  const player = document.getElementById('audio-dock-player');
+  if (!dock || !select || !player) {
+    return;
+  }
+
+  const files = Array.isArray(audioFiles) ? audioFiles : [];
+
+  if (!files.length) {
+    dock.hidden = true;
+    setAudioDockOpen(false);
+    player.pause();
+    player.removeAttribute('src');
+    delete player.dataset.path;
+    select.innerHTML = '';
+    return;
+  }
+
+  dock.hidden = false;
+
+  select.innerHTML = '';
+  files.forEach((file) => {
+    const option = document.createElement('option');
+    option.value = file.path;
+    option.textContent = file.name;
+    select.appendChild(option);
+  });
+  select.hidden = files.length < 2;
+
+  const currentPath = player.dataset.path;
+  const stillPresent = files.some((file) => file.path === currentPath);
+  if (!stillPresent) {
+    setAudioDockSource(files[0].path);
+  } else {
+    select.value = currentPath;
+  }
 }
 
 function notifyParentPdfChanged(relativePdfPath) {
@@ -712,6 +778,7 @@ async function renderSiblingFiles(relativePdfPath) {
   if (!split.name) {
     document.getElementById('folder-path').textContent = '/pdf';
     document.getElementById('file-list').innerHTML = '<div class="sidebar-empty">Aucun fichier selectionne.</div>';
+    updateAudioDock([]);
     return 0;
   }
 
@@ -724,6 +791,16 @@ async function renderSiblingFiles(relativePdfPath) {
     ? payload.items.filter((item) => item && item.type === 'file')
     : [];
   renderFileList(payload.items, split.name, split.parent);
+
+  const audioFiles = files
+    .map((item) => ({
+      name: item.name,
+      path: cleanPath(item.path || `${split.parent}/${item.name}`),
+    }))
+    .filter((file) => isAudioPath(file.path))
+    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+  updateAudioDock(audioFiles);
+
   return files.length;
 }
 
@@ -786,6 +863,16 @@ async function initViewer() {
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('folder-info').addEventListener('click', openCurrentChantInfo);
   document.getElementById('sidebar-toggle-floating').addEventListener('click', showFolderSidebarFromFloating);
+
+  document.getElementById('audio-dock-toggle')?.addEventListener('click', () => {
+    const panel = document.getElementById('audio-dock-panel');
+    setAudioDockOpen(Boolean(panel && panel.hidden));
+  });
+  document.getElementById('audio-dock-close')?.addEventListener('click', () => setAudioDockOpen(false));
+  document.getElementById('audio-dock-select')?.addEventListener('change', (event) => {
+    setAudioDockSource(event.target.value);
+    document.getElementById('audio-dock-player')?.play().catch(() => {});
+  });
   document.getElementById('program-toggle')?.addEventListener('click', toggleProgramSidebar);
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);
   document.getElementById('program-info')?.addEventListener('click', () => {
