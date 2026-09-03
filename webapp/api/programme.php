@@ -470,7 +470,12 @@ function loadItems(PDO $pdo, int $programmeId): array
     $chants = $pdo->prepare(
         'SELECT pc.Position, pc.ChantID, pc.FichierID, c.Nom AS ChantNom, c.Path AS ChantPath, f.NomFichier,
                 (SELECT GROUP_CONCAT(cc.CategorieID ORDER BY cc.CategorieID SEPARATOR \',\')
-                 FROM `ChantCategorie` cc WHERE cc.ChantID = c.ID) AS CategorieIds
+                 FROM `ChantCategorie` cc WHERE cc.ChantID = c.ID) AS CategorieIds,
+                (SELECT f2.NomFichier FROM `Fichier` f2
+                 WHERE f2.ChantID = c.ID AND f2.Supprimer = 0
+                   AND LOWER(SUBSTRING_INDEX(f2.NomFichier, \'.\', -1))
+                       IN (\'mp3\', \'m4a\', \'wav\', \'webm\', \'ogg\', \'oga\', \'opus\', \'aac\', \'flac\')
+                 ORDER BY f2.NomFichier ASC LIMIT 1) AS AudioFichier
          FROM `ProgrammeChant` pc
          INNER JOIN `Chant` c ON c.ID = pc.ChantID
          LEFT JOIN `Fichier` f ON f.ID = pc.FichierID
@@ -499,6 +504,7 @@ function loadItems(PDO $pdo, int $programmeId): array
             'chantPath' => (string) $row['ChantPath'],
             'fichierId' => $row['FichierID'] === null ? null : (int) $row['FichierID'],
             'nomFichier' => $row['NomFichier'] === null ? '' : (string) $row['NomFichier'],
+            'audioFile' => $row['AudioFichier'] === null ? '' : (string) $row['AudioFichier'],
             'categorieIds' => $row['CategorieIds'] === null
                 ? []
                 : array_map('intval', explode(',', (string) $row['CategorieIds'])),

@@ -159,6 +159,24 @@
       cursor: not-allowed;
     }
 
+    .chant-play-button {
+      flex: 0 0 26px;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--accent);
+      font: inherit;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .chant-play-button:hover {
+      background: var(--accent-soft);
+    }
+
     .chant-add-categorie-button {
       flex: 0 0 26px;
       width: 26px;
@@ -440,9 +458,47 @@
       return response.text();
     }
 
+    let popupAudioPlayer = null;
+    let activePopupAudioButton = null;
+
+    function resetPopupAudioButton() {
+      if (activePopupAudioButton) {
+        activePopupAudioButton.innerHTML = '&#9658;';
+        activePopupAudioButton = null;
+      }
+    }
+
+    function togglePopupAudio(audioPath, button) {
+      if (!popupAudioPlayer) {
+        popupAudioPlayer = new Audio();
+        popupAudioPlayer.addEventListener('pause', resetPopupAudioButton);
+        popupAudioPlayer.addEventListener('ended', resetPopupAudioButton);
+      }
+
+      if (activePopupAudioButton === button) {
+        popupAudioPlayer.pause();
+        return;
+      }
+
+      resetPopupAudioButton();
+
+      const pdfRoot = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.PDF_ROOT) || '../pdf/';
+      popupAudioPlayer.src = `${pdfRoot}${String(audioPath || '')
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/')}`;
+      popupAudioPlayer.play().catch(() => resetPopupAudioButton());
+      activePopupAudioButton = button;
+      button.innerHTML = '&#9208;';
+    }
+
     function renderPopup(data) {
       const title = document.getElementById('messe-popup-title');
       const container = document.getElementById('messe-popup-content');
+      if (popupAudioPlayer) {
+        popupAudioPlayer.pause();
+      }
       let currentPartieCategorieIds = [];
       const programItems = (data.program || []).map((item, index) => {
         if (item.type === 'partie') {
@@ -477,6 +533,11 @@
           ? `<button type="button" class="chant-info-button" title="Informations du chant" aria-label="Informations de ${escapeHtml(item.name)}" data-chant-info-path="${escapeHtml(path)}" data-chant-info-name="${escapeHtml(item.name)}"${chantId ? ` data-chant-info-id="${chantId}"` : ''}>i</button>`
           : '<button type="button" class="chant-info-button" title="Aucun fichier associe" aria-label="Informations indisponibles" disabled>i</button>';
 
+        const audioPath = String(item.audioPath || '').trim();
+        const playButton = audioPath
+          ? `<button type="button" class="chant-play-button" title="Ecouter" aria-label="Ecouter ${escapeHtml(item.name)}" data-chant-audio-path="${escapeHtml(audioPath)}">&#9658;</button>`
+          : '';
+
         const chantCategorieIds = item.categorieIds || [];
         const hasCorrespondance = currentPartieCategorieIds.some((id) => chantCategorieIds.includes(id));
         const categoriesById = data.categoriesById || {};
@@ -493,7 +554,7 @@
             </span>`
           : '';
 
-        return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong><span style="display:flex;gap:6px;">${addCategorieButton}${infoButton}</span></div>${pathMarkup}</div>`;
+        return `<div class="messe-popup-program-song"><div class="messe-popup-program-song-row"><strong>${escapeHtml(item.name)}</strong><span style="display:flex;gap:6px;">${addCategorieButton}${playButton}${infoButton}</span></div>${pathMarkup}</div>`;
       }).join('');
 
       const titleText = data.title || 'Informations de la messe';
@@ -681,6 +742,13 @@
           }
 
           void openChantInfo(button.dataset.chantInfoPath, button.dataset.chantInfoId, infoWindow, button.dataset.chantInfoName);
+        });
+      });
+
+      container.querySelectorAll('[data-chant-audio-path]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          togglePopupAudio(button.dataset.chantAudioPath, button);
         });
       });
 
@@ -1008,6 +1076,9 @@
           name: item.chantNom,
           chantId: item.chantId,
           path: [item.chantPath, item.chantNom, item.nomFichier].filter(Boolean).join('/'),
+          audioPath: item.audioFile
+            ? [item.chantPath, item.chantNom, item.audioFile].filter(Boolean).join('/')
+            : '',
           categorieIds: item.categorieIds || [],
         }));
 
