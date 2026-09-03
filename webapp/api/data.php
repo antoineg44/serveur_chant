@@ -1375,7 +1375,6 @@ function ymusicUrlExists(string $url): bool
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_RANGE => '0-0',
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 30,
@@ -1391,7 +1390,6 @@ function ymusicFetchBinary(string $url): string
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 300,
     ]);
