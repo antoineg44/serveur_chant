@@ -1339,7 +1339,8 @@
 
       results.forEach((result) => {
         const artists = Array.isArray(result.artists) ? result.artists.filter(Boolean).join(', ') : '';
-        const meta = [artists, result.duration].filter(Boolean).join(' • ');
+        const views = String(result.views || '').trim();
+        const meta = [artists, result.duration, views ? `${views} vues` : ''].filter(Boolean).join(' • ');
 
         const row = document.createElement('div');
         row.className = 'ymusic-result';
