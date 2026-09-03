@@ -1337,7 +1337,12 @@ function ymusicResolveAudio(string $videoId): array
         $candidates[] = 'data/' . $file;
     }
 
-    foreach (array_unique(array_filter($candidates)) as $relative) {
+    $candidates = array_values(array_unique(array_filter($candidates)));
+    if (!$candidates) {
+        throw new RuntimeException('Fichier audio introuvable sur YMusic.');
+    }
+
+    foreach ($candidates as $relative) {
         $url = YMUSIC_BASE_URL . '/' . ltrim($relative, '/');
         if (ymusicUrlExists($url)) {
             return [
@@ -1347,7 +1352,14 @@ function ymusicResolveAudio(string $videoId): array
         }
     }
 
-    throw new RuntimeException('Fichier audio introuvable sur YMusic.');
+    // None answered the probe (e.g. server rejects range/HEAD): fall back to the
+    // best guess and let the real fetch/playback surface any genuine error.
+    $fallback = $candidates[0];
+
+    return [
+        'url' => YMUSIC_BASE_URL . '/' . ltrim($fallback, '/'),
+        'extension' => strtolower((string) pathinfo($fallback, PATHINFO_EXTENSION)),
+    ];
 }
 
 function ymusicNormalizeRelativePath(string $path): string
@@ -1362,9 +1374,9 @@ function ymusicUrlExists(string $url): bool
 {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_NOBODY => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_RANGE => '0-0',
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 30,
     ]);
