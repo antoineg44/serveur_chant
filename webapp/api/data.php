@@ -18,6 +18,12 @@ const DATA_MAX_NAME_LENGTH = 255;
 const DATA_SEED_EXTENSIONS = ['pdf', 'mp3', 'm4a', 'musicxml', 'mxl', 'xml'];
 const DATA_SEED_EXCLUDED_ROOTS = ['Recycle Bin', 'programmes'];
 
+// YMusic project (search/download proxy). Called server-side because its API is
+// CORS-restricted to its own origin.
+const YMUSIC_INTERFACE_URL = 'https://musiques.partitions.ovh/php/yt/interface.php';
+const YMUSIC_BASE_URL = 'https://musiques.partitions.ovh';
+const YMUSIC_AUDIO_EXTENSIONS = ['mp3', 'm4a', 'wav', 'webm', 'ogg', 'oga', 'opus', 'aac', 'flac'];
+
 $action = (string) ($_REQUEST['action'] ?? 'list');
 
 // The homepage displays aggregate stats publicly, without requiring a login.
@@ -97,6 +103,18 @@ try {
 
         case 'chant_options':
             handleChantOptions($pdo);
+            break;
+
+        case 'ymusic_search':
+            handleYmusicSearch();
+            break;
+
+        case 'ymusic_stream':
+            handleYmusicStream();
+            break;
+
+        case 'ymusic_import':
+            handleYmusicImport($pdo);
             break;
 
         case 'seed':
@@ -1164,6 +1182,251 @@ function storeUploadedFile(array $upload, string $chantPath, string $chantName, 
     }
 
     return $fileName;
+}
+
+/**
+ * Proxies a YouTube Music search to the ymusic project (its API is CORS-locked to
+ * its own origin, so it must be reached server-side) and returns the results list.
+ */
+function handleYmusicSearch(): void
+{
+    $query = requestValue('q');
+    if ($query === '') {
+        throw new RuntimeException('Requete de recherche vide.');
+    }
+
+    $data = ymusicRequest(['query' => $query]);
+
+    respondJson(200, [
+        'success' => true,
+        'results' => is_array($data['results'] ?? null) ? $data['results'] : [],
+    ]);
+}
+
+/**
+ * Triggers the ymusic download for a videoId and returns a directly playable URL,
+ * used to preview a track before importing it.
+ */
+function handleYmusicStream(): void
+{
+    $videoId = ymusicVideoId(requestValue('video_id'));
+    $audio = ymusicResolveAudio($videoId);
+
+    respondJson(200, [
+        'success' => true,
+        'url' => $audio['url'],
+    ]);
+}
+
+/**
+ * Downloads a track through the ymusic project and stores it inside the chant
+ * folder (/pdf/<Path>/<Nom>/) with a matching Fichier row.
+ */
+function handleYmusicImport(PDO $pdo): void
+{
+    $chantId = nullableInt('chant_id', 1, PHP_INT_MAX);
+    if ($chantId === null) {
+        throw new RuntimeException('Chaque fichier doit etre lie a un chant.');
+    }
+
+    $videoId = ymusicVideoId(requestValue('video_id'));
+
+    $chant = $pdo->prepare('SELECT Nom, Path FROM `Chant` WHERE ID = :id');
+    $chant->execute([':id' => $chantId]);
+    $chantRow = $chant->fetch();
+    if ($chantRow === false) {
+        throw new RuntimeException('Le chant lie est introuvable.');
+    }
+
+    $audio = ymusicResolveAudio($videoId);
+    if (!in_array($audio['extension'], YMUSIC_AUDIO_EXTENSIONS, true)) {
+        throw new RuntimeException('Extension audio non supportee (' . $audio['extension'] . ').');
+    }
+
+    $bytes = ymusicFetchBinary($audio['url']);
+    if ($bytes === '') {
+        throw new RuntimeException('Fichier audio vide recu depuis YMusic.');
+    }
+
+    $requestedName = requestValue('nom_fichier');
+    $fileName = ymusicBuildFileName($requestedName !== '' ? $requestedName : $videoId, $audio['extension']);
+
+    $targetDir = chantDirectory((string) $chantRow['Path'], (string) $chantRow['Nom']);
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+        throw new RuntimeException('Impossible de creer le dossier du chant.');
+    }
+
+    $fileName = ymusicUniqueFileName($targetDir, $fileName);
+    $destination = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+
+    if (file_put_contents($destination, $bytes) === false) {
+        throw new RuntimeException('Impossible d\'enregistrer le fichier audio sur le serveur.');
+    }
+
+    $statement = $pdo->prepare(
+        'INSERT INTO `Fichier` (NomFichier, DateAjout, ChantID, Tonalite, Accords, NbVoix, Informations)
+         VALUES (:nom, :date, :chant, NULL, 0, NULL, :informations)'
+    );
+    $statement->execute([
+        ':nom' => $fileName,
+        ':date' => currentTimestamp(),
+        ':chant' => $chantId,
+        ':informations' => 'Ajoute via YMusic',
+    ]);
+
+    respondJson(200, [
+        'success' => true,
+        'id' => (int) $pdo->lastInsertId(),
+        'nomFichier' => $fileName,
+    ]);
+}
+
+function ymusicVideoId(string $value): string
+{
+    if ($value === '' || preg_match('/^[0-9A-Za-z_-]{6,32}$/', $value) !== 1) {
+        throw new RuntimeException('Identifiant video YMusic invalide.');
+    }
+
+    return $value;
+}
+
+/**
+ * Performs a GET call to the ymusic interface and returns the decoded JSON payload.
+ */
+function ymusicRequest(array $query): array
+{
+    $url = YMUSIC_INTERFACE_URL . '?' . http_build_query($query);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 300,
+    ]);
+    $body = curl_exec($ch);
+    if ($body === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        throw new RuntimeException('Connexion a YMusic impossible: ' . $error);
+    }
+    curl_close($ch);
+
+    $data = json_decode((string) $body, true);
+    if (!is_array($data)) {
+        throw new RuntimeException('Reponse YMusic invalide.');
+    }
+    if (array_key_exists('success', $data) && $data['success'] === false) {
+        throw new RuntimeException((string) ($data['error'] ?? 'Erreur YMusic.'));
+    }
+
+    return $data;
+}
+
+/**
+ * Asks ymusic to download a track then resolves a directly reachable audio URL.
+ */
+function ymusicResolveAudio(string $videoId): array
+{
+    $data = ymusicRequest(['download' => $videoId]);
+    $download = is_array($data['download'] ?? null) ? $data['download'] : [];
+
+    $candidates = [];
+    if (!empty($download['path'])) {
+        $candidates[] = ymusicNormalizeRelativePath((string) $download['path']);
+    }
+    if (!empty($download['file'])) {
+        $file = basename((string) $download['file']);
+        $candidates[] = 'data/temp/' . $file;
+        $candidates[] = 'data/' . $file;
+    }
+
+    foreach (array_unique(array_filter($candidates)) as $relative) {
+        $url = YMUSIC_BASE_URL . '/' . ltrim($relative, '/');
+        if (ymusicUrlExists($url)) {
+            return [
+                'url' => $url,
+                'extension' => strtolower((string) pathinfo($relative, PATHINFO_EXTENSION)),
+            ];
+        }
+    }
+
+    throw new RuntimeException('Fichier audio introuvable sur YMusic.');
+}
+
+function ymusicNormalizeRelativePath(string $path): string
+{
+    $path = str_replace('\\', '/', $path);
+    $path = preg_replace('#(?:\.\./|\./)+#', '', $path);
+
+    return ltrim((string) $path, '/');
+}
+
+function ymusicUrlExists(string $url): bool
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_NOBODY => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+    ]);
+    curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return $status >= 200 && $status < 400;
+}
+
+function ymusicFetchBinary(string $url): string
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 300,
+    ]);
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($body === false || $status < 200 || $status >= 300) {
+        throw new RuntimeException('Telechargement du fichier audio YMusic echoue.');
+    }
+
+    return (string) $body;
+}
+
+function ymusicBuildFileName(string $title, string $extension): string
+{
+    $title = preg_replace('/[\\\\\/:*?"<>|\x00]+/', ' ', $title);
+    $title = trim((string) preg_replace('/\s+/', ' ', (string) $title));
+    if ($title === '') {
+        $title = 'audio';
+    }
+
+    return mb_substr($title, 0, 200) . '.' . $extension;
+}
+
+function ymusicUniqueFileName(string $directory, string $fileName): string
+{
+    if (!file_exists($directory . DIRECTORY_SEPARATOR . $fileName)) {
+        return $fileName;
+    }
+
+    $name = pathinfo($fileName, PATHINFO_FILENAME);
+    $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+    $suffix = $ext !== '' ? '.' . $ext : '';
+
+    for ($index = 1; $index <= 1000; $index += 1) {
+        $candidate = $name . '-' . $index . $suffix;
+        if (!file_exists($directory . DIRECTORY_SEPARATOR . $candidate)) {
+            return $candidate;
+        }
+    }
+
+    return $name . '-' . time() . $suffix;
 }
 
 /**

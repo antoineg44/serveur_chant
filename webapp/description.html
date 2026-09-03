@@ -108,6 +108,91 @@
       margin: 0 0 12px;
     }
 
+    .chant-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chant-section-head h2 {
+      margin: 0;
+    }
+
+    .ymusic-results {
+      display: grid;
+      gap: 8px;
+      max-height: 52vh;
+      overflow-y: auto;
+      margin-top: 4px;
+    }
+
+    .ymusic-result {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .ymusic-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ymusic-result-title {
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .ymusic-result-meta {
+      font-size: 0.82em;
+      color: var(--ink-soft);
+      word-break: break-word;
+    }
+
+    .ymusic-result-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .ymusic-play-button {
+      flex: 0 0 32px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #ffffff;
+      color: #0f766e;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .ymusic-play-button:hover {
+      background: #ccfbf1;
+    }
+
+    .ymusic-search-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .ymusic-search-row label {
+      flex: 1;
+    }
+
+    .ymusic-status {
+      margin: 10px 0 0;
+      color: var(--ink-soft);
+    }
+
     .chant-description {
       white-space: pre-wrap;
       margin: 0;
@@ -450,6 +535,27 @@
     </form>
   </dialog>
 
+  <dialog id="ymusic-dialog" class="chant-dialog">
+    <form id="ymusic-form" method="dialog">
+      <h2>Ajouter un audio via YMusic</h2>
+      <div class="chant-form-grid">
+        <div class="ymusic-search-row">
+          <label>Recherche
+            <input id="ymusic-search" type="search" autocomplete="off" placeholder="Nom du chant ou de la musique" />
+          </label>
+          <button type="submit" class="btn">Rechercher</button>
+        </div>
+      </div>
+      <div id="ymusic-status" class="ymusic-status" role="status"></div>
+      <div id="ymusic-results" class="ymusic-results"></div>
+      <div class="chant-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Fermer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <audio id="ymusic-audio-player" hidden></audio>
+
   <script>
     const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
     const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
@@ -459,7 +565,7 @@
     const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 
     function isAudioFileName(fileName) {
-      return /\.(mp3|m4a|wav)$/i.test(String(fileName || ''));
+      return /\.(mp3|m4a|wav|webm|ogg|oga|opus|aac|flac)$/i.test(String(fileName || ''));
     }
 
     function buildPdfFileUrl(relativePdfPath) {
@@ -937,10 +1043,21 @@
 
         ${audioFiles.length ? `
         <section class="chant-section">
-          <h2>Audio</h2>
+          <div class="chant-section-head">
+            <h2>Audio</h2>
+            <button id="add-ymusic" class="btn" type="button">Ajouter via YMusic</button>
+          </div>
           <div class="chant-audio-list">${audioItems}</div>
         </section>
-        ` : ''}
+        ` : `
+        <section class="chant-section">
+          <div class="chant-section-head">
+            <h2>Audio</h2>
+            <button id="add-ymusic" class="btn" type="button">Ajouter via YMusic</button>
+          </div>
+          <p class="hint">Aucun fichier audio pour ce chant.</p>
+        </section>
+        `}
 
         <section class="chant-section">
           <h2>Fichiers associés</h2>
@@ -1001,6 +1118,11 @@
       document.querySelectorAll('[data-programme-id]').forEach((button) => {
         button.addEventListener('click', () => openProgramme(button.dataset.programmeId));
       });
+
+      const addYmusicButton = document.getElementById('add-ymusic');
+      if (addYmusicButton) {
+        addYmusicButton.addEventListener('click', () => openYmusicDialog(chant));
+      }
 
       document.querySelectorAll('[data-file-edit]').forEach((button) => {
         const file = files.find((item) => String(item.id) === button.dataset.fileEdit);
@@ -1088,6 +1210,220 @@
         window.alert(error.message);
       }
     }
+
+    const ymusicDialog = document.getElementById('ymusic-dialog');
+    const ymusicForm = document.getElementById('ymusic-form');
+    const ymusicSearchInput = document.getElementById('ymusic-search');
+    const ymusicStatus = document.getElementById('ymusic-status');
+    const ymusicResults = document.getElementById('ymusic-results');
+    const ymusicAudioPlayer = document.getElementById('ymusic-audio-player');
+    let ymusicChant = null;
+    let ymusicActiveButton = null;
+
+    async function getData(action, params) {
+      const endpoints = [LOCAL_DATA_API, DATA_API];
+      const errors = [];
+
+      for (let index = 0; index < endpoints.length; index += 1) {
+        const baseUrl = endpoints[index];
+        const isLast = index === endpoints.length - 1;
+        const query = new URLSearchParams({ action, ...params }).toString();
+
+        try {
+          const response = await fetch(`${baseUrl}?${query}`, { credentials: 'include' });
+
+          if (response.status === 401) {
+            redirectToLogin();
+            return null;
+          }
+
+          const payload = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            if (!isLast && (response.status === 404 || response.status >= 500)) {
+              errors.push(`HTTP ${response.status} on ${baseUrl}`);
+              continue;
+            }
+            throw new Error((payload && payload.message) || `HTTP ${response.status}`);
+          }
+
+          if (!payload || !payload.success) {
+            throw new Error((payload && payload.message) || 'Erreur API');
+          }
+
+          return payload;
+        } catch (error) {
+          if (!isLast) {
+            errors.push(`${baseUrl}: ${error.message}`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new Error(errors.join(' | ') || 'API inaccessible');
+    }
+
+    function resetYmusicPlayback() {
+      if (ymusicActiveButton) {
+        ymusicActiveButton.innerHTML = '&#9658;';
+        ymusicActiveButton = null;
+      }
+    }
+
+    ymusicAudioPlayer.addEventListener('pause', resetYmusicPlayback);
+    ymusicAudioPlayer.addEventListener('ended', resetYmusicPlayback);
+
+    async function toggleYmusicPreview(videoId, button) {
+      if (ymusicActiveButton === button) {
+        ymusicAudioPlayer.pause();
+        return;
+      }
+
+      resetYmusicPlayback();
+      button.innerHTML = '&#8987;';
+      button.disabled = true;
+
+      try {
+        const payload = await getData('ymusic_stream', { video_id: videoId });
+        if (!payload) {
+          return;
+        }
+        ymusicAudioPlayer.src = payload.url;
+        await ymusicAudioPlayer.play();
+        ymusicActiveButton = button;
+        button.innerHTML = '&#9208;';
+      } catch (error) {
+        button.innerHTML = '&#9658;';
+        window.alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function importYmusicTrack(result, button) {
+      if (!ymusicChant) {
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = 'Ajout...';
+
+      try {
+        await postData('ymusic_import', {
+          chant_id: ymusicChant.id,
+          video_id: result.videoId,
+          nom_fichier: result.title || result.videoId,
+        });
+        ymusicAudioPlayer.pause();
+        ymusicDialog.close();
+        await reloadChant();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = originalLabel;
+        window.alert(error.message);
+      }
+    }
+
+    function renderYmusicResults(results) {
+      resetYmusicPlayback();
+      ymusicResults.innerHTML = '';
+
+      if (!results.length) {
+        ymusicStatus.textContent = 'Aucun resultat.';
+        return;
+      }
+
+      ymusicStatus.textContent = '';
+
+      results.forEach((result) => {
+        const artists = Array.isArray(result.artists) ? result.artists.filter(Boolean).join(', ') : '';
+        const meta = [artists, result.duration].filter(Boolean).join(' • ');
+
+        const row = document.createElement('div');
+        row.className = 'ymusic-result';
+
+        const info = document.createElement('div');
+        info.className = 'ymusic-result-info';
+        const title = document.createElement('div');
+        title.className = 'ymusic-result-title';
+        title.textContent = result.title || result.videoId;
+        info.appendChild(title);
+        if (meta) {
+          const metaEl = document.createElement('div');
+          metaEl.className = 'ymusic-result-meta';
+          metaEl.textContent = meta;
+          info.appendChild(metaEl);
+        }
+        row.appendChild(info);
+
+        const actions = document.createElement('div');
+        actions.className = 'ymusic-result-actions';
+
+        const playButton = document.createElement('button');
+        playButton.type = 'button';
+        playButton.className = 'ymusic-play-button';
+        playButton.innerHTML = '&#9658;';
+        playButton.setAttribute('aria-label', `Ecouter ${title.textContent}`);
+        playButton.addEventListener('click', () => toggleYmusicPreview(result.videoId, playButton));
+        actions.appendChild(playButton);
+
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'btn';
+        addButton.textContent = 'Ajouter';
+        addButton.addEventListener('click', () => importYmusicTrack(result, addButton));
+        actions.appendChild(addButton);
+
+        row.appendChild(actions);
+        ymusicResults.appendChild(row);
+      });
+    }
+
+    async function runYmusicSearch(query) {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      resetYmusicPlayback();
+      ymusicResults.innerHTML = '';
+      ymusicStatus.textContent = 'Recherche en cours...';
+
+      try {
+        const payload = await getData('ymusic_search', { q: trimmed });
+        if (!payload) {
+          return;
+        }
+        renderYmusicResults(payload.results || []);
+      } catch (error) {
+        ymusicStatus.textContent = error.message;
+      }
+    }
+
+    function openYmusicDialog(chant) {
+      ymusicChant = chant;
+      ymusicResults.innerHTML = '';
+      ymusicStatus.textContent = '';
+      ymusicSearchInput.value = chant.nom || '';
+      ymusicDialog.showModal();
+      runYmusicSearch(ymusicSearchInput.value);
+    }
+
+    ymusicForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      runYmusicSearch(ymusicSearchInput.value);
+    });
+
+    ymusicDialog.addEventListener('close', () => {
+      ymusicAudioPlayer.pause();
+      resetYmusicPlayback();
+    });
+
+    ymusicDialog.querySelectorAll('[data-close-dialog]').forEach((button) => {
+      button.addEventListener('click', () => ymusicDialog.close());
+    });
 
     (async () => {
       const chantId = new URLSearchParams(window.location.search).get('chantId') || '';
