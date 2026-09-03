@@ -1238,18 +1238,21 @@ function handleYmusicImport(PDO $pdo): void
         throw new RuntimeException('Le chant lie est introuvable.');
     }
 
-    $audio = ymusicResolveAudio($videoId);
-    if (!in_array($audio['extension'], YMUSIC_AUDIO_EXTENSIONS, true)) {
-        throw new RuntimeException('Extension audio non supportee (' . $audio['extension'] . ').');
+    // Stream the bytes through interface.php (?raw=) rather than fetching the
+    // static /data/temp file, which the host rejects on server-to-server calls.
+    $audio = ymusicDownloadRaw($videoId);
+    $extension = $audio['extension'] !== '' ? $audio['extension'] : 'webm';
+    if (!in_array($extension, YMUSIC_AUDIO_EXTENSIONS, true)) {
+        throw new RuntimeException('Extension audio non supportee (' . $extension . ').');
     }
 
-    $bytes = ymusicFetchBinary($audio['url']);
+    $bytes = $audio['bytes'];
     if ($bytes === '') {
         throw new RuntimeException('Fichier audio vide recu depuis YMusic.');
     }
 
     $requestedName = requestValue('nom_fichier');
-    $fileName = ymusicBuildFileName($requestedName !== '' ? $requestedName : $videoId, $audio['extension']);
+    $fileName = ymusicBuildFileName($requestedName !== '' ? $requestedName : $videoId, $extension);
 
     $targetDir = chantDirectory((string) $chantRow['Path'], (string) $chantRow['Nom']);
     if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
@@ -1421,6 +1424,53 @@ function ymusicFetchBinary(string $url, int $redirectsLeft = 3): string
     }
 
     return $body;
+}
+
+/**
+ * Downloads a track through interface.php (?raw=) and returns the raw audio bytes
+ * plus the file extension (read from the X-File-Name response header). Used for
+ * import because the static /data/temp URL is rejected on server-to-server calls.
+ */
+function ymusicDownloadRaw(string $videoId): array
+{
+    $url = YMUSIC_INTERFACE_URL . '?' . http_build_query(['raw' => $videoId]);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HEADER => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 300,
+    ]);
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
+    if ($response === false) {
+        throw new RuntimeException('Connexion a YMusic impossible: ' . curl_error($ch));
+    }
+
+    $headers = substr((string) $response, 0, $headerSize);
+    $body = substr((string) $response, $headerSize);
+
+    if ($status < 200 || $status >= 300 || stripos($contentType, 'application/json') !== false) {
+        $payload = json_decode($body, true);
+        $message = is_array($payload) && isset($payload['error'])
+            ? (string) $payload['error']
+            : ('HTTP ' . $status);
+        throw new RuntimeException('Telechargement du fichier audio YMusic echoue: ' . $message);
+    }
+
+    $fileName = '';
+    if (preg_match('/^x-file-name:\s*(.+)$/im', $headers, $match) === 1) {
+        $fileName = rawurldecode(trim($match[1]));
+    }
+
+    return [
+        'bytes' => $body,
+        'extension' => strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION)),
+    ];
 }
 
 function ymusicBuildFileName(string $title, string $extension): string
