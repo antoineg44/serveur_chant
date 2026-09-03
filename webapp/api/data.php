@@ -1385,22 +1385,42 @@ function ymusicUrlExists(string $url): bool
     return $status >= 200 && $status < 400;
 }
 
-function ymusicFetchBinary(string $url): string
+function ymusicFetchBinary(string $url, int $redirectsLeft = 3): string
 {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HEADER => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 300,
+        CURLOPT_USERAGENT => 'serveur_chant/1.0',
     ]);
-    $body = curl_exec($ch);
+    $response = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $errno = curl_errno($ch);
+    $error = curl_error($ch);
 
-    if ($body === false || $status < 200 || $status >= 300) {
-        throw new RuntimeException('Telechargement du fichier audio YMusic echoue.');
+    if ($response === false) {
+        throw new RuntimeException('Telechargement du fichier audio YMusic echoue (curl ' . $errno . ': ' . $error . ').');
     }
 
-    return (string) $body;
+    $headers = substr((string) $response, 0, $headerSize);
+    $body = substr((string) $response, $headerSize);
+
+    // open_basedir blocks CURLOPT_FOLLOWLOCATION, so follow redirects manually.
+    if ($status >= 300 && $status < 400 && $redirectsLeft > 0
+        && preg_match('/^location:\s*(.+)$/im', $headers, $match) === 1) {
+        return ymusicFetchBinary(trim($match[1]), $redirectsLeft - 1);
+    }
+
+    if ($status < 200 || $status >= 300) {
+        throw new RuntimeException('Telechargement du fichier audio YMusic echoue (HTTP ' . $status . ').');
+    }
+
+    return $body;
 }
 
 function ymusicBuildFileName(string $title, string $extension): string
