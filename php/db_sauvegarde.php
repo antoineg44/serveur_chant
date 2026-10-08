@@ -1,5 +1,7 @@
 <?php
-<?php
+
+// Pour sauvegarder la base de donnée ailleurs
+
 declare(strict_types=1);
 
 require_once '/var/www/partitions/php/connexion.php';
