@@ -29,7 +29,7 @@
     <div class="demo-page">
         <div class="demo-page-navigation">
                 <!-- button go to accueil -->
-                <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: left; margin: 0; padding: 0; width: 100%; display: block;"><a href="https://partitions.ovh" style="color: #3498db; display: inline-block;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
+                <p class="mt-6 text-lg leading-8 text-gray-300" style="text-align: left; margin: 0; padding: 0; width: 100%; display: block;"><a href="https://app.partitions.ovh" style="color: #3498db; display: inline-block;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
             <nav>
                 <ul>
                     <!--<li>

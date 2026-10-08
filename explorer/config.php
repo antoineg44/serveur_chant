@@ -2,7 +2,7 @@
 $config = array (
   'token_secret' => 'FY97wl6XkRqdC51mzJRjfduZvaFtSwvQq9hMfYQIYL93NxPrkKVT2XHfCigNz02m',
   'projects_path' => '/home/partith/www/pdf',
-  'projects_url' => 'https://partitions.ovh/pdf',
+  'projects_url' => 'https://app.partitions.ovh/pdf',
   'dot_folders' => false,
   'file_exts' => '.jpg, .jpeg, .png, .gif, .svg, .html, .css, .js, .json, .md, .txt, .xml, .pdf',
   'allow_empty_ext' => false,

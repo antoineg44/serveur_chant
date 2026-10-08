@@ -126,11 +126,11 @@ if(isset($_GET['carnet'])) {
 		if($carnet == null) {
 	?>
 	<div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
-		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Carnets de chants</h2>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)<span aria-hidden="true">&rarr;</span></a></p>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets?carnet=paroisse_nantes_v2" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)<span aria-hidden="true">&rarr;</span></a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh/carnets?carnet=paroisse_nantes" style="color: #3498db;">Lien vers l'ancien carnet de chants de la paroisse Notre Dame de Nantes (version 2014)<span aria-hidden="true">&rarr;</span></a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh/carnets?carnet=paroisse_nantes_v2" style="color: #3498db;">Lien vers le nouveau carnet de chants de la paroisse Notre Dame de Nantes (version 2024)<span aria-hidden="true">&rarr;</span></a></p>
         </div>
     <div/>
 	<?php
@@ -138,17 +138,17 @@ if(isset($_GET['carnet'])) {
 	?>
 	<?php if($carnet == "paroisse_nantes") { ?>
     <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
-		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">Anciens carnet de chants de la paroisse notre Dame de Nantes :</h2>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets/lists/Paroisse NDDN - Carnet de chants 2014.pdf" target="_blank" style="color: #3498db;">Lien vers le carnets de chants</a></p>
-            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh/carnets/lists/Table des matières - Par thème.pdf" target="_blank" style="color: #3498db;">Lien vers la table des matière par thème</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh/carnets/lists/Paroisse NDDN - Carnet de chants 2014.pdf" target="_blank" style="color: #3498db;">Lien vers le carnets de chants</a></p>
+            <p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh/carnets/lists/Table des matières - Par thème.pdf" target="_blank" style="color: #3498db;">Lien vers la table des matière par thème</a></p>
         </div>
     <div/>
 	<?php } ?>
 	<?php if($carnet == "paroisse_nantes_v2") { ?>
     <div id="contenu" class="mx-auto max-w-6xl px-6 lg:px-8" style="margin-top:20px;margin-bottom:20px;">
-		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
+		<p class="mt-6 text-lg leading-8 text-gray-300"><a href="https://app.partitions.ovh" style="color: #3498db;"><span aria-hidden="true">&larr;</span>Accueil</a></p>
         <div class="mx-auto max-w-2xl lg:mx-0">
             <h2 class="text-4xl font-bold tracking-tight text-white sm:text-4xl">[En construction !] Nouveaux carnet de chants de la paroisse notre Dame de Nantes</h2>
         </div>
