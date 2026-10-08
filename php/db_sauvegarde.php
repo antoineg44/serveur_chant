@@ -1,10 +1,24 @@
 <?php
-
-// Pour sauvegarder la base de donnée ailleurs
-
 declare(strict_types=1);
 
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION
+|--------------------------------------------------------------------------
+*/
+
+// Ton fichier de connexion
 require_once '/var/www/partitions/php/connexion.php';
+
+// Dossier où seront stockées les sauvegardes.
+// IMPORTANT : utilise de préférence un chemin ABSOLU.
+$dossierSauvegarde = '/mnt/sauv/partitions/db';
+
+/*
+|--------------------------------------------------------------------------
+| CONNEXION À LA BASE
+|--------------------------------------------------------------------------
+*/
 
 try {
     $pdo = new PDO(
