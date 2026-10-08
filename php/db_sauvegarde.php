@@ -1,37 +1,22 @@
 <?php
+<?php
 declare(strict_types=1);
 
-session_start();
+require_once '/var/www/partitions/php/connexion.php';
 
-/*
-|--------------------------------------------------------------------------
-| CONFIGURATION
-|--------------------------------------------------------------------------
-*/
-
-// Ton fichier de connexion
-require_once 'connexion.php';
-
-// Dossier où seront stockées les sauvegardes.
-// IMPORTANT : utilise de préférence un chemin ABSOLU.
-$dossierSauvegarde = '/mnt/sauv/partitions/db';
-
-/*
-|--------------------------------------------------------------------------
-| CONNEXION À LA BASE
-|--------------------------------------------------------------------------
-*/
-
-connexion();
-
-if (
-    !isset($_SESSION['session']) ||
-    !($_SESSION['session'] instanceof PDO)
-) {
-    die("Connexion à la base de données impossible.");
+try {
+    $pdo = new PDO(
+        'mysql:host=' . serveur . ';dbname=' . nom_bd . ';charset=utf8mb4',
+        db_user,
+        db_pass,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]
+    );
+} catch (PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage() . PHP_EOL);
 }
-
-$pdo = $_SESSION['session'];
 
 /*
 |--------------------------------------------------------------------------
