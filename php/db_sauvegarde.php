@@ -1,20 +1,8 @@
 <?php
 include("../php/connexion.php");
 
-
-try {
-    $pdo = new PDO(
-        "mysql:host=$serveur;dbname=$nom_bd;charset=utf8mb4",
-        $db_user,
-        $db_pass,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]
-    );
-} catch (PDOException $e) {
-    die("Erreur de connexion : " . $e->getMessage());
-}
+connexion();
+$pdo = $_SESSION['session'];
 
 
 // --------------------------------------------------
