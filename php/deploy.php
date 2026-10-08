@@ -11,7 +11,7 @@ $branch_name = (String) trim($_GET['branch_name']);
 
 // Configurations
 if($branch_name == "main") {
-    $path = "../../www";
+    $path = "../../partitions";
 } else {
     $path = "../../".$branch_name;
 }
