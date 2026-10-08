@@ -1,61 +1,137 @@
 <?php
-include("../php/connexion.php");
+declare(strict_types=1);
+
+session_start();
+
+/*
+|--------------------------------------------------------------------------
+| CONFIGURATION
+|--------------------------------------------------------------------------
+*/
+
+// Ton fichier de connexion
+require_once 'connexion.php';
+
+// Dossier où seront stockées les sauvegardes.
+// IMPORTANT : utilise de préférence un chemin ABSOLU.
+$dossierSauvegarde = '/mnt/sauv/partitions/db';
+
+/*
+|--------------------------------------------------------------------------
+| CONNEXION À LA BASE
+|--------------------------------------------------------------------------
+*/
 
 connexion();
+
+if (
+    !isset($_SESSION['session']) ||
+    !($_SESSION['session'] instanceof PDO)
+) {
+    die("Connexion à la base de données impossible.");
+}
+
 $pdo = $_SESSION['session'];
 
+/*
+|--------------------------------------------------------------------------
+| CRÉATION DU DOSSIER
+|--------------------------------------------------------------------------
+*/
 
-// --------------------------------------------------
-// Nom du fichier de sauvegarde
-// --------------------------------------------------
+if (!is_dir($dossierSauvegarde)) {
+    if (!mkdir($dossierSauvegarde, 0750, true)) {
+        die("Impossible de créer le dossier de sauvegarde.");
+    }
+}
 
-$filename = $nom_bd . '_' . date('Y-m-d_H-i-s') . '.sql';
+if (!is_writable($dossierSauvegarde)) {
+    die("Le dossier de sauvegarde n'est pas accessible en écriture.");
+}
+
+/*
+|--------------------------------------------------------------------------
+| NOM DU FICHIER
+|--------------------------------------------------------------------------
+*/
+
+$filename = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
+
+$fichier = rtrim($dossierSauvegarde, DIRECTORY_SEPARATOR)
+         . DIRECTORY_SEPARATOR
+         . $filename;
 
 
-// --------------------------------------------------
-// Récupération des tables
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| CRÉATION DU FICHIER
+|--------------------------------------------------------------------------
+*/
 
-$tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+$handle = fopen($fichier, 'wb');
+
+if ($handle === false) {
+    die("Impossible de créer le fichier de sauvegarde.");
+}
 
 
-// --------------------------------------------------
-// Début du fichier SQL
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| EN-TÊTE SQL
+|--------------------------------------------------------------------------
+*/
 
-$sql = "-- Sauvegarde de la base : $nom_bd\n";
-$sql .= "-- Date : " . date('Y-m-d H:i:s') . "\n\n";
+fwrite($handle, "-- Sauvegarde MySQL\n");
+fwrite($handle, "-- Date : " . date('Y-m-d H:i:s') . "\n");
+fwrite($handle, "-- Base : " . nom_bd . "\n\n");
 
-$sql .= "SET FOREIGN_KEY_CHECKS=0;\n";
-$sql .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
-$sql .= "START TRANSACTION;\n\n";
+fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n");
+fwrite($handle, "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n");
+fwrite($handle, "START TRANSACTION;\n\n");
 
+
+/*
+|--------------------------------------------------------------------------
+| RÉCUPÉRATION DES TABLES
+|--------------------------------------------------------------------------
+*/
+
+$tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")
+              ->fetchAll(PDO::FETCH_COLUMN);
+
+
+/*
+|--------------------------------------------------------------------------
+| SAUVEGARDE DES TABLES
+|--------------------------------------------------------------------------
+*/
 
 foreach ($tables as $table) {
 
-    // Sécurisation du nom de table pour les requêtes
     $tableQuoted = '`' . str_replace('`', '``', $table) . '`';
 
-    // --------------------------------------------------
-    // Structure de la table
-    // --------------------------------------------------
+    /*
+    |--------------------------------------------------------------------------
+    | STRUCTURE
+    |--------------------------------------------------------------------------
+    */
 
-    $sql .= "-- --------------------------------------------\n";
-    $sql .= "-- Structure de la table $table\n";
-    $sql .= "-- --------------------------------------------\n\n";
+    fwrite($handle, "-- --------------------------------------------------------\n");
+    fwrite($handle, "-- Table : $table\n");
+    fwrite($handle, "-- --------------------------------------------------------\n\n");
 
-    $sql .= "DROP TABLE IF EXISTS $tableQuoted;\n";
+    fwrite($handle, "DROP TABLE IF EXISTS $tableQuoted;\n");
 
     $create = $pdo->query("SHOW CREATE TABLE $tableQuoted")->fetch();
 
-    $sql .= $create['Create Table'] . ";\n\n";
+    fwrite($handle, $create['Create Table'] . ";\n\n");
 
 
-    // --------------------------------------------------
-    // Données de la table
-    // --------------------------------------------------
-
-    $sql .= "-- Données de la table $table\n\n";
+    /*
+    |--------------------------------------------------------------------------
+    | DONNÉES
+    |--------------------------------------------------------------------------
+    */
 
     $rows = $pdo->query("SELECT * FROM $tableQuoted");
 
@@ -71,35 +147,223 @@ foreach ($tables as $table) {
             if ($value === null) {
                 $values[] = 'NULL';
             } else {
-                $values[] = $pdo->quote($value);
+                $values[] = $pdo->quote((string) $value);
             }
         }
 
-        $sql .= "INSERT INTO $tableQuoted (" .
-                implode(', ', $columns) .
-                ") VALUES (" .
-                implode(', ', $values) .
-                ");\n";
+        $insert = "INSERT INTO $tableQuoted ("
+                . implode(', ', $columns)
+                . ") VALUES ("
+                . implode(', ', $values)
+                . ");\n";
+
+        fwrite($handle, $insert);
     }
 
-    $sql .= "\n";
+    fwrite($handle, "\n");
 }
 
 
-$sql .= "COMMIT;\n";
-$sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
+/*
+|--------------------------------------------------------------------------
+| FIN DU SQL
+|--------------------------------------------------------------------------
+*/
+
+fwrite($handle, "COMMIT;\n");
+fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
+
+fclose($handle);
 
 
-// --------------------------------------------------
-// Téléchargement du fichier
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| ROTATION DES SAUVEGARDES
+|--------------------------------------------------------------------------
+|
+| On conserve :
+|
+| - 7 derniers jours
+| - 7 dernières semaines
+| - 7 derniers mois
+| - 7 dernières années
+|
+|--------------------------------------------------------------------------
+*/
 
-header('Content-Type: application/sql; charset=utf-8');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Content-Length: ' . strlen($sql));
 
-echo $sql;
-exit;
+$fichiers = glob(
+    rtrim($dossierSauvegarde, DIRECTORY_SEPARATOR)
+    . DIRECTORY_SEPARATOR
+    . 'backup_*.sql'
+);
 
+if ($fichiers === false) {
+    $fichiers = [];
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| TRI DU PLUS RÉCENT AU PLUS ANCIEN
+|--------------------------------------------------------------------------
+*/
+
+usort($fichiers, function ($a, $b) {
+    return filemtime($b) <=> filemtime($a);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| TABLES DE ROTATION
+|--------------------------------------------------------------------------
+*/
+
+$joursConserves = [];
+$semainesConservees = [];
+$moisConserves = [];
+$anneesConservees = [];
+
+$maintenir = [];
+
+
+/*
+|--------------------------------------------------------------------------
+| ANALYSE DES FICHIERS
+|--------------------------------------------------------------------------
+*/
+
+$maintenant = new DateTimeImmutable();
+
+foreach ($fichiers as $fichierBackup) {
+
+    $dateFichier = DateTimeImmutable::createFromFormat(
+        'U',
+        (string) filemtime($fichierBackup)
+    );
+
+    if (!$dateFichier) {
+        continue;
+    }
+
+    $age = $maintenant->diff($dateFichier)->days;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. 7 DERNIERS JOURS
+    |--------------------------------------------------------------------------
+    */
+
+    if ($age < 7) {
+
+        $cleJour = $dateFichier->format('Y-m-d');
+
+        if (!isset($joursConserves[$cleJour])) {
+
+            $joursConserves[$cleJour] = true;
+            $maintenir[$fichierBackup] = 'quotidien';
+        }
+
+        continue;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. 7 DERNIÈRES SEMAINES
+    |--------------------------------------------------------------------------
+    */
+
+    if ($age < 56) {
+
+        $cleSemaine = $dateFichier->format('o-W');
+
+        if (!isset($semainesConservees[$cleSemaine])) {
+
+            $semainesConservees[$cleSemaine] = true;
+            $maintenir[$fichierBackup] = 'hebdomadaire';
+        }
+
+        continue;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. 7 DERNIERS MOIS
+    |--------------------------------------------------------------------------
+    */
+
+    if ($age < 365) {
+
+        $cleMois = $dateFichier->format('Y-m');
+
+        if (!isset($moisConserves[$cleMois])) {
+
+            $moisConserves[$cleMois] = true;
+            $maintenir[$fichierBackup] = 'mensuel';
+        }
+
+        continue;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. 7 DERNIÈRES ANNÉES
+    |--------------------------------------------------------------------------
+    */
+
+    if ($age < 365 * 7) {
+
+        $cleAnnee = $dateFichier->format('Y');
+
+        if (!isset($anneesConservees[$cleAnnee])) {
+
+            $anneesConservees[$cleAnnee] = true;
+            $maintenir[$fichierBackup] = 'annuel';
+        }
+
+        continue;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PLUS DE 7 ANS
+    |--------------------------------------------------------------------------
+    |
+    | Le fichier ne sera pas ajouté à $maintenir et sera donc supprimé.
+    |
+    */
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SUPPRESSION DES ANCIENNES SAUVEGARDES
+|--------------------------------------------------------------------------
+*/
+
+foreach ($fichiers as $fichierBackup) {
+
+    if (!isset($maintenir[$fichierBackup])) {
+
+        if (is_file($fichierBackup)) {
+            unlink($fichierBackup);
+        }
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| JOURNAL
+|--------------------------------------------------------------------------
+*/
+
+echo "Sauvegarde terminée : " . basename($fichier) . PHP_EOL;
+echo "Fichier : " . $fichier . PHP_EOL;
+echo "Rotation effectuée." . PHP_EOL;
 
 ?>
