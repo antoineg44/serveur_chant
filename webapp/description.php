@@ -639,7 +639,7 @@ if (!$autorise) {
 
     function redirectToLogin() {
       const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-      window.location.replace(`./login.html?return=${returnUrl}`);
+      window.location.replace(`./connexion.php?return=${returnUrl}`);
     }
 
     async function fetchChant(chantId) {
@@ -696,7 +696,7 @@ if (!$autorise) {
         return;
       }
 
-      previewUrl = `./visualisation.html?lien=${encodeURIComponent(`/${path}`)}`;
+      previewUrl = `./visualisation.php?lien=${encodeURIComponent(`/${path}`)}`;
 
       document.getElementById('preview-title').textContent = file.nomFichier;
       document.getElementById('preview-frame').src = previewUrl;
@@ -784,7 +784,7 @@ if (!$autorise) {
     document.getElementById('preview-external').addEventListener('click', openPreviewExternally);
 
     function openProgramme(programmeId) {
-      const url = `./informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+      const url = `./informations.php?programmeId=${encodeURIComponent(programmeId)}`;
 
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'openMesseInfoModal', item: { url, title: 'Informations de la messe' } }, '*');
