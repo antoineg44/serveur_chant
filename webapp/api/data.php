@@ -53,9 +53,6 @@ $action = (string) ($_REQUEST['action'] ?? 'list');
 
 // The homepage displays aggregate stats publicly, without requiring a login.
 $publicActions = ['stats'];
-if (!(in_array($action, $publicActions, true) && $_SERVER['REQUEST_METHOD'] === 'GET')) {
-    requireAuthenticatedUser();
-}
 
 try {
     $pdo = resolveDatabase();
@@ -181,16 +178,6 @@ function applyCorsHeaders(): void
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
-}
-
-function requireAuthenticatedUser(): void
-{
-    if (empty($_SESSION['user'])) {
-        respondJson(401, [
-            'success' => false,
-            'message' => 'Authentification requise.',
-        ]);
-    }
 }
 
 function resolveDatabase(): PDO
