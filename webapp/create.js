@@ -81,7 +81,7 @@ async function loadParoisses() {
 }
 
 function openEditor(programmeId) {
-  const url = `./modifications.html?programmeId=${encodeURIComponent(programmeId)}`;
+  const url = `./modifications.php?programmeId=${encodeURIComponent(programmeId)}`;
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
