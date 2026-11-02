@@ -126,26 +126,6 @@ function redirectToLogin() {
   window.location.replace(`./connexion.php?return=${returnUrl}`);
 }
 
-async function ensureAuthenticated() {
-  const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
-    || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
-
-  try {
-    const response = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
-    const payload = await response.json().catch(() => ({ success: false }));
-
-    if (!response.ok || !payload.success) {
-      redirectToLogin();
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    redirectToLogin();
-    return false;
-  }
-}
-
 function getRelativePathFromPdfUrl(value) {
   const raw = String(value || '').trim();
   if (!raw) {
@@ -856,9 +836,6 @@ async function loadVisualisation(relativePdfPath) {
 }
 
 async function initViewer() {
-  if (!(await ensureAuthenticated())) {
-    return;
-  }
 
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('folder-info').addEventListener('click', openCurrentChantInfo);
