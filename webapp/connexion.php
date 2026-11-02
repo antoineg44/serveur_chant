@@ -15,10 +15,33 @@ session_set_cookie_params([
 
 session_start();
 
+// Mémoriser la page demandée avant la connexion.
+if (
+    !isset($_SESSION['sso_partitions_return'])
+    && isset($_GET['return'])
+    && is_string($_GET['return'])
+) {
+    $returnUrl = $_GET['return'];
+
+    if (
+        str_starts_with($returnUrl, '/')
+        && !str_starts_with($returnUrl, '//')
+        && !str_contains($returnUrl, '\\')
+    ) {
+        $_SESSION['sso_partitions_return'] = $returnUrl;
+    }
+}
+
+
 if (isset($_SESSION['utilisateur_id'])) {
-    header('Location: index.php');
+    $returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+
+    unset($_SESSION['sso_partitions_return']);
+
+    header('Location: ' . $returnUrl);
     exit;
 }
+
 
 function base64Url(string $valeur): string
 {
