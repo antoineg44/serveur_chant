@@ -1,3 +1,69 @@
+<?php
+declare(strict_types=1);
+
+$isHttps = isset($_SERVER['HTTPS'])
+    && $_SERVER['HTTPS'] !== 'off';
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
+session_start();
+
+require_once '/var/www/compte/config/database.php';
+require_once '/var/www/compte/config/services.php';
+
+if (!isset($_SESSION['utilisateur_id'])) {
+    header('Location: connexion.php');
+    exit;
+}
+
+function e(string $valeur): string
+{
+    return htmlspecialchars(
+        $valeur,
+        ENT_QUOTES,
+        'UTF-8'
+    );
+}
+
+$identifiant = (string) (
+    $_SESSION['utilisateur_identifiant'] ?? ''
+);
+
+$csrfToken = $_SESSION['csrf_token'] ?? '';
+
+if (!is_string($csrfToken) || $csrfToken === '') {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    $csrfToken = $_SESSION['csrf_token'];
+}
+
+try {
+    $autorise = utilisateurAAccesService(
+        $pdo,
+        (int) $_SESSION['utilisateur_id'],
+        'video'
+    );
+} catch (Throwable $exception) {
+    error_log(
+        'Erreur de vérification des droits vidéo : '
+        . $exception->getMessage()
+    );
+
+    http_response_code(500);
+    exit('Impossible de vérifier vos autorisations.');
+}
+
+if (!$autorise) {
+    http_response_code(403);
+}
+
+?>
+
 <!doctype html>
 <html lang="fr">
 <head>
