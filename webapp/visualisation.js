@@ -123,7 +123,7 @@ function resolveProgramUrl() {
 
 function redirectToLogin() {
   const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-  window.location.replace(`./login.html?return=${returnUrl}`);
+  window.location.replace(`./connexion.php?return=${returnUrl}`);
 }
 
 async function ensureAuthenticated() {
@@ -486,7 +486,7 @@ async function openChantInfo(relativeFilePath, infoWindow) {
   try {
     const chantId = await resolveChantId(relativeFilePath);
     if (chantId) {
-      const url = `./description.html?chantId=${encodeURIComponent(chantId)}`;
+      const url = `./description.php?chantId=${encodeURIComponent(chantId)}`;
       const fileName = stripFileExtension(splitParentAndName(relativeFilePath).name) || 'Chant';
 
       if (window.parent && window.parent !== window) {
@@ -877,16 +877,16 @@ async function initViewer() {
   document.getElementById('program-toggle-floating')?.addEventListener('click', showProgramSidebarFromFloating);
   document.getElementById('program-info')?.addEventListener('click', () => {
     if (currentProgram?.programmeId) {
-      window.open(`./informations.html?programmeId=${encodeURIComponent(currentProgram.programmeId)}`, '_blank');
+      window.open(`./informations.php?programmeId=${encodeURIComponent(currentProgram.programmeId)}`, '_blank');
       return;
     }
 
     if (currentProgram?.sourceUrl) {
       const relativePath = getRelativePathFromPdfUrl(currentProgram.sourceUrl);
       const programPath = encodeURIComponent(`/pdf/${relativePath}`);
-      window.open(`./informations.html?programme=${programPath}`, '_blank');
+      window.open(`./informations.php?programme=${programPath}`, '_blank');
     } else {
-      window.open('./informations.html', '_blank');
+      window.open('./informations.php', '_blank');
     }
   });
   const programSidebar = document.getElementById('program-sidebar');
