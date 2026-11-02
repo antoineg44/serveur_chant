@@ -373,7 +373,7 @@ function openPdfFromExplorer(item) {
     return;
   }
 
-  const fallbackUrl = `${"./visualisation.html"}?${new URLSearchParams({ lien: `/${item.path}`, folderPanel: 'visible' }).toString()}`;
+  const fallbackUrl = `${"./visualisation.php"}?${new URLSearchParams({ lien: `/${item.path}`, folderPanel: 'visible' }).toString()}`;
   window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
 }
 
