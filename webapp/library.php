@@ -1,3 +1,35 @@
+<?php
+
+declare(strict_types=1);
+$isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $isHttps, 'httponly' => true, 'samesite' => 'Lax',]);
+session_start();
+require_once '/var/www/compte/config/database.php';
+require_once '/var/www/compte/config/services.php'; // Vérifier la connexion. 
+if (!isset($_SESSION['utilisateur_id'])) {
+    $returnUrl = $_SERVER['REQUEST_URI'] ?? '/webapp/data.php';
+    $connexionUrl = '/webapp/connexion.php?return=' . rawurlencode($returnUrl); // L'explorateur étant chargé dans une iframe, // effectuer la redirection dans la fenêtre principale. 
+    http_response_code(401);
+    header('Content-Type: text/html; charset=UTF-8');
+    header('Cache-Control: no-store');
+    echo '<!doctype html><html lang="fr"><script>';
+    echo 'window.top.location.replace(' . json_encode($connexionUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ');';
+    echo '</script></html>';
+    exit;
+} // Vérifier les autorisations. 
+try {
+    $autorise = utilisateurAAccesService($pdo, (int) $_SESSION['utilisateur_id'], 'partitions');
+} catch (Throwable $exception) {
+    error_log('Erreur de vérification des droits explorateur : ' . $exception->getMessage());
+    http_response_code(500);
+    exit('Impossible de vérifier vos autorisations.');
+}
+if (!$autorise) {
+    http_response_code(403);
+    exit('Vous n\'êtes pas autorisé à accéder à cet explorateur.');
+}
+?>
+
 <!doctype html>
 <html lang="fr">
 <head>
@@ -221,23 +253,6 @@
       background: var(--accent-soft, #e2e8f0);
     }
   </style>
-  <script>
-    (async () => {
-      try {
-        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
-          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
-        const res = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
-        const data = await res.json();
-        if (!data.success) {
-          const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-          window.location.replace(`./login.html?return=${returnUrl}`);
-        }
-      } catch {
-        const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-        window.location.replace(`./login.html?return=${returnUrl}`);
-      }
-    })();
-  </script>
 </head>
 <body>
   <div class="library-toolbar">
