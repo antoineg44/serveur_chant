@@ -152,7 +152,7 @@ if (!$autorise) {
 
     function redirectToLogin() {
       const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-      window.location.replace(`./login.html?return=${returnUrl}`);
+      window.location.replace(`./connexion.php?return=${returnUrl}`);
     }
 
     function formatCote(value) {
@@ -160,7 +160,7 @@ if (!$autorise) {
     }
 
     function openChantDescription(chant) {
-      const url = `./description.html?chantId=${encodeURIComponent(chant.id)}`;
+      const url = `./description.php?chantId=${encodeURIComponent(chant.id)}`;
 
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({
