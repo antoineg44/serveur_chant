@@ -157,7 +157,7 @@ function buildPdfViewerUrl(relativePdfPath, options = {}) {
     params.set('folderPanel', 'visible');
   }
   const query = params.toString();
-  return `./visualisation.html?${query}`;
+  return `./visualisation.php?${query}`;
 }
 
 function buildPdfFileUrl(relativePdfPath) {
