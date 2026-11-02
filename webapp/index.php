@@ -18,8 +18,14 @@ require_once '/var/www/compte/config/database.php';
 require_once '/var/www/compte/config/services.php';
 
 if (!isset($_SESSION['utilisateur_id'])) {
-    header('Location: connexion.php');
-    exit;
+    $returnUrl = $_SERVER['REQUEST_URI'] ?? '/index.php';
+
+header(
+    'Location: /connexion.php?return='
+    . rawurlencode($returnUrl)
+);
+exit;
+
 }
 
 function e(string $valeur): string
