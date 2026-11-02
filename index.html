@@ -134,7 +134,7 @@
         if (!programmeId) {
             return;
         }
-        window.open(`${BASE_URL}webapp/modifications.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+        window.open(`${BASE_URL}webapp/modifications.php?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
     }
 
     function view_programme(element) {
@@ -142,7 +142,7 @@
         if (!programmeId) {
             return;
         }
-        window.open(`${BASE_URL}webapp/visualisation.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+        window.open(`${BASE_URL}webapp/visualisation.php?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
     }
 
     function view_programme_from_div(element) {
@@ -154,7 +154,7 @@
         if (!programmeId) {
             return;
         }
-        const infoUrl = `${BASE_URL}webapp/informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+        const infoUrl = `${BASE_URL}webapp/informations.php?programmeId=${encodeURIComponent(programmeId)}`;
         window.open(infoUrl, '_blank', 'noopener,noreferrer');
     }
 
