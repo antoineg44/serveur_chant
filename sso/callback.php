@@ -92,8 +92,8 @@ try {
     // Le droit doit toujours être présent au moment du callback.
     if (!utilisateurAAccesService($pdo, $utilisateurId, 'partitions')) {
         $pdo->rollBack();
-        $returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
-
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/webapp/';
+        
 unset($_SESSION['sso_partitions_pending']);
 unset($_SESSION['sso_partitions_return']);
 
@@ -113,8 +113,8 @@ unset($_SESSION['sso_partitions_return']);
 
     if (!$utilisateur) {
         $pdo->rollBack();
-$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
-
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/webapp/';
+        
 unset($_SESSION['sso_partitions_pending']);
 unset($_SESSION['sso_partitions_return']);
 
@@ -135,8 +135,8 @@ unset($_SESSION['sso_partitions_return']);
 
     if ($requete->rowCount() !== 1) {
         $pdo->rollBack();
-$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
-
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/webapp/';
+        
 unset($_SESSION['sso_partitions_pending']);
 unset($_SESSION['sso_partitions_return']);
 
@@ -150,8 +150,8 @@ unset($_SESSION['sso_partitions_return']);
         throw new RuntimeException('Impossible de renouveler la session vidéo.');
     }
 
-$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
-
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/webapp/';
+    
 unset($_SESSION['sso_partitions_pending']);
 unset($_SESSION['sso_partitions_return']);
 
