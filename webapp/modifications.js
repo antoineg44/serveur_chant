@@ -982,7 +982,7 @@ function visualiser() {
     if (!programmeId) {
         return;
     }
-    window.open("./visualisation.html?programmeId=" + encodeURIComponent(programmeId));
+    window.open("./visualisation.php?programmeId=" + encodeURIComponent(programmeId));
 }
 
 /**
