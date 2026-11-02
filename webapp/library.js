@@ -104,7 +104,7 @@ function getSelectedProgramme() {
 }
 
 function openProgrammeInfo(programme) {
-  const url = `./informations.html?programmeId=${encodeURIComponent(programme.id)}`;
+  const url = `./informations.php?programmeId=${encodeURIComponent(programme.id)}`;
   const title = [formatDate(programme.date), programme.lieu, programme.occasion].filter(Boolean).join(' - ');
 
   if (window.parent && window.parent !== window) {
@@ -261,7 +261,7 @@ document.querySelectorAll('[data-close-dialog]').forEach((button) => {
 });
 
 createButton.addEventListener('click', () => {
-  const url = './create.html';
+  const url = './create.php';
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({ type: 'openMesseInfoModal', item: { url, title: 'Nouveau programme' } }, '*');
