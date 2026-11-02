@@ -641,11 +641,11 @@ if (!$autorise) {
         : programmeFileUrl;
       const actionUrls = {
         modify: programmeId
-          ? `./modifications.html?programmeId=${encodeURIComponent(programmeId)}`
-          : `./modifications.html?programme=${programmeQuery}`,
+          ? `./modifications.php?programmeId=${encodeURIComponent(programmeId)}`
+          : `./modifications.php?programme=${programmeQuery}`,
         visualize: programmeId
-          ? `./visualisation.html?programmeId=${encodeURIComponent(programmeId)}`
-          : `./visualisation.html?programme=${programmeQuery}`,
+          ? `./visualisation.php?programmeId=${encodeURIComponent(programmeId)}`
+          : `./visualisation.php?programme=${programmeQuery}`,
         zip: programmeId
           ? `${programmeApiUrl}?action=download_zip&id=${encodeURIComponent(programmeId)}`
           : `${apiUrl}?action=download_program&path=${encodeURIComponent(programmePath)}`,
@@ -720,7 +720,7 @@ if (!$autorise) {
                 name: label,
                 title: label,
                 description: 'Informations de la messe',
-                url: `./informations.html${window.location.search}`,
+                url: `./informations.php{window.location.search}`,
               },
             }, '*');
             return;
@@ -743,7 +743,7 @@ if (!$autorise) {
           if (programmeId) {
             params.set('programmeId', programmeId);
           }
-          const viewerUrl = `./visualisation.html?${params.toString()}`;
+          const viewerUrl = `./visualisation.php?${params.toString()}`;
 
           if (window.parent && window.parent !== window) {
             window.parent.postMessage({
@@ -868,7 +868,7 @@ if (!$autorise) {
       if (fileBaseName) {
         params.set('file', fileBaseName);
       }
-      const url = `./description.html?${params.toString()}`;
+      const url = `./description.php?${params.toString()}`;
       const name = fileName || 'Chant';
 
       if (window.parent && window.parent !== window) {
@@ -930,7 +930,7 @@ if (!$autorise) {
 
     function redirectToLogin() {
       const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-      window.location.replace(`./login.html?return=${returnUrl}`);
+      window.location.replace(`./connexion.php?return=${returnUrl}`);
     }
 
     async function fetchCategoriesById() {
