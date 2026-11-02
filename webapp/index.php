@@ -204,7 +204,7 @@ if (!$autorise) {
           <iframe
             class="viewer-frame"
             title="Explorateur"
-            src="./data.html"
+            src="./data.php"
             loading="eager"
           ></iframe>
         </div>
@@ -223,7 +223,7 @@ if (!$autorise) {
           <iframe
             class="viewer-frame"
             title="Bibliotheque"
-            src="./library.html"
+            src="./library.php"
             loading="eager"
           ></iframe>
         </div>
