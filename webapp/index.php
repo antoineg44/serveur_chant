@@ -21,7 +21,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
     $returnUrl = $_SERVER['REQUEST_URI'] ?? '/index.php';
 
 header(
-    'Location: /connexion.php?return='
+    'Location: /webapp/connexion.php?return='
     . rawurlencode($returnUrl)
 );
 exit;
