@@ -92,7 +92,11 @@ try {
     // Le droit doit toujours être présent au moment du callback.
     if (!utilisateurAAccesService($pdo, $utilisateurId, 'partitions')) {
         $pdo->rollBack();
-        unset($_SESSION['sso_partitions_pending']);
+        $returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+
+unset($_SESSION['sso_partitions_pending']);
+unset($_SESSION['sso_partitions_return']);
+
 
         callbackErreur(403, 'Accès refusé : ce compte ne dispose pas des droits vidéo.');
     }
@@ -109,7 +113,10 @@ try {
 
     if (!$utilisateur) {
         $pdo->rollBack();
-        unset($_SESSION['sso_partitions_pending']);
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+
+unset($_SESSION['sso_partitions_pending']);
+unset($_SESSION['sso_partitions_return']);
 
         callbackErreur(403, 'Le compte utilisateur n’existe plus.');
     }
@@ -128,7 +135,10 @@ try {
 
     if ($requete->rowCount() !== 1) {
         $pdo->rollBack();
-        unset($_SESSION['sso_partitions_pending']);
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+
+unset($_SESSION['sso_partitions_pending']);
+unset($_SESSION['sso_partitions_return']);
 
         callbackErreur(400, 'Ce code SSO a déjà été utilisé.');
     }
@@ -140,7 +150,10 @@ try {
         throw new RuntimeException('Impossible de renouveler la session vidéo.');
     }
 
-    unset($_SESSION['sso_partitions_pending']);
+$returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+
+unset($_SESSION['sso_partitions_pending']);
+unset($_SESSION['sso_partitions_return']);
 
     $_SESSION['utilisateur_id'] = (int) $utilisateur['id'];
     $_SESSION['utilisateur_identifiant'] = $utilisateur['identifiant'];
@@ -151,8 +164,22 @@ try {
 
     header('Cache-Control: no-store');
     header('Referrer-Policy: no-referrer');
-    header('Location: /index.php');
-    exit;
+    // Vérifier que la destination est une URL locale autorisée.
+if (
+    !is_string($returnUrl)
+    || $returnUrl === ''
+    || !str_starts_with($returnUrl, '/')
+    || str_starts_with($returnUrl, '//')
+    || str_contains($returnUrl, '\\')
+) {
+    $returnUrl = '/index.php';
+}
+
+header('Cache-Control: no-store');
+header('Referrer-Policy: no-referrer');
+header('Location: ' . $returnUrl);
+exit;
+
 
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
