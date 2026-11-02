@@ -389,11 +389,11 @@ function openFileInNewTab(chant, file) {
   }
 
   const query = new URLSearchParams({ lien: `/${path}`, folderPanel: 'visible' }).toString();
-  window.open(`./visualisation.html?${query}`, '_blank', 'noopener,noreferrer');
+  window.open(`./visualisation.php?${query}`, '_blank', 'noopener,noreferrer');
 }
 
 function openChantDescription(chant) {
-  const url = `./description.html?chantId=${encodeURIComponent(chant.id)}`;
+  const url = `./description.php?chantId=${encodeURIComponent(chant.id)}`;
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
@@ -1004,7 +1004,7 @@ deleteChantButton.addEventListener('click', async () => {
 });
 
 advancedSearchButton.addEventListener('click', () => {
-  const url = './recherche.html';
+  const url = './recherche.php';
 
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({
