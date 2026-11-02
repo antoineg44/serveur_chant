@@ -46,7 +46,7 @@ try {
     $autorise = utilisateurAAccesService(
         $pdo,
         (int) $_SESSION['utilisateur_id'],
-        'video'
+        'partitions'
     );
 } catch (Throwable $exception) {
     error_log(
@@ -140,59 +140,6 @@ if (!$autorise) {
     }
   </style>
   <script src="./config.js"></script>
-  <script>
-    // Auth guard: redirect to login if not authenticated
-    (async () => {
-      try {
-        const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
-          || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
-        const res  = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
-        const data = await res.json();
-        if (!data.success) {
-          const returnUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-          window.location.replace(`./login.html?return=${returnUrl}`);
-        } else {
-          window.__currentUser = data.user;
-          const applyUserUi = () => {
-            const info = document.getElementById('user-info');
-            if (info) {
-              info.innerHTML = `Connecté : <strong>${data.user.username}</strong>
-                ${ data.user.role === 'admin'
-                  ? '&nbsp;<a href="./admin/admin-users.html" style="color:var(--accent);font-size:.85rem;">Gérer les utilisateurs</a>'
-                  : ''}`.trim();
-            }
-
-            const settingsTab = document.getElementById('tab-settings');
-            const settingsPanel = document.getElementById('panel-settings');
-            const isAdmin = data.user.role === 'admin';
-            if (settingsTab) {
-              settingsTab.hidden = !isAdmin;
-              settingsTab.setAttribute('aria-hidden', String(!isAdmin));
-            }
-
-            if (!isAdmin) {
-              if (settingsTab) {
-                settingsTab.remove();
-              }
-              if (settingsPanel) {
-                settingsPanel.remove();
-              }
-            } else if (settingsPanel) {
-              settingsPanel.hidden = true;
-            }
-          };
-
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', applyUserUi);
-          } else {
-            applyUserUi();
-          }
-        }
-      } catch {
-        window.location.replace('./login.html');
-      }
-    })();
-  </script>
 </head>
 <body>
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
@@ -213,9 +160,23 @@ if (!$autorise) {
         <a href="../index.html" class="btn btn-ghost icon-btn" title="Accueil" aria-label="Aller à l'accueil">
           <span class="icon-glyph" aria-hidden="true">&#x1f3e0;</span><span class="sr-only">Accueil</span>
         </a>
-        <button id="btn-logout" class="btn btn-danger icon-btn" type="button" title="Déconnexion" aria-label="Déconnexion">
-          <span class="icon-glyph" aria-hidden="true">&#x21aa;</span><span class="sr-only">Déconnexion</span>
-        </button>
+        <form action="deconnexion.php" method="post">
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="<?= e($csrfToken) ?>"
+    >
+
+    <button
+        class="btn btn-danger icon-btn"
+        type="submit"
+        title="Déconnexion"
+        aria-label="Déconnexion"
+    >
+        <span class="icon-glyph" aria-hidden="true">&#x21aa;</span>
+    </button>
+</form>
+
       </div>
       <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-explorer" id="tab-explorer" data-tab="explorer">Explorateur</button>
       <button class="tab" role="tab" aria-selected="false" aria-controls="panel-library" id="tab-library" data-tab="library">Bibliotheque</button>
@@ -301,13 +262,6 @@ if (!$autorise) {
 
   <script src="./app.js"></script>
   <script>
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-      const AUTH_API = (window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.AUTH_API)
-        || `${(window.WEBAPP_CONFIG && window.WEBAPP_CONFIG.BASE_URL) || ''}webapp/api/auth.php`;
-      await fetch(`${AUTH_API}?action=logout`, { credentials: 'include' });
-      window.location.replace('./login.html');
-    });
-
     document.getElementById('seed-database').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       const status = document.getElementById('seed-status');
