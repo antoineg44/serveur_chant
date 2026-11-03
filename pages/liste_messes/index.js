@@ -15,14 +15,18 @@ async function ensureAuthenticated() {
         const response = await fetch(SESSION_API, { credentials: 'include' });
         const payload = await response.json().catch(() => ({ success: false }));
 
-        if (!response.ok || !payload.success) {
+        if (response.status === 401) {
             redirectToLogin();
             return false;
         }
 
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Impossible de verifier vos autorisations.');
+        }
+
         return true;
     } catch (error) {
-        redirectToLogin();
+        document.getElementById('liste_paroisses').textContent = error.message;
         return false;
     }
 }
@@ -152,12 +156,12 @@ function activate() {
 
 function ajouterNouveauProgramme() {
     console.log('Ajouter un nouveau programme clicked');
-    window.location.href = window.location.origin+"/webapp/create.html";
+    window.location.href = window.location.origin+"/webapp/create.php";
 }
 
 function gererProgramme() {
     console.log('Gerer programme clicked');
-    window.location.href = window.location.origin+"/webapp/library.html";
+    window.location.href = window.location.origin+"/webapp/library.php";
 }
 
 function getProgrammeIdFromElement(element) {
@@ -170,7 +174,7 @@ function edit_programme(element) {
     if (!programmeId) {
         return;
     }
-    window.open(`${BASE_URL}webapp/modifications.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+    window.open(`${BASE_URL}webapp/modifications.php?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
 }
 
 function view_programme(element) {
@@ -178,7 +182,7 @@ function view_programme(element) {
     if (!programmeId) {
         return;
     }
-    window.open(`${BASE_URL}webapp/visualisation.html?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
+    window.open(`${BASE_URL}webapp/visualisation.php?programmeId=${encodeURIComponent(programmeId)}`, '_blank', 'noopener,noreferrer');
 }
 
 function view_programme_from_div(element) {
@@ -190,6 +194,6 @@ function open_programme_info(element) {
     if (!programmeId) {
         return;
     }
-    const infoUrl = `${BASE_URL}webapp/informations.html?programmeId=${encodeURIComponent(programmeId)}`;
+    const infoUrl = `${BASE_URL}webapp/informations.php?programmeId=${encodeURIComponent(programmeId)}`;
     window.open(infoUrl, '_blank', 'noopener,noreferrer');
 }
