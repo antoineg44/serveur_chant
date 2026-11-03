@@ -4,16 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
 
-$isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => $isHttps,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
-
 applyCorsHeaders();
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -21,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-requireAuthenticatedUser();
+require_once __DIR__ . '/../auth.php';
+requireWebappAccess();
 
 $projectRoot = realpath(dirname(__DIR__, 2));
 
@@ -127,40 +118,6 @@ function applyCorsHeaders(): void
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
-}
-
-function requireAuthenticatedUser(): void
-{
-    if (!isset($_SESSION['utilisateur_id'])) {
-        respondJson(401, [
-            'success' => false,
-            'message' => 'Authentification requise.',
-        ]);
-    }
-
-    try {
-        require_once '/var/www/compte/config/database.php';
-        require_once '/var/www/compte/config/services.php';
-
-        $autorise = utilisateurAAccesService(
-            $pdo,
-            (int) $_SESSION['utilisateur_id'],
-            'partitions'
-        );
-    } catch (Throwable $exception) {
-        error_log('Erreur de verification des droits explorateur : ' . $exception->getMessage());
-        respondJson(500, [
-            'success' => false,
-            'message' => 'Impossible de verifier vos autorisations.',
-        ]);
-    }
-
-    if (!$autorise) {
-        respondJson(403, [
-            'success' => false,
-            'message' => 'Acces refuse a cet explorateur.',
-        ]);
-    }
 }
 
 function requestValue(string $key): string
