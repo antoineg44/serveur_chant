@@ -1,18 +1,18 @@
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '/';
-const AUTH_API = WEBAPP_CONFIG.AUTH_API || `${BASE_URL}webapp/api/auth.php`;
+const SESSION_API = WEBAPP_CONFIG.SESSION_API || `${BASE_URL}webapp/api/session.php`;
 const DATA_API = WEBAPP_CONFIG.DATA_API || `${BASE_URL}webapp/api/data.php`;
 
 var section = 1;
 
 function redirectToLogin() {
-    const returnUrl = encodeURIComponent(window.location.href);
-    window.location.replace(`${BASE_URL}webapp/login.html?return=${returnUrl}`);
+    const returnUrl = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+    window.location.replace(`${BASE_URL}webapp/connexion.php?return=${returnUrl}`);
 }
 
 async function ensureAuthenticated() {
     try {
-        const response = await fetch(`${AUTH_API}?action=check`, { credentials: 'include' });
+        const response = await fetch(SESSION_API, { credentials: 'include' });
         const payload = await response.json().catch(() => ({ success: false }));
 
         if (!response.ok || !payload.success) {
