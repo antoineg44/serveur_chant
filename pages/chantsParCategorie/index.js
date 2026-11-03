@@ -15,14 +15,18 @@ async function ensureAuthenticated() {
         const response = await fetch(SESSION_API, { credentials: 'include' });
         const payload = await response.json().catch(() => ({ success: false }));
 
-        if (!response.ok || !payload.success) {
+        if (response.status === 401) {
             redirectToLogin();
             return false;
         }
 
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Impossible de verifier vos autorisations.');
+        }
+
         return true;
     } catch (error) {
-        redirectToLogin();
+        document.getElementById('liste_categories').textContent = error.message;
         return false;
     }
 }
@@ -128,7 +132,7 @@ function open_chant_info(element) {
     if (!chantId) {
         return;
     }
-    window.open(`${BASE_URL}webapp/description.html?chantId=${encodeURIComponent(chantId)}`, '_blank', 'noopener,noreferrer');
+    window.open(`${BASE_URL}webapp/description.php?chantId=${encodeURIComponent(chantId)}`, '_blank', 'noopener,noreferrer');
 }
 
 function open_chant_from_div(element) {
@@ -136,6 +140,6 @@ function open_chant_from_div(element) {
 }
 
 function ouvrirRechercheApprofondie() {
-    window.open(`${BASE_URL}webapp/recherche.html`, '_blank', 'noopener,noreferrer');
+    window.open(`${BASE_URL}webapp/recherche.php`, '_blank', 'noopener,noreferrer');
 }
 
