@@ -858,7 +858,7 @@ if (!$autorise) {
                     </div>
                 </div>
             </div>
-            <iframe id="pdf-visualisation-viewer" class="pdf-viewer-container" src="./visualisation.html?lien=Doxologie/Amen, gloire et louange/Amen, gloire et louange_v8.pdf" style="width:100%;height:100%;border:none;"></iframe>
+            <iframe id="pdf-visualisation-viewer" class="pdf-viewer-container" src="./visualisation.php?lien=Doxologie/Amen, gloire et louange/Amen, gloire et louange_v8.pdf" style="width:100%;height:100%;border:none;"></iframe>
         </div>
         </div>
     </div>
@@ -932,7 +932,7 @@ if (!$autorise) {
             /*fc.document.dispatchEvent(new CustomEvent("eventChangePDF", {
                 detail: { file: url }
             }));*/
-            document.getElementById("pdf-visualisation-viewer").src = "./visualisation.html?lien=" + url;
+            document.getElementById("pdf-visualisation-viewer").src = "./visualisation.php?lien=" + url;
             // Store last loaded PDF URL for external open
             window.lastLoadedPdfUrl = url;
             console.log("PDF change event sent");
