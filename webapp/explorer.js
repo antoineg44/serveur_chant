@@ -21,6 +21,7 @@ const explorerListWrap = document.querySelector('.explorer-list-wrap');
 // Constants
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+const SESSION_API = WEBAPP_CONFIG.SESSION_API || './api/session.php';
 const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 const LOCAL_API_URL = './api/explorer.php';
 const REMOTE_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/api/explorer.php`;
@@ -47,6 +48,24 @@ function normalizePath(value) {
     .replaceAll('\\', '/')
     .replace(/^\/+|\/+$/g, '')
     .replace(/\/+/g, '/');
+}
+
+function redirectToLogin() {
+  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+  window.top.location.replace(`/webapp/connexion.php?return=${returnUrl}`);
+}
+
+async function loadUserAccess() {
+  const response = await fetch(SESSION_API, { credentials: 'include' });
+  const data = await response.json().catch(() => ({ success: false }));
+
+  if (response.status === 401) {
+    redirectToLogin();
+  }
+
+  if (!response.ok || !data.success) {
+    throw new Error('Impossible de verifier les droits utilisateur.');
+  }
 }
 
 /**
@@ -230,6 +249,10 @@ function getApiCandidates() {
  * Vérifie si on doit réessayer avec un autre API
  */
 function shouldRetryWithFallback(error, responseStatus) {
+  const status = error?.status || responseStatus;
+  if (status === 401 || status === 403) {
+    return false;
+  }
   if (error) {
     return true;
   }
@@ -258,7 +281,12 @@ async function fetchWithFallback(buildRequest, expectJson = true) {
           errors.push(`HTTP ${response.status} sur ${baseUrl}`);
           continue;
         }
-        throw new Error(`HTTP ${response.status}`);
+        if (response.status === 401) {
+          redirectToLogin();
+        }
+        const error = new Error(`HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
 
       activeApiUrl = baseUrl;
@@ -918,6 +946,7 @@ async function initExplorer() {
   // Initialisation
   updateActionButtons();
   try {
+    await loadUserAccess();
     await loadDirectory('');
   } catch (error) {
     setStatus(error.message || 'Impossible de charger l\'explorateur.', true);
