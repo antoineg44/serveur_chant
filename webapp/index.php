@@ -235,7 +235,6 @@ if (!$autorise) {
           <h2>Parametres</h2>
           <p><a href="https://compte.partitions.ovh/">Aller a la gestion du compte</a></p>
           <p><a href="./admin/historic.html">Aller a la page historique</a></p>
-          <p><a href="./admin/logins.html">Aller a la page connexions</a></p>
           <p>
             <button id="seed-database" class="btn btn-ghost" type="button" title="Remplir une premiere fois les tables depuis le dossier /pdf">Initialiser la base</button>
           </p>
