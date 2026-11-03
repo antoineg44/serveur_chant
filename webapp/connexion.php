@@ -34,7 +34,7 @@ if (
 
 
 if (isset($_SESSION['utilisateur_id'])) {
-    $returnUrl = $_SESSION['sso_partitions_return'] ?? '/index.php';
+    $returnUrl = $_SESSION['sso_partitions_return'] ?? '/webapp/index.php';
 
     unset($_SESSION['sso_partitions_return']);
 
