@@ -1,5 +1,5 @@
 <?php
-	include("../../php/config.php");
+	require_once __DIR__ . '/../config.php';
 
 	$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim((string) $_SERVER['HTTP_ORIGIN']) : '';
 	$allowedOrigins = array_filter([
@@ -24,7 +24,9 @@
 		http_response_code(204);
 		exit;
 	}
-header( 'content-type: text/html; charset=utf-8' );
+	require_once __DIR__ . '/../auth.php';
+	requireWebappAccess(true);
+header('Content-Type: application/json; charset=UTF-8');
 /*
  * DataTables example server-side processing script.
  *
@@ -75,7 +77,7 @@ $columns = array(
 	)*/
 );
 
-include("../../php/connexion.php");
+require_once __DIR__ . '/../../php/connexion.php';
 // SQL server connection information
 $sql_details = array(
 	'user' => db_user,
@@ -91,7 +93,7 @@ $sql_details = array(
  * server-side, there is no need to edit below this line.
  */
 
-require( 'ssp.class.php' );
+require_once __DIR__ . '/../../explo/ssp.class.php';
 
 echo json_encode(
 	SSP::simple( $_GET, $sql_details, $table, $primaryKey, $columns ), JSON_UNESCAPED_UNICODE
