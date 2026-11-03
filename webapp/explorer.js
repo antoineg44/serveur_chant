@@ -21,13 +21,14 @@ const explorerListWrap = document.querySelector('.explorer-list-wrap');
 // Constants
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
+// Mise à jour de l'URL de l'API d'authentification
 const AUTH_API = WEBAPP_CONFIG.AUTH_API || `${BASE_URL}webapp/api/auth.php`;
 const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 const LOCAL_API_URL = './api/explorer.php';
 const REMOTE_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/api/explorer.php`;
 const RECYCLE_BIN_ROOT = 'Recycle Bin';
+
 const AUTH_CHECK_URL = `${AUTH_API}?action=check`;
-const HIDDEN_ROOT_FOLDERS = new Set(['programmes', RECYCLE_BIN_ROOT]);
 
 // State
 let currentPath = '';
@@ -43,6 +44,9 @@ let searchRequestId = 0;
 let dragDepth = 0;
 let isAdminUser = false;
 
+/**
+ * Normalise le chemin
+ */
 function normalizePath(value) {
   return String(value || '')
     .replaceAll('\\', '/')
@@ -50,6 +54,9 @@ function normalizePath(value) {
     .replace(/\/+/g, '/');
 }
 
+/**
+ * Vérifie si le chemin est restreint
+ */
 function isRestrictedPath(pathValue) {
   if (isAdminUser) {
     return false;
@@ -64,6 +71,9 @@ function isRestrictedPath(pathValue) {
   return HIDDEN_ROOT_FOLDERS.has(rootSegment);
 }
 
+/**
+ * Filtre les éléments selon les droits
+ */
 function filterItemsByAccess(items) {
   if (isAdminUser) {
     return items;
@@ -72,6 +82,9 @@ function filterItemsByAccess(items) {
   return (items || []).filter((item) => !isRestrictedPath(item.path));
 }
 
+/**
+ * Charge les droits utilisateur
+ */
 async function loadUserAccess() {
   const response = await fetch(AUTH_CHECK_URL, { credentials: 'include' });
   const data = await response.json().catch(() => ({ success: false }));
@@ -83,6 +96,9 @@ async function loadUserAccess() {
   isAdminUser = data.user?.role === 'admin';
 }
 
+/**
+ * Crée un nom de dossier de recyclage unique
+ */
 function createRecycleFolderName() {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -94,33 +110,44 @@ function createRecycleFolderName() {
   return `${yyyy}-${mm}-${dd}_${hh}-${min}-${ss}`;
 }
 
+/**
+ * Extrait le nom du fichier à partir du chemin
+ */
 function getFileNameFromPath(pathValue) {
   const normalized = String(pathValue || '').replaceAll('\\', '/');
   const parts = normalized.split('/');
   return parts.pop() || '';
 }
 
+/**
+ * Retourne la liste filtrée selon la recherche
+ */
 function getFilteredExplorerItems() {
   if (!searchTerm) {
     return currentDirectoryItems;
   }
-
-  // Search results are already filtered by backend (special chars ignored).
+  // La recherche est déjà filtrée côté backend
   return explorerItems;
 }
 
+/**
+ * Rendu de la liste filtrée
+ */
 function renderFilteredExplorerList() {
   const filteredItems = getFilteredExplorerItems();
   renderList(filteredItems);
 
   const total = searchTerm ? explorerItems.length : currentDirectoryItems.length;
   if (searchTerm) {
-    setStatus(`${filteredItems.length} element(s) trouves sur ${total} dans /pdf (${getApiLabel()}).`);
+    setStatus(`${filteredItems.length} élément(s) trouvés sur ${total} dans /pdf (${getApiLabel()}).`);
   } else {
-    setStatus(`${total} element(s) dans ${currentPath || '/'} (${getApiLabel()}).`);
+    setStatus(`${total} élément(s) dans ${currentPath || '/'} (${getApiLabel()}).`);
   }
 }
 
+/**
+ * Recharge les résultats de recherche
+ */
 async function refreshExplorerSearchResults() {
   if (!searchTerm) {
     explorerItems = currentDirectoryItems;
@@ -146,6 +173,9 @@ async function refreshExplorerSearchResults() {
   }
 }
 
+/**
+ * Efface le filtre de recherche
+ */
 function clearSearchFilter() {
   searchTerm = '';
   searchRequestId += 1;
@@ -161,7 +191,7 @@ function clearSearchFilter() {
 }
 
 /**
- * Update action button states based on selection
+ * Met à jour l'état des boutons d'action
  */
 function updateActionButtons() {
   if (!selectedItem) {
@@ -181,7 +211,7 @@ function updateActionButtons() {
 }
 
 /**
- * Set status message
+ * Définit le message de statut
  */
 function setStatus(message, isError = false) {
   statusElement.textContent = message;
@@ -189,7 +219,7 @@ function setStatus(message, isError = false) {
 }
 
 /**
- * Format bytes to human-readable size
+ * Formate la taille en octets
  */
 function formatBytes(value) {
   if (value === null || value === undefined) {
@@ -213,7 +243,7 @@ function formatBytes(value) {
 }
 
 /**
- * Format timestamp to localized date string
+ * Formate la date
  */
 function formatDate(timestamp) {
   if (!timestamp) {
@@ -227,14 +257,14 @@ function formatDate(timestamp) {
 }
 
 /**
- * Encode query parameters
+ * Encode les paramètres de requête
  */
 function encodeQuery(params) {
   return new URLSearchParams(params).toString();
 }
 
 /**
- * Get list of API candidates for fallback
+ * Retourne la liste des API candidates pour fallback
  */
 function getApiCandidates() {
   if (activeApiUrl === REMOTE_API_URL) {
@@ -244,7 +274,7 @@ function getApiCandidates() {
 }
 
 /**
- * Check if should retry with fallback
+ * Vérifie si on doit réessayer avec un autre API
  */
 function shouldRetryWithFallback(error, responseStatus) {
   if (error) {
@@ -254,7 +284,7 @@ function shouldRetryWithFallback(error, responseStatus) {
 }
 
 /**
- * Fetch with fallback to alternative API
+ * Requête fetch avec fallback
  */
 async function fetchWithFallback(buildRequest, expectJson = true) {
   const candidates = getApiCandidates();
@@ -272,7 +302,7 @@ async function fetchWithFallback(buildRequest, expectJson = true) {
 
       if (!response.ok) {
         if (index < candidates.length - 1 && shouldRetryWithFallback(null, response.status)) {
-          errors.push(`HTTP ${response.status} on ${baseUrl}`);
+          errors.push(`HTTP ${response.status} sur ${baseUrl}`);
           continue;
         }
         throw new Error(`HTTP ${response.status}`);
@@ -292,7 +322,7 @@ async function fetchWithFallback(buildRequest, expectJson = true) {
       return payload;
     } catch (error) {
       if (index < candidates.length - 1 && shouldRetryWithFallback(error, null)) {
-        errors.push(`${baseUrl}: ${error.message}`);
+        errors.push(`${baseUrl} : ${error.message}`);
         continue;
       }
       throw error;
@@ -303,7 +333,7 @@ async function fetchWithFallback(buildRequest, expectJson = true) {
 }
 
 /**
- * GET request to API
+ * Requête GET
  */
 async function apiGet(action, pathValue = '', extraParams = {}) {
   const query = encodeQuery({ action, path: pathValue, ...extraParams });
@@ -314,14 +344,18 @@ async function apiGet(action, pathValue = '', extraParams = {}) {
 }
 
 /**
- * POST request to API
+ * Requête POST
  */
 async function apiPost(action, data) {
   return fetchWithFallback((baseUrl) => {
     const formData = new FormData();
     formData.append('action', action);
     Object.entries(data).forEach(([key, value]) => {
-      formData.append(key, value);
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else {
+        formData.append(key, value);
+      }
     });
 
     return {
@@ -335,7 +369,7 @@ async function apiPost(action, data) {
 }
 
 /**
- * Resolve active API URL
+ * Résout l'URL de l'API active
  */
 async function resolveApiUrl() {
   await fetchWithFallback((baseUrl) => {
@@ -345,12 +379,11 @@ async function resolveApiUrl() {
       options: undefined,
     };
   });
-
   return activeApiUrl;
 }
 
 /**
- * Get API label for status display
+ * Retourne l'étiquette de l'API pour le statut
  */
 function getApiLabel() {
   if (activeApiUrl === REMOTE_API_URL) {
@@ -360,7 +393,7 @@ function getApiLabel() {
 }
 
 /**
- * Open a PDF in host app via postMessage (cross-origin safe), or fallback to new tab
+ * Ouvre un PDF dans l'application via postMessage ou nouvelle fenêtre
  */
 function openPdfFromExplorer(item) {
   if (typeof window.openPdfInNewTab === 'function') {
@@ -377,21 +410,33 @@ function openPdfFromExplorer(item) {
   window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
 }
 
+/**
+ * Vérifie si le fichier est audio
+ */
 function isAudioFileName(fileName) {
   const lower = String(fileName || '').toLowerCase();
   return lower.endsWith('.mp3') || lower.endsWith('.m4a');
 }
 
+/**
+ * Vérifie si le fichier est MusicXML
+ */
 function isMusicXmlFileName(fileName) {
   const lower = String(fileName || '').toLowerCase();
   return lower.endsWith('.musicxml') || lower.endsWith('.mxl') || lower.endsWith('.xml');
 }
 
+/**
+ * Ouvre un MP3
+ */
 function openMp3FromExplorer(item) {
   const fileUrl = `${PDF_ROOT.replace(/\/$/, '')}/${item.path}`;
   window.open(fileUrl, '_blank', 'noopener,noreferrer');
 }
 
+/**
+ * Ouvre un MusicXML
+ */
 async function openMusicXmlFromExplorer(item) {
   const apiUrl = await resolveApiUrl();
   const query = encodeQuery({ action: 'download', path: item.path });
@@ -414,7 +459,7 @@ async function openMusicXmlFromExplorer(item) {
 }
 
 /**
- * Render breadcrumb navigation
+ * Rendu de la navigation breadcrumb
  */
 function renderBreadcrumbs(pathValue) {
   const parts = pathValue ? pathValue.split('/') : [];
@@ -447,7 +492,7 @@ function renderBreadcrumbs(pathValue) {
 }
 
 /**
- * Render file list
+ * Rendu de la liste
  */
 function renderList(items) {
   explorerBody.innerHTML = '';
@@ -474,6 +519,7 @@ function renderList(items) {
     } else if (isAudioFileName(item.name)) {
       iconClass = 'item-icon-audio';
     }
+
     const openExternallyBtn = document.createElement('button');
     openExternallyBtn.type = 'button';
     openExternallyBtn.className = 'open-external-btn';
@@ -496,6 +542,19 @@ function renderList(items) {
       row.querySelector('.actions-cell').appendChild(openExternallyBtn);
     }
 
+    row.querySelector('.name-btn').addEventListener('click', () => {
+      if (item.type === 'dir') {
+        clearSearchFilter();
+        void loadDirectory(item.path);
+      } else if (item.name.toLowerCase().endsWith('.pdf')) {
+        openPdfFromExplorer(item);
+      } else if (isMusicXmlFileName(item.name)) {
+        void openMusicXmlFromExplorer(item);
+      } else if (isAudioFileName(item.name)) {
+        openMp3FromExplorer(item);
+      }
+    });
+
     row.addEventListener('click', () => {
       Array.from(explorerBody.querySelectorAll('tr')).forEach((candidate) => candidate.classList.remove('is-selected'));
       row.classList.add('is-selected');
@@ -511,32 +570,18 @@ function renderList(items) {
       }
     });
 
-    row.querySelector('.name-btn').addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (item.type === 'dir') {
-        clearSearchFilter();
-        void loadDirectory(item.path);
-      } else if (item.name.toLowerCase().endsWith('.pdf')) {
-        openPdfFromExplorer(item);
-      } else if (isMusicXmlFileName(item.name)) {
-        void openMusicXmlFromExplorer(item);
-      } else if (isAudioFileName(item.name)) {
-        openMp3FromExplorer(item);
-      }
-    });
-
     explorerBody.appendChild(row);
   });
 }
 
 /**
- * Load directory contents
+ * Charge un répertoire
  */
 async function loadDirectory(pathValue = currentPath) {
   setStatus('Chargement...');
   try {
     if (isRestrictedPath(pathValue)) {
-      throw new Error('Acces reserve aux administrateurs.');
+      throw new Error('Accès réservé aux administrateurs.');
     }
 
     const payload = await apiGet('list', pathValue);
@@ -552,16 +597,16 @@ async function loadDirectory(pathValue = currentPath) {
 }
 
 /**
- * Require selection for operations
+ * Vérifie si une sélection est requise
  */
 function requireSelection() {
   if (!selectedItem) {
-    throw new Error('Selectionnez un element d abord.');
+    throw new Error('Sélectionnez un élément d\'abord.');
   }
 }
 
 /**
- * Handle folder creation
+ * Crée un nouveau dossier
  */
 async function handleCreateFolder() {
   const folderName = window.prompt('Nom du nouveau dossier :');
@@ -573,7 +618,7 @@ async function handleCreateFolder() {
 }
 
 /**
- * Handle item rename
+ * Renomme un élément
  */
 async function handleRename() {
   requireSelection();
@@ -595,7 +640,7 @@ async function handleRename() {
       && String(item.name || '').toLocaleLowerCase() === normalizedTarget);
 
     if (hasConflict) {
-      throw new Error('Renommage annule: un autre fichier porte deja ce nom.');
+      throw new Error('Renommage annulé : un autre fichier porte déjà ce nom.');
     }
   }
 
@@ -604,12 +649,12 @@ async function handleRename() {
 }
 
 /**
- * Handle item deletion
+ * Supprime un élément
  */
 async function handleDelete() {
   requireSelection();
   if (selectedItem.type === 'dir' && selectedItem.isEmptyDir === false) {
-    throw new Error('Suppression interdite: le dossier n est pas vide.');
+    throw new Error('Suppression interdite : le dossier n\'est pas vide.');
   }
   const confirmation = window.confirm(`Supprimer ${selectedItem.name} ?`);
   if (!confirmation) {
@@ -636,21 +681,21 @@ async function handleDelete() {
     });
 
     await loadDirectory(currentPath);
-    return `Fichier deplace vers /pdf/${RECYCLE_BIN_ROOT}/${recycleFolderName}.`;
+    return `Fichier déplacé vers /pdf/${RECYCLE_BIN_ROOT}/${recycleFolderName}.`;
   }
 
   await apiPost('delete', { path: selectedItem.path });
   await loadDirectory(currentPath);
-  return 'Element supprime.';
+  return 'Élément supprimé.';
 }
 
 /**
- * Handle file upload
+ * Envoi de fichiers
  */
 async function uploadFiles(files) {
   const fileList = Array.from(files || []).filter((file) => file instanceof File);
   if (!fileList.length) {
-    throw new Error('Choisissez un fichier a envoyer.');
+    throw new Error('Choisissez un fichier à envoyer.');
   }
 
   for (const file of fileList) {
@@ -665,6 +710,9 @@ async function handleUpload() {
   uploadInput.value = '';
 }
 
+/**
+ * Active la zone de dépôt
+ */
 function setDropZoneActive(isActive) {
   if (!explorerListWrap) {
     return;
@@ -672,6 +720,9 @@ function setDropZoneActive(isActive) {
   explorerListWrap.classList.toggle('is-drag-over', isActive);
 }
 
+/**
+ * Vérifie si le DataTransfer contient des fichiers
+ */
 function hasFilesInDataTransfer(dataTransfer) {
   if (!dataTransfer) {
     return false;
@@ -679,29 +730,35 @@ function hasFilesInDataTransfer(dataTransfer) {
   return Array.from(dataTransfer.types || []).includes('Files');
 }
 
+/**
+ * Gère le dépôt de fichiers
+ */
 async function handleDroppedFiles(fileList) {
   try {
     setStatus('Envoi des fichiers...');
     await uploadFiles(fileList);
-    setStatus('Fichier(s) envoye(s).');
+    setStatus('Fichier(s) envoyé(s).');
   } catch (error) {
     setStatus(error.message, true);
   }
 }
 
 /**
- * Handle file download
+ * Télécharge un fichier
  */
 async function handleDownload() {
   requireSelection();
   if (selectedItem.type !== 'file') {
-    throw new Error('Le telechargement est disponible uniquement pour les fichiers.');
+    throw new Error('Le téléchargement est disponible uniquement pour les fichiers.');
   }
   const apiUrl = await resolveApiUrl();
   const query = encodeQuery({ action: 'download', path: selectedItem.path });
   window.open(`${apiUrl}?${query}`, '_blank', 'noopener,noreferrer');
 }
 
+/**
+ * Coupe un fichier
+ */
 async function handleCut() {
   requireSelection();
   if (selectedItem.type !== 'file') {
@@ -714,17 +771,20 @@ async function handleCut() {
   };
 
   updateActionButtons();
-  setStatus(`Fichier coupe: ${cutItem.name}. Ouvrez un dossier puis cliquez sur Coller.`);
+  setStatus(`Fichier coupé : ${cutItem.name}. Ouvrez un dossier puis cliquez sur Coller.`);
 }
 
+/**
+ * Colle un fichier coupé
+ */
 async function handlePaste() {
   if (!cutItem) {
-    throw new Error('Aucun fichier coupe.');
+    throw new Error('Aucun fichier coupé.');
   }
 
   const targetPath = currentPath ? `${currentPath}/${cutItem.name}` : cutItem.name;
   if (targetPath === cutItem.path) {
-    throw new Error('Le fichier est deja dans ce dossier.');
+    throw new Error('Le fichier est déjà dans ce dossier.');
   }
 
   await apiPost('move', {
@@ -736,23 +796,26 @@ async function handlePaste() {
   cutItem = null;
   selectedItem = null;
   await loadDirectory(currentPath);
-  setStatus(`Fichier deplace: ${movedName}.`);
+  setStatus(`Fichier déplacé : ${movedName}.`);
 }
 
+/**
+ * Renomme un élément
+ */
 async function triggerRename() {
   try {
     await handleRename();
-    setStatus('Element renomme.');
+    setStatus('Élément renommé.');
   } catch (error) {
     setStatus(error.message, true);
   }
 }
 
 /**
- * Initialize explorer module
+ * Initialise le module explorateur
  */
 async function initExplorer() {
-  // Navigation buttons
+  // Boutons de navigation
   goUpButton.addEventListener('click', () => {
     if (parentPath === null) {
       return;
@@ -765,11 +828,11 @@ async function initExplorer() {
     void loadDirectory(currentPath);
   });
 
-  // File operations
+  // Opérations sur fichiers
   newFolderButton.addEventListener('click', async () => {
     try {
       await handleCreateFolder();
-      setStatus('Dossier cree.');
+      setStatus('Dossier créé.');
     } catch (error) {
       setStatus(error.message, true);
     }
@@ -818,7 +881,7 @@ async function initExplorer() {
     try {
       setStatus('Envoi du fichier...');
       await handleUpload();
-      setStatus('Fichier envoye.');
+      setStatus('Fichier envoyé.');
     } catch (error) {
       setStatus(error.message, true);
     }
@@ -903,13 +966,13 @@ async function initExplorer() {
     void triggerRename();
   });
 
-  // Initialize
+  // Initialisation
   updateActionButtons();
   try {
     await loadUserAccess();
     await loadDirectory('');
   } catch (error) {
-    setStatus(error.message || 'Impossible de charger l explorateur.', true);
+    setStatus(error.message || 'Impossible de charger l\'explorateur.', true);
   }
 }
 
