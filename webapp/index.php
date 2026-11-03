@@ -66,6 +66,7 @@ try {
 
 if (!$autorise) {
     http_response_code(403);
+  exit('Acces refuse au service partitions.');
 }
 
 ?>
@@ -232,7 +233,7 @@ if (!$autorise) {
       <article class="panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" tabindex="0" hidden>
         <div class="placeholder">
           <h2>Parametres</h2>
-          <p><a href="./admin/admin-users.html">Aller a l'administration des utilisateurs</a></p>
+          <p><a href="https://compte.partitions.ovh/">Aller a la gestion du compte</a></p>
           <p><a href="./admin/historic.html">Aller a la page historique</a></p>
           <p><a href="./admin/logins.html">Aller a la page connexions</a></p>
           <p>
