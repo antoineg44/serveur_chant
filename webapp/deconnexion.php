@@ -52,8 +52,6 @@ if (ini_get('session.use_cookies')) {
     );
 }
 
-session_destroy();
-
 if (!session_destroy()) {
     http_response_code(500);
     exit('Impossible de terminer la session.');
