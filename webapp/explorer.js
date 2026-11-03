@@ -21,14 +21,10 @@ const explorerListWrap = document.querySelector('.explorer-list-wrap');
 // Constants
 const WEBAPP_CONFIG = window.WEBAPP_CONFIG || {};
 const BASE_URL = WEBAPP_CONFIG.BASE_URL || '';
-// Mise à jour de l'URL de l'API d'authentification
-const AUTH_API = WEBAPP_CONFIG.AUTH_API || `${BASE_URL}webapp/api/auth.php`;
 const PDF_ROOT = WEBAPP_CONFIG.PDF_ROOT || `${BASE_URL}pdf/`;
 const LOCAL_API_URL = './api/explorer.php';
 const REMOTE_API_URL = WEBAPP_CONFIG.EXPLORER_API || `${BASE_URL}webapp/api/explorer.php`;
 const RECYCLE_BIN_ROOT = 'Recycle Bin';
-
-const AUTH_CHECK_URL = `${AUTH_API}?action=check`;
 
 // State
 let currentPath = '';
@@ -42,7 +38,6 @@ let searchTerm = '';
 let searchDebounceTimer = null;
 let searchRequestId = 0;
 let dragDepth = 0;
-let isAdminUser = false;
 
 /**
  * Normalise le chemin
@@ -52,48 +47,6 @@ function normalizePath(value) {
     .replaceAll('\\', '/')
     .replace(/^\/+|\/+$/g, '')
     .replace(/\/+/g, '/');
-}
-
-/**
- * Vérifie si le chemin est restreint
- */
-function isRestrictedPath(pathValue) {
-  if (isAdminUser) {
-    return false;
-  }
-
-  const normalizedPath = normalizePath(pathValue);
-  if (!normalizedPath) {
-    return false;
-  }
-
-  const [rootSegment] = normalizedPath.split('/');
-  return HIDDEN_ROOT_FOLDERS.has(rootSegment);
-}
-
-/**
- * Filtre les éléments selon les droits
- */
-function filterItemsByAccess(items) {
-  if (isAdminUser) {
-    return items;
-  }
-
-  return (items || []).filter((item) => !isRestrictedPath(item.path));
-}
-
-/**
- * Charge les droits utilisateur
- */
-async function loadUserAccess() {
-  const response = await fetch(AUTH_CHECK_URL, { credentials: 'include' });
-  const data = await response.json().catch(() => ({ success: false }));
-
-  if (!response.ok || !data.success) {
-    throw new Error('Impossible de verifier les droits utilisateur.');
-  }
-
-  isAdminUser = data.user?.role === 'admin';
 }
 
 /**
@@ -163,7 +116,7 @@ async function refreshExplorerSearchResults() {
     if (requestId !== searchRequestId) {
       return;
     }
-    explorerItems = filterItemsByAccess(payload.items || []);
+    explorerItems = payload.items || [];
     renderFilteredExplorerList();
   } catch (error) {
     if (requestId !== searchRequestId) {
@@ -580,14 +533,10 @@ function renderList(items) {
 async function loadDirectory(pathValue = currentPath) {
   setStatus('Chargement...');
   try {
-    if (isRestrictedPath(pathValue)) {
-      throw new Error('Accès réservé aux administrateurs.');
-    }
-
     const payload = await apiGet('list', pathValue);
     currentPath = payload.currentPath;
     parentPath = payload.parentPath;
-    currentDirectoryItems = filterItemsByAccess(payload.items || []);
+    currentDirectoryItems = payload.items || [];
     explorerItems = currentDirectoryItems;
     renderBreadcrumbs(currentPath);
     await refreshExplorerSearchResults();
@@ -969,7 +918,6 @@ async function initExplorer() {
   // Initialisation
   updateActionButtons();
   try {
-    await loadUserAccess();
     await loadDirectory('');
   } catch (error) {
     setStatus(error.message || 'Impossible de charger l\'explorateur.', true);
